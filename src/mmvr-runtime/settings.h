@@ -207,6 +207,7 @@ enum class Setting {
     ZoraBody,
     DekuBody,
     FierceDeityBody,
+    AlwaysShield,
     Count
 };
 struct SettingDefinition {
@@ -417,6 +418,7 @@ inline constexpr SettingDefinition SettingDefinitions[] = {
     { "gVR.ZoraBody", "Zora body (Experimental)", 1, 0, 1, 1, "off/on" },
     { "gVR.DekuBody", "Deku body (Experimental)", 1, 0, 1, 1, "off/on" },
     { "gVR.FierceDeityBody", "Fierce Deity body (Experimental)", 0, 0, 1, 1, "off/on" },
+    { "gVR.AlwaysShield", "Always hold shield when sword is drawn", 0, 0, 1, 1, "off/on" },
 };
 static_assert(sizeof(SettingDefinitions) / sizeof(SettingDefinitions[0]) == size_t(Setting::Count));
 inline float BoundSetting(Setting id, float value) {

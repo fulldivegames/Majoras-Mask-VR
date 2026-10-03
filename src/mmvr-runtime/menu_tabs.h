@@ -203,6 +203,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { int(Setting::DeityBeamInterval), 8 },
     { int(Setting::WeaponWallOffset), 8 },
     { int(Setting::ShieldMargin), 9 },
+    { int(Setting::AlwaysShield), 9 },
     { int(Setting::ShieldVisualSize), 9 },
     { int(Setting::PunchSpeed), 9 },
     { int(Setting::PunchDistance), 9 },

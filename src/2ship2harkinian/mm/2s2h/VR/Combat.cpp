@@ -105,6 +105,12 @@ bool SpinContactActive() {
 bool PhysicalMelee(int w) {
     return w >= PLAYER_MELEEWEAPON_SWORD_KOKIRI && w <= PLAYER_MELEEWEAPON_DEKU_STICK;
 }
+bool SwordDrawn(Player* p) {
+    if (!p || p->actor.id != ACTOR_PLAYER || p->transformation != PLAYER_FORM_HUMAN)
+        return false;
+    const int weapon = Player_GetMeleeWeaponHeld(p);
+    return weapon >= PLAYER_MELEEWEAPON_SWORD_KOKIRI && weapon <= PLAYER_MELEEWEAPON_SWORD_TWO_HANDED;
+}
 void CombatLog(const char* event, PlayState* play, Player* p) {
     if (mmvr::GetSettings().Get(mmvr::Setting::SwordDiagnostics) < .5f)
         return;
@@ -271,9 +277,11 @@ void UpdateShield(const mmvr::TrackingFrame& frame, const mmvr::Matrix& rightHan
     auto* play = gPlayState;
     auto* p = play ? GET_PLAYER(play) : nullptr;
     int controller = 1 - mmvr::SwordController(mmvr::GetSettings());
+    const bool autoShield = p && mmvr::GetSettings().Get(mmvr::Setting::AlwaysShield) > .5f &&
+                            SwordDrawn(p) && p->currentShield != PLAYER_SHIELD_NONE;
     shieldValid = p && (p->transformation == PLAYER_FORM_HUMAN || p->transformation == PLAYER_FORM_ZORA) &&
                   !mmvrgame::BowHeld() && !MMVR_IndependentHookshot(p) && CombatEligible(play, p) &&
-                  frame.grips[controller] > .65f && frame.handTracked[controller] &&
+                  frame.handTracked[controller] && (autoShield || frame.grips[controller] > .65f) &&
                   mmvr::GetSettings().Get(mmvr::Setting::PhysicalShield) > .5f &&
                   (p->transformation == PLAYER_FORM_ZORA || p->currentShield != PLAYER_SHIELD_NONE);
     if (!shieldValid)
@@ -302,7 +310,7 @@ void UpdateShield(const mmvr::TrackingFrame& frame, const mmvr::Matrix& rightHan
     }
 }
 const void* TrackedShieldMesh(Player* p) {
-    if (!shieldValid || p->transformation != PLAYER_FORM_HUMAN)
+    if (!p || !shieldValid || p->transformation != PLAYER_FORM_HUMAN)
         return nullptr;
     if (p->currentShield == PLAYER_SHIELD_HEROS_SHIELD)
         return gLinkHumanRightHandHoldingHerosShieldDL;

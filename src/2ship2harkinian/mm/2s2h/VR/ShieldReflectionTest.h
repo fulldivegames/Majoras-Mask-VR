@@ -1,5 +1,6 @@
 #pragma once
 #include "ShieldReflection.h"
+#include "AlwaysShieldTest.h"
 extern "C" {
 #include "overlays/actors/ovl_Mir_Ray3/z_mir_ray3.h"
 #include "overlays/actors/ovl_Boss_07/z_boss_07.h"
@@ -32,5 +33,5 @@ static void NativeShieldReflectionTest(PlayState* play,const Player& baseline,st
   }
   if(left||mode)log<<",";log<<"{\"left\":"<<left<<",\"mode\":"<<mode<<",\"contact\":"<<contact<<",\"hitPoint\":"<<hitPoint<<",\"pose\":"<<pose<<",\"light\":"<<light<<",\"boss\":"<<boss<<"}";
  }
- log<<"]";*p=saved;gSaveContext=save;mmvr::GetSettings()=settings;play->colChkCtx=context;play->pauseCtx.state=pause;mmvrgame::ClearTracking();mmvrgame::ClearItemSelection();
+ log<<"]";NativeAlwaysShieldTest(play,baseline,log);*p=saved;gSaveContext=save;mmvr::GetSettings()=settings;play->colChkCtx=context;play->pauseCtx.state=pause;mmvrgame::ClearTracking();mmvrgame::ClearItemSelection();
 }
