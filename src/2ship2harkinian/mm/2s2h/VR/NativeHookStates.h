@@ -1,6 +1,10 @@
 #pragma once
 #if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
 #include "NativeInteractionStates.h"
+#ifdef MMVR_LOCAL_TEST_TOOLS
+#include <fstream>
+#include <iterator>
+#endif
 namespace mmvrgame {
 namespace statehooks {
 using nlohmann::json;
@@ -39,7 +43,27 @@ inline mmvr::states::Component HookTopologyStateComponent() {
     return {id,1,[] {return stateinteraction::Encode("engine/hook-topology",statehooks::Description());},
         [](const Block& block)->std::unique_ptr<PreparedComponent> {
             auto expected=stateinteraction::Decode(block,"engine/hook-topology");
-            if(expected!=statehooks::Description())throw Error("Gameplay hooks differ from the saved state");
+            const auto current=statehooks::Description();
+            if(expected!=current) {
+#ifdef MMVR_LOCAL_TEST_TOOLS
+                // Private diagnostic only: retain the strict compatibility
+                // check and report duplicate-sensitive differences, never
+                // silently remove or accept a mismatching gameplay hook.
+                try {
+                    auto ordered=expected;
+                    std::sort(ordered.begin(),ordered.end());
+                    std::vector<nlohmann::json> onlySaved,onlyCurrent;
+                    std::set_difference(ordered.begin(),ordered.end(),current.begin(),current.end(),
+                                        std::back_inserter(onlySaved));
+                    std::set_difference(current.begin(),current.end(),ordered.begin(),ordered.end(),
+                                        std::back_inserter(onlyCurrent));
+                    std::ofstream("native-state-hook-mismatch.json")<<nlohmann::json{
+                        {"expectedCount",expected.size()},{"currentCount",current.size()},
+                        {"onlySaved",onlySaved},{"onlyCurrent",onlyCurrent}}.dump(2);
+                } catch(...) {} // Diagnostic storage cannot change rejection semantics.
+#endif
+                throw Error("Gameplay hooks differ from the saved state");
+            }
             return std::make_unique<Prepared>();
         }};
 }

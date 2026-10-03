@@ -20,6 +20,28 @@ void OnSaveLoadHandler(s16 fileNum) {
     ShipInit::Init("IS_RANDO");
 }
 
+// Exact-state preparation temporarily supplies the target save. The native
+// static tables themselves are restored by the state graph, not this hook pass.
+extern "C" { extern s16 sOcarinaSongFanfares[17]; }
+void Rando::RegisterStateHooks() {
+    const auto fanfare=sOcarinaSongFanfares[OCARINA_SONG_SARIAS];
+    const auto wallet=gUpgradeCapacities[UPG_WALLET][3];
+    struct RestoreTables {
+        s16 fanfare; u16 wallet;
+        ~RestoreTables() {
+            sOcarinaSongFanfares[OCARINA_SONG_SARIAS]=fanfare;
+            gUpgradeCapacities[UPG_WALLET][3]=wallet;
+        }
+    } restore{fanfare,wallet};
+    MiscBehavior::RegisterFileHooks();
+    ActorBehavior::OnFileLoad();
+    CheckTracker::OnFileLoad();
+    ClockShuffle::RegisterFileHooks();
+    ShipInit::Init("IS_RANDO");
+    RefreshStateItemCaches();
+    GameInteractor::Instance->RemoveAllQueuedHooks();
+}
+
 // Entry point for the module, run once on game boot
 void Rando::Init() {
     Rando::Spoiler::RefreshOptions();

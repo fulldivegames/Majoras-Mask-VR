@@ -450,7 +450,7 @@ class TheaterRuntime {
         uiVisible = drawUi && (VisibleFullViewFade() || menu.open || selector.open || assignment.open);
         if (!uiVisible)
             return;
-        const unsigned wantedHeight = menu.open && menu.tab == NativeTab && !VisibleFullViewFade()
+        const unsigned wantedHeight = menu.open && menu.UsesNativePanel() && !VisibleFullViewFade()
             ? NativeMenuSurfaceHeight : 768;
         if (uiChain && uiHeight != wantedHeight) {
             Check(xrDestroySwapchain(uiChain), "Resize VR UI swapchain");
@@ -1033,7 +1033,7 @@ class TheaterRuntime {
                 Pulse(DominantController(settings), .15f);
                 nextMenuStep = displayTime + 180000000;
             }
-            if (menu.tab == NativeTab) {
+            if (menu.UsesNativePanel()) {
                 menu.nativeInput = { uint64_t(displayTime), std::clamp(turnDelta, .001f, .1f),
                     navigate.x, navigate.y, adjust.x, adjust.y,
                     Bool(buttons[0]), Bool(buttons[1]), Bool(buttons[2]) };
@@ -1086,6 +1086,8 @@ class TheaterRuntime {
                     menu.ToggleSection();
                 else if (confirmed >= ModPackRow && confirmed < ModPackRow + int(modPacks.size())) {
                     if (toggleMod) toggleMod(confirmed - ModPackRow);
+                } else if (confirmed == SearchSettingsRow) {
+                    menu.BeginSearch();
                 } else if (confirmed == RefreshModsRow) {
                     if (refreshMods) refreshMods();
                     menu.Normalize();
@@ -2220,6 +2222,7 @@ class TheaterRuntime {
                 tracking.visualHeadValid = visualHeadValid;
                 std::memcpy(tracking.visualOffset, visualOffset, sizeof(visualOffset));
                 for(int bone=0;bone<BodyBoneCount;++bone) tracking.bodyBones[bone]=bodyBones[bone].visual;
+                for(int bone=0;bone<6;++bone) tracking.bodyGeometry[bone]=bodyBones[bone].native;
                 tracking.visualYaw = visualYaw;
                 tracking.visualAlpha = interpolationAlpha;
                 tracking.visualValid = visualValid;

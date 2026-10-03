@@ -13,6 +13,18 @@ extern "C" {
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
 
 // Skips the interaction in which kafei reveals his secret to Link, and gives him the Pendant of Memories.
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipKafeiReveal_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You received the Pendant of Memories!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox(
+            "You received the Pendant of Memories!\x1C\x02\x10", { .textboxType = 2 });
+    }
+    Item_Give(play, ITEM_PENDANT_OF_MEMORIES);
+}
+
 void RegisterSkipKafeiReveal() {
     // "...Can you keep a secret?"
     COND_ID_HOOK(OnOpenText, 0x296A, CVAR, [](u16* textId, bool* loadFromMessageTable) {
@@ -35,16 +47,7 @@ void RegisterSkipKafeiReveal() {
             GameInteractor::Instance->events.emplace_back(
                 GIEventGiveItem{ .showGetItemCutscene = true,
                                  .param = GID_PENDANT_OF_MEMORIES,
-                                 .giveItem = [](Actor* actor, PlayState* play) {
-                                     if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                         CustomMessage::SetActiveCustomMessage("You received the Pendant of Memories!",
-                                                                               { .textboxType = 2 });
-                                     } else {
-                                         CustomMessage::StartTextbox(
-                                             "You received the Pendant of Memories!\x1C\x02\x10", { .textboxType = 2 });
-                                     }
-                                     Item_Give(play, ITEM_PENDANT_OF_MEMORIES);
-                                 } });
+                                 .giveItem = MMVR_StateEvent_SkipKafeiReveal_giveItem0 });
         }
     });
 }

@@ -153,13 +153,14 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
                 list.AddRectFilled({ x - 4, 95 }, { x + tabWidth - 10, 130 }, IM_COL32(24, 75, 81, 255), 4);
             Text(list, x, 100, TabNames[tab], 20);
         }
-        const bool nativeTab = menu.tab == NativeTab;
+        const bool nativeTab = menu.UsesNativePanel();
         Text(list, 60, 140,
              nativeTab ? "LT/RT: tabs   Left stick: navigate   Right stick: pointer"
                        : "LT/RT: tabs   Left stick: navigate   Right stick: adjust",
              20);
-        if (menu.tab == NativeTab) {
-            Text(list, 60, 164, "2Ship: audio, gameplay, cheats, difficulty and randomizer", 18);
+        if (menu.UsesNativePanel()) {
+            Text(list, 60, 164, menu.search.open ? "Search VR settings - opens the original category and control" :
+                 "2Ship: audio, gameplay, cheats, difficulty and randomizer", 18);
             Text(list, 60, 692, "A: select / drag   B: back   X: collapse   Stick click: close", 20);
             if (menu.saveFailed) Text(list, 60, 662, "Settings could not be saved. Close again to retry.", 20);
             return;
@@ -227,7 +228,12 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
                     { "Physical Bombers' Notebook", "A held open book with native pages and touch navigation.", "Fixed page rendering, event selection and navigation." },
                     { "Comfort and cutscenes", "Motion blur defaults off; restore it under View > Comfort.", "Graffiti flashback framing and telescope comfort fixes." },
                     { "Items and combat", "Optional ready-on-selection masks/ocarina; sword reach and charge glow.", "Moon children now correctly remove surrendered masks from use." },
-                    { "Save continuation", "Fixed remembered-save arrival handling for the Mask Salesman.", "Use ordinary game saves across updates; exact states may break." }
+                    { "Save continuation", "Fixed remembered-save arrival handling for the Mask Salesman.", "Use ordinary game saves across updates; exact states may break." },
+                    { "v0.32 - Body and gameplay hotfixes", "Smoother tracked wrists and corrected item-receiving placement.", "Fixed first-person view after skipping the opening." },
+                    { "Form bodies and climbing", "Improved form necks, Goron view and Deku wrists.", "Climb Anywhere can grab ledge tops and climb over." },
+                    { "Save and mod improvements", "Import/export ordinary saves between PCVR and Quest.", "Improved nested mod and texture-pack discovery." },
+                    { "Save-state restoration", "New compatible states restore settings and recorded pack selection.", "Keep required packs installed; incompatible old states need their old build." },
+                    { "Menu and shield options", "VR settings search; 2Ship results come first in 2Ship search.", "Editable cutscene options and optional sword-drawn shield for human Link." }
                 };
                 static_assert(std::size(notes) == ReleaseNotesCount);
                 const auto& note = notes[i - ReleaseNotesFirstRow];
@@ -299,6 +305,9 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
                     list.AddImage(icons[slot], { 835, y - 4 }, { 883, y + 44 });
                 if (bombIcons[slot])
                     list.AddImage(bombIcons[slot], {850.43f,y+4.57f}, {874.43f,y+28.57f});
+            } else if (i == SearchSettingsRow) {
+                list.AddRect({64,y-2}, {949,y+44}, IM_COL32(187,150,79,255), 5);
+                Text(list, 80, y+7, "Search VR settings...", 25);
             } else if (i == ResetControlsRow)
                 Text(list, 64, y, "Restore all control bindings to defaults", 25);
             else if (i == ResetSettingsRow)

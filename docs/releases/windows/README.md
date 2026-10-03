@@ -3,7 +3,7 @@ Full Motion Majora's Mask VR mod, made by Full Dive Games.
 
 Disclaimer: This is made using Vibe coding. I make no money from this mod, and I've put a lot of time and testing into making it polished, fun, and fully playable.
 
-**v0.3 - Physical Body Hotfixes and More:** Experimental tracked body, held notebook, comfort and gameplay fixes. See System > Release notes in VR.
+**v0.32 - Body and Gameplay Hotfixes:** Body, item-receiving, climbing, saves and menu improvements. See System > Release notes in VR.
 
 ## First installation
 
@@ -19,7 +19,7 @@ This is an independent fan project. Nintendo does not make or endorse it. Ninten
 
 ## Before updating
 
-**Save states are tied to the exact game build and mounted content that created them.** They may not load after an update or after changing mods, texture packs or their load order. Make a normal in-game save before updating. Keep a backup of the matching build, content set and state files.
+**New save states support compatible updates and restore their saved settings and pack selection.** Keep the required pack versions installed. Older states and incompatible game layouts may still need their original build. Make an ordinary game save before updating.
 
 ## Beta release status
 
@@ -107,7 +107,7 @@ Optional **Items > Bottle and mask tuning > Ready masks and ocarina on selection
 - **Sword and Deku stick:** draw/select the weapon and swing deliberately through the target. Stationary contact is not an attack. Speed, travel and recovery thresholds are adjustable under Combat. Native weapon damage and item restrictions still apply. Deku sticks retain their burning/breaking behavior.
 - **Spin attack:** hold the sword-hand trigger to charge, then release with the sword held away from you. Full charge defaults to two seconds. The default trigger-spin option turns your view through 360 degrees; disable **Trigger spin turns view** if unwanted. A deliberate physical turn with the sword extended can also trigger a spin. Magic tiers require acquired, available magic. Keep the blade extended during the attack.
 - **Fierce Deity beam:** hold the sword-hand trigger and make a qualified sword swing. The beam aims along headset direction; holding trigger alone does not repeatedly fire.
-- **Shield:** hold the offhand grip and physically place the shield between you and the attack. Form shields use their tracked presentation. Shield placement matters; a shield button alone does not provide protection everywhere.
+- **Shield:** hold the offhand grip and physically place the shield between you and the attack. Form shields use their tracked presentation. Shield placement matters; a shield button alone does not provide protection everywhere. **Combat > Shield and punch tuning** can optionally keep Human Link's shield out while his sword is drawn; this is off by default.
 - **Bow:** select the bow or desired arrow type. Hold the bow in the offhand, press and hold the dominant trigger near its string, draw back, then release to shoot. Elemental arrows retain native unlock, ammunition and magic requirements. Bow calibration and reticle settings are under Items. The bow reticle appears with a nocked arrow.
 - **Hookshot:** select it, point the dominant hand and press its trigger. The reticle is visible while equipped; B puts it away. Native hookable surfaces and shot/retraction rules still apply.
 - **Bombs, Deku nuts and powder kegs:** select first; hold the dominant trigger to take one in hand. Release while moving the hand to throw, or release gently to drop. Form restrictions still apply. A Goron-held keg is visually reduced while held and returns to normal size on release.
@@ -162,9 +162,13 @@ VR settings are global across game-save files. Close the VR menu after changes t
 
 During gameplay, open **System > Save states**. There are three Save entries and three matching Load entries. Follow overwrite/load confirmation prompts and the resulting status message. Loading replaces the current live state. An empty slot cannot be loaded.
 
-Save states only load with the matching game build, platform and mounted content. An update or a change to mods, texture packs or their load order can make a state unusable, even when its file is still present. Make a normal in-game save before updating and keep backups of state files with their matching build and content.
+New states restore your progress, player settings, and enabled packs in their saved order. If the pack selection differs, the game selects the saved packs and restarts to resume safely. Missing or changed pack files are reported before restoring gameplay. Compatible updates can load these states; incompatible layouts and older states may still require the original build. Exact states stay platform-specific—use ordinary saves to move between PCVR and Quest.
 
-Keep ordinary game saves as your long-term progress backup. Exact states are separate files in `saves/save-states/slot-1.mmstate` through `slot-3.mmstate` under the app's data folder. They can be large (sampled scenes approximately 65 MB per slot), and capture/load briefly pauses play. Current VR settings and current headset origin remain current when loading. Release controls after loading before starting another gesture. Automated coverage is substantial but does not certify every mod, boss, cutscene or mid-action combination.
+Keep ordinary game saves as your long-term progress backup. Exact states are separate files in `saves/save-states/slot-1.mmstate` through `slot-3.mmstate` under the app's data folder. They can be large (sampled scenes approximately 65 MB per slot), and capture/load briefly pauses play. Saved player settings return when loading; your current headset origin and device setup remain current. Release controls after loading before starting another gesture. Automated coverage is substantial but does not certify every mod, boss, cutscene or mid-action combination.
+
+At the file-selection screen, open **2Ship > Save files** to import or export a normal save. Choose the destination slot and confirm replacement. The JSON includes normal and persistent owl progress and works between PCVR and Quest; the previous destination is backed up. This is separate from save-state slots.
+
+**System > Session and files > Search VR settings** searches built-in VR controls without changing their categories. Clear the text to return to the menu. Installed pack names are excluded; mod-library controls remain searchable. **2Ship > Time savers and cutscenes** includes cutscene-skip options after creating a file.
 
 ## Troubleshooting and limits
 
@@ -190,7 +194,7 @@ Mods are not fully tested. One texture pack has been tested and works; this does
 
 ### Climbing out of water
 
-With physical climbing enabled, press a trigger against a climbable surface while swimming at the surface or underwater. A held physical climb takes priority over swimming. Release to resume normal water behavior, or climb onto dry land.
+With physical climbing enabled, press a trigger against a climbable surface while swimming at the surface or underwater. A held physical climb takes priority over swimming. Release to resume normal water behavior, or climb onto dry land. With Climb Anywhere, grab a reachable ledge top and pull yourself over; release near the lip to finish a valid native mantle.
 
 ### Third-person and theater controls
 
@@ -200,7 +204,7 @@ For first-person play, Items also offers **Head aim for bow and hookshot**. It i
 
 ### Optional standing world scale
 
-In **VR settings > View > World scale (experimental)**, turn on **Standing world-scale calibration**. It is off by default. Recenter in your normal seated or standing playing position. The runtime floor is used when available; otherwise set **Fallback floor-to-eye height** to the distance from the floor to your eyes in centimetres (not the top of your head). At 100% world size, each form uses its normal standing eye height while scaling the world and controller movement together.
+In **VR settings > View > World scale**, use **Standing world-scale calibration**. It is on by default. Recenter in your normal seated or standing playing position. The runtime floor is used when available; otherwise set **Fallback floor-to-eye height** to the distance from the floor to your eyes in centimetres (not the top of your head). At 100% world size, each form uses its normal standing eye height while scaling the world and controller movement together.
 
 Use the separate Human, Deku, Goron, Zora and Fierce Deity world-size sliders to fine-tune each form. Increasing a value makes the world look larger and reduces your reach; decreasing it does the opposite. Your existing form-height adjustments still work. This affects first-person play, not theater mode or the VR settings panel. Turn calibration off to return to the normal scale. Hand collisions still apply; calibration does not remove them.
 
@@ -208,13 +212,13 @@ Use the separate Human, Deku, Goron, Zora and Fierce Deity world-size sliders to
 
 The first launch shows a short setup guide. Stand or sit comfortably and recenter. Choose your dominant hand under Hands. Controls contains the full tutorial and button rebinding. You can reopen the guide under System > Session and files. Close settings to save changes. World scale is optional; measure floor to your eyes, not the top of your head. Hands and carried equipment follow that scale together.
 
-The game checks for updates once on launch by default. A newer version is shown in the VR menu; checking never installs automatically. You can turn launch checks off under System > Updates. Before installing, make an ordinary game save. Exact save states may not work after changing builds, platforms or mods. Incompatible states are rejected and kept; ordinary saves are the reliable way to continue after updating.
+The game checks for updates once on launch by default. A newer version is shown in the VR menu; checking never installs automatically. You can turn launch checks off under System > Updates. Before installing, make an ordinary game save. New save states restore their saved settings and installed pack selection across compatible updates. Older states, incompatible layouts, missing pack versions and different platforms may still require the original setup; ordinary saves remain the long-term backup.
 
 System > Diagnostics and reset > Export diagnostic report writes `diagnostics/mmvr-report.json` in the game's files folder. It includes build, runtime, numeric VR settings, anonymous mod identifiers and recent error counts. It excludes saves, personal paths and raw logs. Review it before sharing it with a bug report. Describe where you were and what you did too.
 
 If the menu becomes unusable, close the game. On Windows, run **Recover VR settings.cmd** beside the game. On Quest, open **MMVR - Recover settings** from your app library and confirm. This resets VR settings on the next start while keeping saves and mods; a copy of the previous settings is retained. It does not change your system's OpenXR runtime.
 
-Update downloads are verified before installation. Windows keeps rollback files and restores them if applying an update fails. Android uses its package installer so a failed installation keeps the installed app. Neither method makes old save states compatible with a new build.
+Update downloads are verified before installation. Windows keeps rollback files and restores them if applying an update fails. Android uses its package installer so a failed installation keeps the installed app. Older incompatible state files are kept, rather than rewritten or deleted.
 
 ### World scale and reaching the floor
 With world scale enabled (the default for new settings), recenter while sitting or standing in your normal playing position. If your VR runtime supplies a calibrated floor, the game uses your eye-to-floor distance at recenter for every form. It does not change your boundary. If the runtime has no floor, set **Fallback floor-to-eye height** to your seated or standing eye height above the floor, then recenter. The default 100% form scales align the physical floor with the character’s floor; custom form world-size percentages intentionally change that relationship. Hands and held equipment retain their physical size.
@@ -229,10 +233,10 @@ Bottle pickup includes hot-spring water and bugs, with world-scale support.
 
 Frame rate options: Uncapped, 120, 90, 80 or 72 FPS. Uncapped removes the game limiter; the headset/runtime still controls display refresh.
 
-Large texture packs are verified in the background before save states are available. If the menu says verification is still running, retry Save/Load shortly; keep the same build and packs when loading a state.
+Large texture packs are verified in the background before save states are available. If the menu says verification is still running, retry Save/Load shortly. Keep the pack versions required by your states.
 
 Bow hand angles and holding-hand smoothing are under **Items → Bow and aiming**. The item wheel shows consumable counts. Release notes are under **System → Release notes**.
 
 **v0.26:** Save game is under System > Session and files. Persistent owl saves, pause-menu saving and remembered location default on for unconfigured settings. Combat has an optional target-centered lock-on orbit. 2Ship search also finds VR settings.
 
-In first person, the Bombers' Notebook is a held open book: touch entries and arrows, or use the usual stick and B controls. **View > Body visibility** has separate experimental tracked-body options. Human, Zora and Deku default on; Goron (very experimental) and Fierce Deity default off. Motion blur defaults off; restore it under **View > Comfort and cutscenes**. Extra non-VR options are under **FullDiveGames Additions** in 2Ship.
+In first person, the Bombers' Notebook is a held open book: touch entries and arrows, or use the usual stick and B controls. **View > Body visibility** has separate tracked-body options. Human, Zora and Deku default on; Goron and Fierce Deity default off. Motion blur defaults off; restore it under **View > Comfort and cutscenes**. Extra non-VR options are under **FullDiveGames Additions** in 2Ship.

@@ -13,6 +13,23 @@ extern "C" {
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
 
 // Forced on in rando for now
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipLearningNewWaveBossaNova_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You learned the New Wave Bossa Nova!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You learned the New Wave Bossa Nova!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_SONG_NOVA);
+}
+
+void MMVR_StateEvent_SkipLearningNewWaveBossaNova_drawItem0(Actor* actor, PlayState* play) {
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    Rando::DrawItem(RI_SONG_NOVA);
+}
+
 void RegisterSkipLearningNewWaveBossaNova() {
     COND_VB_SHOULD(VB_START_CUTSCENE, CVAR || IS_RANDO, {
         s16* csId = va_arg(args, s16*);
@@ -21,21 +38,9 @@ void RegisterSkipLearningNewWaveBossaNova() {
                 GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
                     .showGetItemCutscene = !CVarGetInteger("gEnhancements.Cutscenes.SkipGetItemCutscenes", 0),
                     .giveItem =
-                        [](Actor* actor, PlayState* play) {
-                            if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                CustomMessage::SetActiveCustomMessage("You learned the New Wave Bossa Nova!",
-                                                                      { .textboxType = 2 });
-                            } else {
-                                CustomMessage::StartTextbox("You learned the New Wave Bossa Nova!\x1C\x02\x10",
-                                                            { .textboxType = 2 });
-                            }
-                            Item_Give(gPlayState, ITEM_SONG_NOVA);
-                        },
+                        MMVR_StateEvent_SkipLearningNewWaveBossaNova_giveItem0,
                     .drawItem =
-                        [](Actor* actor, PlayState* play) {
-                            Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                            Rando::DrawItem(RI_SONG_NOVA);
-                        } });
+                        MMVR_StateEvent_SkipLearningNewWaveBossaNova_drawItem0 });
             }
             SET_WEEKEVENTREG(WEEKEVENTREG_20_40);
             *should = false;

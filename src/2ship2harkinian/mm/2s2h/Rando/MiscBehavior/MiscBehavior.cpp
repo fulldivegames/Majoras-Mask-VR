@@ -14,6 +14,10 @@ void Rando::MiscBehavior::Init() {
 
 void Rando::MiscBehavior::OnFileLoad() {
     Rando::MiscBehavior::CheckQueueReset();
+    RegisterFileHooks();
+}
+
+void Rando::MiscBehavior::RegisterFileHooks() {
     Rando::MiscBehavior::InitKaleidoItemPage();
     Rando::MiscBehavior::InitOfferGetItemBehavior();
     Rando::MiscBehavior::SariasSongHint();

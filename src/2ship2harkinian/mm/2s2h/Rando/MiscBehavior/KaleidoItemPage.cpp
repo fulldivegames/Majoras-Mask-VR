@@ -375,3 +375,13 @@ void Rando::MiscBehavior::InitKaleidoItemPage() {
                             GetNextListEntry(availableCoupleItems, currentCoupleItem));
     });
 }
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "2s2h/VR/NativeStateFields.h"
+extern "C" void MMVR_VisitRandoKaleidoItemPageState(MMVR_StateSink* sink) {
+    mmvrgame::NativeStateField(sink,"rando/KaleidoItemPage/sCycleActiveAnimTimer",sCycleActiveAnimTimer);
+    mmvrgame::NativeStateField(sink,"rando/KaleidoItemPage/sCurrentItemCyclingSlot",sCurrentItemCyclingSlot);
+    mmvrgame::NativeStateField(sink,"rando/KaleidoItemPage/sCurrentAnimatingSlot",sCurrentAnimatingSlot);
+    mmvrgame::NativeStateField(sink,"rando/KaleidoItemPage/sPrevKaleidoCursorSlot",sPrevKaleidoCursorSlot);
+}
+#endif

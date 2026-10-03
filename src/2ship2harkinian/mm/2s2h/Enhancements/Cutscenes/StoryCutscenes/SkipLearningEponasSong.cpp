@@ -13,6 +13,21 @@ void EnMa4_SetupDialogueHandler(EnMa4* enMa4);
 #define CVAR_NAME "gEnhancements.Cutscenes.SkipStoryCutscenes"
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipLearningEponasSong_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You received Epona's Song!", { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You received Epona's Song!\x1C\x02\x10", { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_SONG_EPONA);
+}
+
+void MMVR_StateEvent_SkipLearningEponasSong_drawItem0(Actor* actor, PlayState* play) {
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    Rando::DrawItem(RI_SONG_EPONA);
+}
+
 void RegisterSkipLearningEponasSong() {
     COND_VB_SHOULD(VB_QUEUE_CUTSCENE, CVAR || IS_RANDO, {
         s16* csId = va_arg(args, s16*);
@@ -35,19 +50,9 @@ void RegisterSkipLearningEponasSong() {
             GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
                 .showGetItemCutscene = true,
                 .giveItem =
-                    [](Actor* actor, PlayState* play) {
-                        if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                            CustomMessage::SetActiveCustomMessage("You received Epona's Song!", { .textboxType = 2 });
-                        } else {
-                            CustomMessage::StartTextbox("You received Epona's Song!\x1C\x02\x10", { .textboxType = 2 });
-                        }
-                        Item_Give(gPlayState, ITEM_SONG_EPONA);
-                    },
+                    MMVR_StateEvent_SkipLearningEponasSong_giveItem0,
                 .drawItem =
-                    [](Actor* actor, PlayState* play) {
-                        Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                        Rando::DrawItem(RI_SONG_EPONA);
-                    } });
+                    MMVR_StateEvent_SkipLearningEponasSong_drawItem0 });
         }
 
         *should = false;

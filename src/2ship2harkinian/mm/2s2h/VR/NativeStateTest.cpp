@@ -12,6 +12,12 @@
 #include "NativeInteractionStates.h"
 #include "NativeObjectStates.h"
 #include "NativeHookStates.h"
+#include "NativeStateSettings.h"
+#include "NativeStateRandoHooks.h"
+#include "NativeStateRandoScripts.h"
+#include "NativeStatePendingRestore.h"
+#include "NativeStateResume.h"
+#include "StateRestart.h"
 #include "NativeAssetRanges.h"
 #include "2s2h/resource/type/TextMM.h"
 #include "NativeModuleRanges.h"
@@ -46,6 +52,8 @@ extern "C" {
 #include "overlays/actors/ovl_En_Arrow/z_en_arrow.h"
 #include "overlays/actors/ovl_En_Bom/z_en_bom.h"
 #include "overlays/actors/ovl_Arms_Hook/z_arms_hook.h"
+#include "overlays/actors/ovl_En_Horse/z_en_horse.h"
+#include "overlays/actors/ovl_En_Horse_Link_Child/z_en_horse_link_child.h"
 void MMVR_PlayerEquipHookshot(PlayState*,Player*);
 bool func_80831194(PlayState*,Player*);
 void Player_UseItem(PlayState*,Player*,ItemId);
@@ -55,6 +63,15 @@ void Player_Action_87(Player*,PlayState*);
 void MMVR_VisitNativeState(MMVR_StateSink*);
 void MMVR_VisitSongTimeState(MMVR_StateSink*);
 void MMVR_VisitSaveEntranceState(MMVR_StateSink*);
+void MMVR_VisitDeferredMaskState(MMVR_StateSink*);
+void MMVR_VisitHealingMikauAudioState(MMVR_StateSink*);
+void MMVR_VisitEndingTextState(MMVR_StateSink*);
+#ifdef MMVR_LOCAL_TEST_TOOLS
+int MMVR_VerifyEntranceCutscenePhase();
+int MMVR_VerifyDeferredMaskState();
+int MMVR_VerifyHealingMikauAudioState();
+int MMVR_VerifyEndingTextState();
+#endif
 void MMVR_VisitTimeMovementState(MMVR_StateSink*);
 void MMVR_VisitGalleryState(MMVR_StateSink*);
 void MMVR_VisitPictographState(MMVR_StateSink*);
@@ -90,6 +107,17 @@ void MMVR_VisitVrClimbingState(MMVR_StateSink*);
 void MMVR_VisitVrCombatState(MMVR_StateSink*);
 void MMVR_VisitVrBottleState(MMVR_StateSink*);
 void MMVR_VisitVrBowState(MMVR_StateSink*);
+void MMVR_VisitRandoQueueState(MMVR_StateSink*);
+void MMVR_VisitRandoDrawState(MMVR_StateSink*);
+void MMVR_VisitRandoDrawItemState(MMVR_StateSink*);
+void MMVR_VisitRandoTrapState(MMVR_StateSink*);
+void MMVR_ResetRandoDrawCaches() noexcept;
+void MMVR_VisitRandoKaleidoItemPageState(MMVR_StateSink*);
+void MMVR_VisitRandoPlayerState(MMVR_StateSink*);
+void MMVR_VisitRandoEnTalkState(MMVR_StateSink*);
+void MMVR_VisitRandoEnTabState(MMVR_StateSink*);
+void MMVR_VisitRandoEnGoState(MMVR_StateSink*);
+void MMVR_VisitRandoSariaState(MMVR_StateSink*);
 extern Arena gSystemArena,sZeldaArena;
 extern char** gSequenceMap;
 extern char** gFontMap;
@@ -97,12 +125,20 @@ extern size_t gSequenceMapSize,gFontMapSize;
 extern MessageTableEntry* sMessageTableNES;
 extern MessageTableEntry* sMessageTableCredits;
 }
+#include "NativeInterfaceState.h"
+#include "NativeSkinState.h"
+#include "NativeHorseStateTest.h"
 namespace mmvrgame {
 void RegisterManualNativeStateContract(MMVR_StateSink* sink) {
+    RegisterNativeInterfaceStateContract(sink);
+    RegisterNativeSkinStateContract(sink);
     MMVR_VisitSongTimeState(sink);
     MMVR_VisitBombArrowState(sink);
     MMVR_VisitHealingSongState(sink);
     MMVR_VisitSaveEntranceState(sink);
+    MMVR_VisitDeferredMaskState(sink);
+    MMVR_VisitHealingMikauAudioState(sink);
+    MMVR_VisitEndingTextState(sink);
     MMVR_VisitTimeMovementState(sink);
     MMVR_VisitGalleryState(sink);
     MMVR_VisitPictographState(sink);
@@ -122,6 +158,16 @@ void RegisterManualNativeStateContract(MMVR_StateSink* sink) {
     MMVR_VisitVrCombatState(sink);
     MMVR_VisitVrBottleState(sink);
     MMVR_VisitVrBowState(sink);
+    MMVR_VisitRandoQueueState(sink);
+    MMVR_VisitRandoDrawState(sink);
+    MMVR_VisitRandoDrawItemState(sink);
+    MMVR_VisitRandoTrapState(sink);
+    MMVR_VisitRandoKaleidoItemPageState(sink);
+    MMVR_VisitRandoPlayerState(sink);
+    MMVR_VisitRandoEnTalkState(sink);
+    MMVR_VisitRandoEnTabState(sink);
+    MMVR_VisitRandoEnGoState(sink);
+    MMVR_VisitRandoSariaState(sink);
     sink->block(sink->context,"native/system-heap",gSystemHeap,SYSTEM_HEAP_SIZE);
     sink->block(sink->context,"native/audio-heap",gAudioHeap,AUDIO_HEAP_SIZE);
 }
@@ -266,7 +312,7 @@ mmvr::states::Snapshot CaptureNativeCandidate(const Census& census,uint64_t tick
     auto stage=[&](const char* name){auto now=std::chrono::steady_clock::now();timings[name]=std::chrono::duration<double,std::milli>(now-stageStart).count();stageStart=now;};
     using namespace mmvr::states;
     const std::vector<Component> components{mmvrgame::ItemInputResetComponent(),mmvrgame::StateResourceManifestComponent(),
-        mmvrgame::CustomMessageStateComponent(),mmvrgame::GameEventStateComponent(),mmvrgame::ObjectStateComponent(),mmvrgame::HookTopologyStateComponent()};
+        mmvrgame::CustomMessageStateComponent(),mmvrgame::GameEventStateComponent(),mmvrgame::ObjectStateComponent(),mmvrgame::HookTopologyStateComponent(),mmvrgame::StateSettingsComponent(),mmvrgame::RandoScriptStateComponent()};
     std::vector<LiveBlock> blocks;
     for(const auto& region:census.regions)
         blocks.push_back({region.id,1,{static_cast<const uint8_t*>(region.address),region.bytes},{}});
@@ -493,6 +539,8 @@ nlohmann::json WorldTrace() {
             result["actors"].push_back(std::move(entry));
         }
     }
+    if(mmvrgame::NativeStateHorseDrawTestEnabled())
+        result["horseSkin"]=mmvrgame::NativeStateHorseDrawEvidence(play);
     return result;
 }
 std::filesystem::path TracePath() {
@@ -528,6 +576,7 @@ extern "C" void MMVR_SetupNativeStateProbe(PlayState* play,unsigned tick) {
     }
     if(tick==50&&action=="Carry")Actor_Spawn(&play->actorCtx,play,ACTOR_OBJ_TSUBO,position.x+20,position.y,position.z+20,0,0,0,0x11F);
     if(tick==54) {
+        mmvrgame::ForceNativeStateHorseDraw(play);
         if(action=="Hookshot")MMVR_PlayerEquipHookshot(play,player);
         if(action=="Transform")Player_UseItem(play,player,ITEM_MASK_DEKU);
         if(action=="Instrument")Player_UseItem(play,player,ITEM_OCARINA_OF_TIME);
@@ -584,10 +633,14 @@ Census CollectNativeState(PlayState* play,const mmvr::states::Identity& identity
     Census census;
     MMVR_StateSink sink{&census,RegisterActorLayout,Block,Constant,Function,Pointer,Variant,Unsupported,Array};
     MMVR_VisitNativeState(&sink);
+    mmvrgame::VisitNativeStateEventCallbacks(&sink);
     MMVR_VisitSongTimeState(&sink);
     MMVR_VisitBombArrowState(&sink);
     MMVR_VisitHealingSongState(&sink);
     MMVR_VisitSaveEntranceState(&sink);
+    MMVR_VisitDeferredMaskState(&sink);
+    MMVR_VisitHealingMikauAudioState(&sink);
+    MMVR_VisitEndingTextState(&sink);
     MMVR_VisitTimeMovementState(&sink);
     MMVR_VisitGalleryState(&sink);
     MMVR_VisitPictographState(&sink);
@@ -609,6 +662,16 @@ Census CollectNativeState(PlayState* play,const mmvr::states::Identity& identity
     MMVR_VisitVrCombatState(&sink);
     MMVR_VisitVrBottleState(&sink);
     MMVR_VisitVrBowState(&sink);
+    MMVR_VisitRandoQueueState(&sink);
+    MMVR_VisitRandoDrawState(&sink);
+    MMVR_VisitRandoDrawItemState(&sink);
+    MMVR_VisitRandoTrapState(&sink);
+    MMVR_VisitRandoKaleidoItemPageState(&sink);
+    MMVR_VisitRandoPlayerState(&sink);
+    MMVR_VisitRandoEnTalkState(&sink);
+    MMVR_VisitRandoEnTabState(&sink);
+    MMVR_VisitRandoEnGoState(&sink);
+    MMVR_VisitRandoSariaState(&sink);
     for(const auto& section:mmvrgame::NativeModuleRanges()) {
         // ELF commonly combines .rodata and .text in one read/execute segment.
         // Executable does not mean that the segment contains no data literals.
@@ -636,6 +699,7 @@ Census CollectNativeState(PlayState* play,const mmvr::states::Identity& identity
     census.regions.push_back({"native/system-heap",gSystemHeap,SYSTEM_HEAP_SIZE});
     census.regions.push_back({"native/audio-heap",gAudioHeap,AUDIO_HEAP_SIZE});
     MMVR_StateVisitPlay(&sink,play);
+    mmvrgame::VisitNativeInterfaceState(&sink,play);
     if(gAudioCtx.notes&&gAudioCtx.numNotes>0&&gAudioCtx.numNotes<=256)
         for(int i=0;i<gAudioCtx.numNotes;++i)MMVR_StateVisitNote(&sink,&gAudioCtx.notes[i]);
     else if(gAudioCtx.numNotes)Unsupported(&census,"Audio notes: invalid count/owner");
@@ -667,7 +731,10 @@ Census CollectNativeState(PlayState* play,const mmvr::states::Identity& identity
         auto found=census.actors.find({actor->id,size_t(bytes)});
         bool described=found!=census.actors.end();
         result["actors"].push_back({{"id",actor->id},{"described",described}});
-        if(described)found->second.visit(&sink,actor);
+        if(described) {
+            found->second.visit(&sink,actor);
+            mmvrgame::VisitNativeSkinState(&sink,actor,size_t(bytes));
+        }
     }
     const int updates=gAudioCtx.audioBufferParameters.updatesPerFrame;
     if(gAudioCtx.numNotes>=0&&gAudioCtx.numNotes<=256&&updates>=0&&updates<=16)
@@ -796,31 +863,64 @@ void SaveExactNativeState(int slot,const std::filesystem::path& directory) {
 void LoadExactNativeState(int slot,const std::filesystem::path& directory) {
     auto identity=NativeStateIdentity();
     auto saved=mmvr::states::Store(directory).Load(slot,identity);
+    auto settings=ReadStateSettings(saved);
+    // Rollback settings first, then rebuild the old file's hook conditions.
+    PreparedStateRandoHooks preparedRando;
+    PreparedStateSettings preparedSettings(settings);
+    preparedSettings.Apply();
     LoadStateResourceManifest(saved);
     nlohmann::json report;auto census=CollectNativeState(gPlayState,identity,report);
     RequireCompleteStateOwnership(report);
     std::unique_ptr<mmvr::states::RestorePlan> native;
     std::unique_ptr<mmvr::states::Transaction> components;
+    // Extract only the pointer-free SaveContext value after identity/layout and
+    // ownership checks. Hook conditions must use the target
+    // seed even when the currently running file is vanilla or a different seed.
+    const RegionIndex regions(census.regions);
+    const auto saveAt=reinterpret_cast<uintptr_t>(&gSaveContext);
+    const auto* saveOwner=regions.Find(saveAt,sizeof(SaveContext));
+    if(!saveOwner)throw mmvr::states::Error("Save state has no owned save context");
+    const auto saveOffset=saveAt-reinterpret_cast<uintptr_t>(saveOwner->address);
+    const auto saveBlock=std::find_if(saved.blocks.begin(),saved.blocks.end(),
+        [&](const auto& block){return block.id==saveOwner->id;});
+    if(saveBlock==saved.blocks.end()||saveOffset>saveBlock->bytes.size()||
+       sizeof(SaveContext)>saveBlock->bytes.size()-saveOffset)
+        throw mmvr::states::Error("Save state has an incomplete save context");
+    for(const auto& ref:saveBlock->references)
+        if(ref.at<saveOffset+sizeof(SaveContext)&&ref.at+sizeof(void*)>saveOffset)
+            throw mmvr::states::Error("Unexpected pointer in saved game progression");
+    SaveContext targetSave;
+    std::memcpy(&targetSave,saveBlock->bytes.data()+saveOffset,sizeof(targetSave));
+    preparedRando.Apply(targetSave);
+    // Hook topology must match the target file before component validation.
     CaptureNativeCandidate(census,gPlayState->gameplayFrames,report["timings"],&native,&components,identity,&saved,false);
     // Raw native textures may reuse an address with different saved contents.
     // Invalidate uploaded textures only; retain compiled shader programs. Do
     // this before commit because cache bookkeeping can allocate.
     gfx_texture_cache_clear();
     // All allocations, archive validation and relocation finish before mutation.
+    PreparePendingStateCommit();
     native->Commit();components->Commit();
+    preparedRando.Commit();preparedSettings.Commit();
+    MMVR_ResetRandoDrawCaches();
     FrameInterpolation_ResetHistory();BeginStateTrackingResume();
 }
 }
 namespace mmvrgame {
 namespace {
 std::filesystem::path ExactStateDirectory() {
+#ifdef MMVR_LOCAL_TEST_TOOLS
+    if(std::getenv("MMVR_NATIVE_STATE_PENDING_SLOT"))
+        if(const auto* directory=std::getenv("MMVR_NATIVE_STATE_ARCHIVE_DIRECTORY");directory&&*directory)return directory;
+#endif
     return Ship::Context::GetPathRelativeToAppDirectory("saves",appShortName);
 }
 bool PreflightStateSlot(int slot) {
     try {
         const auto saved=mmvr::states::Store(ExactStateDirectory()).PeekIdentity(slot);
-        if(saved!=NativeStateIdentity()) {
-            mmvr::GetMenu().stateStatus="Incompatible build/mods/platform. Slot kept. Use an ordinary save.";
+        const auto current=NativeStateIdentity();
+        if(saved.build!=current.build||saved.abi!=current.abi) {
+            mmvr::GetMenu().stateStatus="This state needs an older game layout/platform. Slot kept. Ordinary saves work across updates.";
             return false;
         }
         return true;
@@ -830,6 +930,10 @@ bool PreflightStateSlot(int slot) {
     }
 }
 bool PrepareStateMenuContent() {
+    if(MMVR_StateResumeBootstrapActive()) {
+        mmvr::GetMenu().stateStatus="A save-state restore is already in progress. Please wait.";
+        return false;
+    }
     try {
         if(PrepareNativeStateIdentity())return true;
         mmvr::GetMenu().stateStatus="Checking texture packs in background. Try Save/Load again shortly.";
@@ -844,25 +948,105 @@ void RefreshStateSlots() {
     mmvr::states::Store store(ExactStateDirectory());
     for(int slot=1;slot<=3;++slot)mmvr::GetMenu().stateSlotsPresent[slot-1]=store.Exists(slot);
 }
+bool DiscardExactStateRequestDuringResume() noexcept {
+    if(!MMVR_StateResumeBootstrapActive())return false;
+    mmvr::exactStateRequested.exchange(0);
+    return true;
+}
 void ProcessExactStateRequest() {
+    // Discover a durable startup request before accepting a new menu request.
+    // The native fixture can invoke this path without the normal title frames.
+    if(!state_resume::checked)PollPendingStateResume();
+    if(DiscardExactStateRequestDuringResume()) {
+        PollPendingStateResume();
+        // A render-thread click arriving during the commit must not save the
+        // throwaway bootstrap or execute against the freshly resumed world.
+        mmvr::exactStateRequested.exchange(0);
+        return;
+    }
     const int request=mmvr::exactStateRequested.exchange(0);
-    if(!request)return;
     auto& menu=mmvr::GetMenu();
+    if(!request) {
+        PollPendingStateResume();
+        return;
+    }
     try {
         if(request < -3 || request > 3)throw mmvr::states::Error("Invalid exact-state slot");
         if(StateTrackingResumePending())throw mmvr::states::Error("Waiting for tracking to resume");
         if(request>0)SaveExactNativeState(request,ExactStateDirectory());
-        else LoadExactNativeState(-request,ExactStateDirectory());
+        else {
+            const auto saved=mmvr::states::Store(ExactStateDirectory()).LoadUnbound(-request);
+            pending_state_detail::CheckContract(saved);
+            const auto settings=ReadStateSettings(saved);
+            if(settings.at("packs")!=nlohmann::json(CurrentStatePacks())) {
+                if(StagePendingStateRestore(saved,Ship::Context::GetRawInstance()->GetConsoleVariables()->SnapshotValues(),
+                                            -request,menu.stateStatus)) {
+                    std::string error;
+                    if(MMVR_RequestStateRestart(error))
+                        menu.stateStatus="Restarting to load this state's saved packs and settings.";
+                    else {
+                        menu.stateStatus="Saved packs selected. Restart the game to resume this state automatically. "+error;
+                        state_resume::FixtureResult(false,menu.stateStatus,-request);
+                    }
+                }else state_resume::FixtureResult(false,menu.stateStatus,-request);
+                menu.open=true;menu.tab=mmvr::SystemTab;menu.CollapseAll();menu.expanded[35]=true;
+                std::ofstream("mmvr-save-states.log",std::ios::app)<<menu.stateStatus<<"\n";
+                return;
+            }
+            LoadExactNativeState(-request,ExactStateDirectory());
+        }
         menu.stateStatus=std::string(request>0?"Saved exact state in slot ":"Loaded exact state from slot ")+std::to_string(std::abs(request))+".";
+        if(request<0) {
+            // Persistence follows successful native commit. Storage failure
+            // must not be reported as a rejected or rolled-back gameplay load.
+            try {CVarSave();if(!Ship::Context::GetRawInstance()->GetConfig()->LastSaveSucceeded())
+                menu.stateStatus+=" Settings are active, but could not be saved to disk.";}
+            catch(...){menu.stateStatus+=" Settings are active, but could not be saved to disk.";}
+            state_resume::FixtureResult(true,menu.stateStatus,-request);
+        }
     } catch(const std::exception& error) {
         menu.stateStatus=std::string(request>0?"SAVE FAILED. No slot written. ":"LOAD FAILED. ")+error.what();
         // Capture/prepare failures leave the original game intact.
         menu.open=true;menu.tab=mmvr::SystemTab;menu.CollapseAll();menu.expanded[35]=true;
+        state_resume::FixtureResult(false,menu.stateStatus,std::abs(request));
     }
     // A directory refresh failure must not misreport a committed load as failed.
     try {RefreshStateSlots();}catch(const std::exception& error){menu.stateStatus+=" Slot listing unavailable: "+std::string(error.what());}
     std::ofstream("mmvr-save-states.log",std::ios::app)<<menu.stateStatus<<"\n";
 }
+#ifdef MMVR_LOCAL_TEST_TOOLS
+int VerifyStateRequestBlocking() {
+    const bool previousBootstrap=state_resume::bootstrap,previousReturning=state_resume::returning;
+    auto previousPending=std::move(state_resume::pending);
+    const int previousRequest=mmvr::exactStateRequested.exchange(0);
+    auto previousStatus=mmvr::GetMenu().stateStatus;
+    struct Restore {
+        bool bootstrap,returning;std::optional<PendingStateRestore>& pending;
+        int request;std::string& status;
+        ~Restore() {
+            state_resume::bootstrap=bootstrap;state_resume::returning=returning;
+            state_resume::pending.swap(pending);mmvr::exactStateRequested.store(request);
+            mmvr::GetMenu().stateStatus.swap(status);
+        }
+    } restore{previousBootstrap,previousReturning,previousPending,previousRequest,previousStatus};
+    int checks=0;
+    auto check=[&](bool good){++checks;if(!good)throw mmvr::states::Error("Pending state accepted a conflicting menu request");};
+    state_resume::bootstrap=false;state_resume::returning=false;state_resume::pending.reset();
+    for(int phase=0;phase<3;++phase) {
+        state_resume::bootstrap=phase==0;state_resume::returning=phase==1;
+        if(phase==2)state_resume::pending.emplace();
+        for(int request:{1,-1,3,-3}) {
+            mmvr::exactStateRequested.store(request);
+            check(DiscardExactStateRequestDuringResume()&&mmvr::exactStateRequested.load()==0);
+        }
+        check(!PrepareStateMenuContent());
+    }
+    state_resume::bootstrap=false;state_resume::returning=false;state_resume::pending.reset();
+    mmvr::exactStateRequested.store(2);
+    check(!DiscardExactStateRequestDuringResume()&&mmvr::exactStateRequested.load()==2);
+    return checks;
+}
+#endif
 }
 void InitializeExactStateMenu() {
     static bool initialized=false;
@@ -874,8 +1058,16 @@ void InitializeExactStateMenu() {
 }
 }
 extern "C" bool MMVR_ExactStateWorkPending() {
-
-    return mmvr::exactStateRequested.load()!=0;
+#ifdef MMVR_LOCAL_TEST_TOOLS
+    if(std::getenv("MMVR_NATIVE_STATE_PENDING_SLOT"))return true;
+    if(const auto* test=std::getenv("MMVR_NATIVE_TEST");test&&std::string_view(test)=="1")
+        return mmvr::exactStateRequested.load()!=0;
+#endif
+    return mmvr::exactStateRequested.load()!=0||mmvrgame::PendingStateResumeWork();
+}
+extern "C" bool MMVR_StateResumeBootstrapActive() {
+    return mmvrgame::state_resume::pending.has_value() || mmvrgame::state_resume::bootstrap ||
+           mmvrgame::state_resume::returning;
 }
 extern "C" void MMVR_VerifyNativeStateCatalog(PlayState* play) {
     mmvr::states::Identity identity;
@@ -918,6 +1110,17 @@ extern "C" void MMVR_VerifyNativeStateCatalog(PlayState* play) {
                              std::string(std::getenv("MMVR_NATIVE_STATE_LIVE_PROBE"))=="1";
         mmvrgame::VerifyItemInputResetComponent();
         mmvrgame::VerifyNativeInteractionStateComponents();
+#ifdef MMVR_LOCAL_TEST_TOOLS
+        result["settingsSnapshotChecks"]=mmvrgame::VerifyStateSettingsSnapshots();
+        result["randoHookPreparationChecks"]=mmvrgame::VerifyStateRandoHookPreparation();
+        result["randoScriptChecks"]=mmvrgame::VerifyRandoScriptState();
+        result["pendingRestoreChecks"]=mmvrgame::VerifyPendingStateRestore(identity);
+        result["stateRequestBlockingChecks"]=mmvrgame::VerifyStateRequestBlocking();
+        result["entranceCutscenePhaseChecks"]=MMVR_VerifyEntranceCutscenePhase();
+        result["deferredMaskPhaseChecks"]=MMVR_VerifyDeferredMaskState();
+        result["healingMikauAudioPhaseChecks"]=MMVR_VerifyHealingMikauAudioState();
+        result["endingTextPhaseChecks"]=MMVR_VerifyEndingTextState();
+#endif
         result["interactionComponentChecks"]=true;
         result["itemInputResetChecks"]=true;
         std::unique_ptr<mmvr::states::RestorePlan> resumePlan;
@@ -953,7 +1156,13 @@ extern "C" void MMVR_VerifyNativeStateCatalog(PlayState* play) {
                     throw mmvr::states::Error("Rejected state load changed the live world");
                 result["rejectedLoadPreservedWorld"]=true;
                 for(int slot=1;slot<=3;++slot) {
+                    // A state must restore preferences even when gameplay was
+                    // started with a different setting in the current process.
+                    CVarSetFloat("gVR.HudOpacity",.123f);
                     mmvrgame::LoadExactNativeState(slot,directory);
+                    const auto savedSettings=mmvrgame::ReadStateSettings(mmvr::states::Store(directory).LoadUnbound(slot));
+                    if(mmvrgame::CurrentStateSettings()!=savedSettings.at("values"))
+                        throw mmvr::states::Error("State did not restore saved preferences");
                     if(!probeExpected.is_null()&&WorldTrace()!=probeExpected[0])
                         throw mmvr::states::Error("Exact-state slot did not restore its saved world");
                 }
@@ -980,6 +1189,7 @@ extern "C" void MMVR_VerifyNativeStateCatalog(PlayState* play) {
                 resumePlan->Commit();componentPlan->Commit();
                 FrameInterpolation_ResetHistory();mmvrgame::BeginStateTrackingResume();
             }
+            mmvrgame::ForceNativeStateHorseDraw(gPlayState);
             probeSavedTick=snapshot.tick;
             if(!gPlayState||gPlayState->gameplayFrames!=probeSavedTick)
                 throw mmvr::states::Error("Native frame counter did not restore");
@@ -991,6 +1201,7 @@ extern "C" void MMVR_VerifyNativeStateCatalog(PlayState* play) {
                 throw mmvr::states::Error("Restored native world differs at the capture tick");
             }
             probeTrace=nlohmann::json::array({WorldTrace()});
+            mmvrgame::RequireNativeStateHorseDrawEvidence(probeTrace[0]);
             probePreviousTick=probeSavedTick;probeSteps=0;probeResuming=true;probeReport=result;
             std::ofstream output("native-state-catalog.json");output<<result.dump(2);
             return;
@@ -1004,6 +1215,7 @@ extern "C" void MMVR_VerifyNativeStateCatalog(PlayState* play) {
         }
         if(std::getenv("MMVR_NATIVE_STATE_TRACE")&&!result["archiveReload"].get<bool>()) {
             probeTrace=nlohmann::json::array({WorldTrace()});
+            mmvrgame::RequireNativeStateHorseDrawEvidence(probeTrace[0]);
             size_t projectiles=0,enemies=0,npcs=0;
             for(const auto& a:probeTrace[0]["actors"]) {
                 if(a["id"]==ACTOR_EN_ARROW||a["id"]==ACTOR_EN_BOM)++projectiles;
@@ -1033,7 +1245,24 @@ extern "C" void MMVR_NativeStateFrameBoundary() {
     const bool fixture=mmvr::PrivateDebugTools&&fixtureFlag&&std::string_view(fixtureFlag)=="1";
     // Public builds must keep serving real save/load requests even if a stale
     // developer environment variable is inherited from the launcher.
-    if(!fixture)mmvrgame::ProcessExactStateRequest();
+    bool pendingFixture=false;
+#ifdef MMVR_LOCAL_TEST_TOOLS
+    pendingFixture=std::getenv("MMVR_NATIVE_STATE_PENDING_SLOT")!=nullptr;
+    if(pendingFixture) {
+        static bool queued=false;
+        if(!queued&&!mmvrgame::PendingStateResumeWork()&&gPlayState&&gPlayState->gameplayFrames>=5) {
+            try {if(!mmvrgame::PrepareNativeStateIdentity())return;}
+            catch(const std::exception& error){mmvrgame::state_resume::FixtureResult(false,error.what(),0);}
+            queued=true;
+            const auto* value=std::getenv("MMVR_NATIVE_STATE_PENDING_SLOT");
+            const int slot=value&&std::string_view(value)=="1"?1:value&&std::string_view(value)=="2"?2:value&&std::string_view(value)=="3"?3:0;
+            if(!slot)mmvrgame::state_resume::FixtureResult(false,"Invalid pending fixture slot",0);
+            mmvr::exactStateRequested.store(-slot);
+        }
+    }
+#endif
+    if(!fixture||pendingFixture)mmvrgame::ProcessExactStateRequest();
+    if(pendingFixture)return;
     if(!fixture||!std::getenv("MMVR_NATIVE_STATE_TEST"))return;
     if(probeResuming||probeBaseline) {
         bool advanced=gPlayState&&gPlayState->gameplayFrames==probePreviousTick+1;
@@ -1042,6 +1271,11 @@ extern "C" void MMVR_NativeStateFrameBoundary() {
             probePreviousTick=gPlayState->gameplayFrames;
             ++probeSteps;
             auto observed=WorldTrace();probeTrace.push_back(observed);
+            mmvrgame::RequireNativeStateHorseDrawEvidence(observed);
+            if(mmvrgame::NativeStateHorseDrawTestEnabled()) {
+                probeReport["horseDrawFrames"]=probeSteps;
+                probeReport["horseDrawEvidence"]=observed["horseSkin"];
+            }
             if(probeResuming&&!probeExpected.is_null()&&observed!=probeExpected[probeSteps]) {
                 probeReport["mismatchFrame"]=probeSteps;
                 std::ofstream difference(TracePath().parent_path()/"world-progression-mismatch.json");

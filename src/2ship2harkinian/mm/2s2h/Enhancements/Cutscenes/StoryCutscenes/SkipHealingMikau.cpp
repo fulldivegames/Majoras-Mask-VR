@@ -11,6 +11,17 @@ extern "C" {
 #define CVAR_NAME "gEnhancements.Cutscenes.SkipStoryCutscenes"
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipHealingMikau_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You received the Zora Mask!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You received the Zora Mask!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+}
+
 void RegisterSkipHealingMikau() {
     COND_VB_SHOULD(VB_START_CUTSCENE, CVAR, {
         s16* csId = va_arg(args, s16*);
@@ -33,15 +44,7 @@ void RegisterSkipHealingMikau() {
                         .showGetItemCutscene = !CVarGetInteger("gEnhancements.Cutscenes.SkipGetItemCutscenes", 0),
                         .param = GID_MASK_ZORA,
                         .giveItem =
-                            [](Actor* actor, PlayState* play) {
-                                if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                    CustomMessage::SetActiveCustomMessage("You received the Zora Mask!",
-                                                                          { .textboxType = 2 });
-                                } else {
-                                    CustomMessage::StartTextbox("You received the Zora Mask!\x1C\x02\x10",
-                                                                { .textboxType = 2 });
-                                }
-                            },
+                            MMVR_StateEvent_SkipHealingMikau_giveItem0,
                     });
                     // Give item immediately instead of queuing it so that the gravestone and Mikau spawns behave
                     Item_Give(gPlayState, ITEM_MASK_ZORA);

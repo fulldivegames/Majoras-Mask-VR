@@ -178,6 +178,13 @@ class Config {
      */
     nlohmann::json GetNestedJson();
 
+    // Transactional in-memory edits. Unlike SetBlock/EraseBlock these never
+    // write a partially edited configuration to disk; Save() publishes it once.
+    struct PreparedSnapshot { nlohmann::json nested, flattened; };
+    nlohmann::json SnapshotValues() const;
+    static PreparedSnapshot PrepareSnapshot(nlohmann::json values);
+    void SwapSnapshot(PreparedSnapshot& prepared) noexcept;
+
     /**
      * @brief Adds a ConfigVersionUpdater instance to the list to be run later via RunVersionUpdates
      *

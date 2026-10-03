@@ -114,7 +114,37 @@ static ClimbingArenaResult NativeClimbingArenaTest(PlayState* play){
   p->actor.world.pos.y=148;
   f.hands[0].position.y-=.008f;sample(1520.04);Player_Action_50(p,play);
   result.mantle=waitsBelowLip&&p->actionFunc!=Player_Action_50&&!MMVR_DirectClimbMode(play,p);
-  p->actionFunc=Player_Action_50;p->av1.actionVar1=1;p->av2.actionVar2=0;p->stateFlags1|=PLAYER_STATE1_200000;p->actor.world.pos={630,40,-638};
+  // The lip is a horizontal native floor at y180, not the vine wall face.
+  // A hand placed just ABOVE it used to miss every horizontal grab probe.
+  // Acquire either top hand, pull, then let native action50 own the mantle.
+  for(int topHand=0;topHand<2;++topHand){
+   mmvrgame::ClearClimbing();p->actionFunc=Player_Action_50;p->av1.actionVar1=1;p->av2.actionVar2=0;
+   p->actor.world.pos={630,148,-615};p->actor.wallPoly=wall;p->actor.wallBgId=bg;
+   p->actor.shape.rot.y=p->actor.world.rot.y=p->yaw=(s16)0x8000;p->stateFlags1|=PLAYER_STATE1_200000;
+   f.triggers[0]=f.triggers[1]=0;f.hands[topHand].position={0,-.35f,-.975f};
+   sample(1530+topHand);sample(1530.01+topHand);f.triggers[topHand]=1;sample(1530.02+topHand);
+   const bool topGrab=MMVR_DirectClimbMode(play,p);
+   f.hands[topHand].position.y-=.008f;sample(1530.03+topHand);
+   const bool topPull=p->actor.world.pos.y>148.f;
+   f.triggers[topHand]=0;sample(1530.04+topHand);
+   const bool releaseHandoff=MMVR_DirectClimbMode(play,p)&&MMVR_ClimbVerticalIntent(play,p)>0;
+   *CONTROLLER1(&play->state)={};Player_Action_50(p,play);
+   std::ofstream("native-climb-top.log",std::ios::app)
+      <<"hand="<<topHand<<" grab="<<topGrab<<" pull="<<topPull<<" releaseHandoff="<<releaseHandoff
+      <<" mantle="<<(p->actionFunc!=Player_Action_50)<<" y="<<p->actor.world.pos.y<<"\n";
+   result.mantle&=topGrab&&topPull&&releaseHandoff&&p->actionFunc!=Player_Action_50;
+  }
+  for(int topHand=0;topHand<2;++topHand){
+   *p=saved;play->animTaskQueue=tasks;mmvrgame::ClearClimbing();
+   p->actor.world.pos={630,148,-615};p->actor.wallPoly=nullptr;p->heldActor=nullptr;
+   p->csAction=PLAYER_CSACTION_NONE;p->stateFlags1=0;p->actor.bgCheckFlags=BGCHECKFLAG_GROUND;
+   f.triggers[0]=f.triggers[1]=0;f.hands[topHand].position={0,-.35f,-.975f};
+   sample(1540+topHand);sample(1540.01+topHand);f.triggers[topHand]=1;sample(1540.02+topHand);
+   const bool freshTop=p->actionFunc==Player_Action_50&&MMVR_DirectClimbMode(play,p);
+   std::ofstream("native-climb-top.log",std::ios::app)<<"freshHand="<<topHand<<" grab="<<freshTop<<"\n";
+   result.approach&=freshTop;
+  }
+  p->actionFunc=Player_Action_50;p->av1.actionVar1=1;p->av2.actionVar2=0;p->stateFlags1|=PLAYER_STATE1_200000;p->actor.world.pos={630,40,-638};p->actor.wallPoly=wall;p->actor.wallBgId=bg;
   CONTROLLER1(&play->state)->press.button=BTN_A;Player_Action_50(p,play);result.drop=p->actionFunc!=Player_Action_50&&!(p->stateFlags1&PLAYER_STATE1_200000);
   auto reticle=mmvrgame::AimReticle(play,p,from,{0,0,-1},{630,88,-620},776,776);
   result.reticle=reticle.m[3][2]>-650&&reticle.m[3][2]<-645&&std::abs(reticle.m[3][0]-630)<.01f;

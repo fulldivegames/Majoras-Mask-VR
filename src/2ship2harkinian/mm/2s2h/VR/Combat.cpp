@@ -277,7 +277,7 @@ void UpdateShield(const mmvr::TrackingFrame& frame, const mmvr::Matrix& rightHan
     auto* play = gPlayState;
     auto* p = play ? GET_PLAYER(play) : nullptr;
     int controller = 1 - mmvr::SwordController(mmvr::GetSettings());
-    const bool autoShield = p && mmvr::GetSettings().Get(mmvr::Setting::AlwaysShield) > .5f &&
+    const bool autoShield = mmvr::GetSettings().Get(mmvr::Setting::AlwaysShield) > .5f &&
                             SwordDrawn(p) && p->currentShield != PLAYER_SHIELD_NONE;
     shieldValid = p && (p->transformation == PLAYER_FORM_HUMAN || p->transformation == PLAYER_FORM_ZORA) &&
                   !mmvrgame::BowHeld() && !MMVR_IndependentHookshot(p) && CombatEligible(play, p) &&

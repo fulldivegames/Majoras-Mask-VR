@@ -15,7 +15,7 @@ namespace mmvrgame {
 // Advance this whenever manually serialized C++ fields, union discriminators,
 // transient-pointer policy, or restore semantics change incompatibly. The
 // generated ABI digest is necessary, but cannot prove semantic compatibility.
-inline constexpr std::string_view NativeManualStatePolicy = "mmvr-manual-state-policy-v1";
+inline constexpr std::string_view NativeManualStatePolicy = "mmvr-manual-state-policy-v4";
 struct NativeCompatibilityContract {
     std::string digest;
     size_t layoutEntries = 0;

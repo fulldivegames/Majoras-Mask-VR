@@ -1,5 +1,6 @@
 #pragma once
 #if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "NativeStateEnvironment.h"
 #include <ship/Context.h>
 #include <ship/resource/ResourceManager.h>
 #include <ship/resource/type/Shader.h>
@@ -25,7 +26,7 @@ template<class Add> auto VisitNativeAssetRanges(Add&& add) {
     for (const auto& entry:resources) {
         const auto& resource=entry.resource;
         std::string name=entry.identifier.Path;
-        if(entry.identifier.Parent)name=entry.identifier.Parent->GetPath()+":"+name;
+        if(entry.identifier.Parent)name=StateArchiveName(entry.identifier.Parent)+":"+name;
         // Scene/room segments are IResource object references, not raw payloads.
         // Symbolic external ownership resolves the object; its C++ bytes are never copied.
         add(name+"/object",resource.get(),1);

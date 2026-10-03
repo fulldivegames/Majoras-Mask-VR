@@ -1,6 +1,8 @@
 #ifdef MMVR_ENABLE
 #include "NativeOptions.h"
 #include "NamedTab.h"
+#include "SaveImport.h"
+#include "2s2h/SaveManager/SaveManager.h"
 #include "ui.h"
 #include "menu_search.h"
 #include "control_bindings.h"
@@ -49,7 +51,7 @@ unsigned DrawVRMenuSearch(const char* query, bool* opened) {
     return matches;
 }
 namespace {
-constexpr const char* Categories[] = { "Audio", "Gameplay", "Cheats", "Difficulty", "Randomizer", "Items and masks", "Clock", "FullDiveGames Additions" };
+constexpr const char* Categories[] = { "Audio", "Gameplay", "Cheats", "Difficulty", "Randomizer", "Items and masks", "Clock", "Time savers and cutscenes", "Save files", "FullDiveGames Additions" };
 struct Panel {
     ImGuiContext* context = nullptr;
     ImFontAtlas* fonts = nullptr;
@@ -190,6 +192,25 @@ void DrawKeyboard(const mmvr::NativeMenuInput& input) {
     if (key("Backspace", {536,967}, {220,42}, 4, 2)) panel.queuedKey=ImGuiKey_Backspace;
     if (key("Enter", {762,967}, {192,42}, 4, 3)) panel.queuedKey=ImGuiKey_Enter;
 }
+void VRSearchContents() {
+    auto& menu = mmvr::GetMenu();
+    ImGui::SetNextItemWidth(-195.f);
+    if (panel.frame == 0) ImGui::SetKeyboardFocusHere();
+    ImGui::InputTextWithHint("##VRSettingSearch", "Search VR settings", menu.search.query, sizeof(menu.search.query));
+    ImGui::SameLine();
+    if (ImGui::Button("Clear / return")) {
+        ImGui::ClearActiveID();
+        menu.EndSearch();
+        return;
+    }
+    if (!menu.search.query[0]) {
+        ImGui::TextWrapped("Search by setting or category name. Enter or B closes the keyboard; B again returns to the menu. Installed pack names stay in the mod library.");
+        return;
+    }
+    ImGui::BeginChild("VR settings results", {0,0}, false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+    if (!DrawVRMenuSearch(menu.search.query)) ImGui::TextWrapped("No matching VR settings. Try a shorter name.");
+    ImGui::EndChild();
+}
 void Contents(Fast::Fast3dGui& gui) {
     auto native = std::dynamic_pointer_cast<BenGui::BenMenu>(gui.GetMenu());
     if (!native) { ImGui::TextWrapped("2Ship options are still initializing."); return; }
@@ -200,12 +221,19 @@ void Contents(Fast::Fast3dGui& gui) {
     if(panel.search[0]) {
         bool any=false;
         const char* sections[][2]={{"FullDiveGames Additions","Visuals"},{"Settings","Audio"},{"Enhancements","Gameplay"},
-            {"Enhancements","Graphics"},{"Enhancements","Items/Songs"},{"Enhancements","Cheats"},{"Enhancements","Difficulty Options"},
+            {"Enhancements","Graphics"},{"Enhancements","Items/Songs"},{"Enhancements","Time Savers"},{"Enhancements","Cheats"},{"Enhancements","Difficulty Options"},
             {"Rando","General"},{"Rando","Logic/Conditions"},{"Rando","Check Pool"},
             {"Rando","Check Exclusions"},{"Rando","Item Pool"},{"Rando","Starting Items"},{"Rando","Hints"}};
         ImGui::BeginChild("Search results",{0,0},false,ImGuiWindowFlags_AlwaysVerticalScrollbar);
-        any = DrawVRMenuSearch(panel.search) > 0;
+        // Keep this tab's native settings ahead of supplemental VR matches.
         for(const auto& section:sections) any=native->DrawVrSection(section[0],section[1],panel.search)||any;
+        if (ImGuiTextFilter(panel.search).PassFilter("Save files import export PC Quest normal save transfer")) {
+            if (ImGui::Button("Open save-file import / export")) {
+                panel.category=8; panel.search[0]=0; ImGui::EndChild(); return;
+            }
+            any=true;
+        }
+        any = (DrawVRMenuSearch(panel.search) > 0) || any;
         if(!any)ImGui::TextWrapped("No matching settings. Try a shorter name.");
         ImGui::EndChild();
         return;
@@ -238,7 +266,11 @@ void Contents(Fast::Fast3dGui& gui) {
         case 4: Rando::DrawVrRandomizerMenu(); break;
         case 5: native->DrawVrSection("Enhancements","Items/Songs"); break;
         case 6: native->DrawVrSection("Enhancements","Graphics","Clock"); break;
-        case 7: native->DrawVrSection("FullDiveGames Additions","Visuals"); break;
+        case 7:
+            ImGui::TextWrapped("Change these at any time, including after choosing a preset. Changes affect future events; skipped story progress is not undone.");
+            native->DrawVrSection("Enhancements","Time Savers"); break;
+        case 8: DrawSaveImport(); break;
+        case 9: native->DrawVrSection("FullDiveGames Additions","Visuals"); break;
     }
 }
 } // namespace
@@ -265,7 +297,8 @@ static void BuildNativeOptions(const mmvr::UiDrawFrame& frame, Fast::Fast3dGui& 
             ImGui::ClearActiveID();
             if (!panel.context->OpenPopupStack.empty()) ImGui::ClosePopupToLevel(0, true);
             panel.keyboard = false;
-            if (panel.search[0]) panel.search[0]=0;
+            if (menu.search.open) menu.EndSearch();
+            else if (panel.search[0]) panel.search[0]=0;
             else if (panel.category >= 0) { panel.category=-1; Rando::ResetVrRandomizerMenu(); }
             else if (back) menu.nativeCloseRequested=true;
         }
@@ -282,7 +315,8 @@ static void BuildNativeOptions(const mmvr::UiDrawFrame& frame, Fast::Fast3dGui& 
             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
         ImGui::Begin("##VR2Ship", nullptr, flags);
         if (panel.frame==0) ImGui::SetWindowFocus();
-        Contents(gui);
+        if (menu.search.open) VRSearchContents();
+        else if (menu.tab == mmvr::NativeTab) Contents(gui);
         ImGui::End();
         SyncKeyboard(input);
         DrawKeyboard(input);
@@ -309,6 +343,7 @@ void DrawNativeOptions(const mmvr::UiDrawFrame& frame, Fast::Fast3dGui& gui) {
     BuildNativeOptions(frame, gui, true);
 }
 #include "NativeTextChecks.inl"
+#include "NativeVRSearchChecks.inl"
 #include "NativeOptionsChecks.inl"
 } // namespace mmvrgame
 #endif

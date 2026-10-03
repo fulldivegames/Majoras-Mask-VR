@@ -12,6 +12,23 @@ extern "C" {
 }
 
 // This file houses various examples of using the systems we have built to modify the game in various ways
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_DemoBehavior_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You found Greg!");
+    } else {
+        CustomMessage::StartTextbox(
+            "You found Greg! (While you were jumping or something) \x1C\x02\x10");
+    }
+
+    Rupees_ChangeBy(1);
+}
+
+void MMVR_StateEvent_DemoBehavior_drawItem0(Actor* actor, PlayState* play) {
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    GetItem_Draw(play, CUSTOM_ITEM_PARAM);
+}
+
 void RegisterDemoBehavior() {
     // Demonstrates some capabilities of CustomItem
     GameInteractor::Instance->RegisterGameHookForID<GameInteractor::ShouldActorInit>(
@@ -35,21 +52,9 @@ void RegisterDemoBehavior() {
                         .showGetItemCutscene = true,
                         .param = GID_RUPEE_GREEN,
                         .giveItem =
-                            [](Actor* actor, PlayState* play) {
-                                if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                    CustomMessage::SetActiveCustomMessage("You found Greg!");
-                                } else {
-                                    CustomMessage::StartTextbox(
-                                        "You found Greg! (While you were jumping or something) \x1C\x02\x10");
-                                }
-
-                                Rupees_ChangeBy(1);
-                            },
+                            MMVR_StateEvent_DemoBehavior_giveItem0,
                         .drawItem =
-                            [](Actor* actor, PlayState* play) {
-                                Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                                GetItem_Draw(play, CUSTOM_ITEM_PARAM);
-                            },
+                            MMVR_StateEvent_DemoBehavior_drawItem0,
                     });
 
                     // Or you can spawn another CustomItem to give an item that way, but the GI queue is more flexible

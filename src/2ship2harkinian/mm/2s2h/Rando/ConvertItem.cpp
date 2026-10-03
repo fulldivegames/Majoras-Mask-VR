@@ -4,6 +4,7 @@
 #include "2s2h/ShipUtils.h"
 #include "2s2h/ShipInit.hpp"
 #include <cassert>
+#include <algorithm>
 
 // Copied from z_player.c, we could instead move this to a header file, idk
 typedef struct GetItemEntry {
@@ -138,6 +139,24 @@ void RefreshObtainableTrapItems() {
         }
     }
 }
+
+// Exact-state resume can enter an already initialized scene directly. Rebuild
+// these derived lists without replaying OnSceneInit or modifying progression.
+void Rando::RefreshStateItemCaches() {
+    if (IS_RANDO) {
+        RefreshObtainableJunkItems();
+        RefreshObtainableTrapItems();
+    } else {
+        obtainableJunkItems.clear();
+        obtainableTrapItems.clear();
+    }
+}
+
+#ifdef MMVR_LOCAL_TEST_TOOLS
+bool Rando::StateItemCacheContainsForTest(RandoItemId item) {
+    return std::find(obtainableJunkItems.begin(),obtainableJunkItems.end(),item)!=obtainableJunkItems.end();
+}
+#endif
 
 static RegisterShipInitFunc refreshInitFunc(
     []() {

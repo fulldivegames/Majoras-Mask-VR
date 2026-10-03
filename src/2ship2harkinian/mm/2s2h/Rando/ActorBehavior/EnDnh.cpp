@@ -10,6 +10,11 @@ void Player_SetupTalk(PlayState* play, Player* player);
 s32 Player_SetupWaitForPutAway(PlayState* play, Player* player, AfterPutAwayFunc afterPutAwayFunc);
 }
 
+static std::vector<u8> skipCmds = {};
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+std::vector<uint8_t>& MMVR_RandoEnDnhCommands() { return skipCmds; }
+#endif
+
 void Rando::ActorBehavior::InitEnDnhBehavior() {
     // Scripted Actors
     COND_VB_SHOULD(VB_EXEC_MSG_EVENT, IS_RANDO, {
@@ -17,7 +22,6 @@ void Rando::ActorBehavior::InitEnDnhBehavior() {
         Actor* actor = va_arg(args, Actor*);
         MsgScript* script = va_arg(args, MsgScript*);
         Player* player = GET_PLAYER(gPlayState);
-        static std::vector<u8> skipCmds = {};
 
         if (actor->id != ACTOR_EN_DNH) {
             return;

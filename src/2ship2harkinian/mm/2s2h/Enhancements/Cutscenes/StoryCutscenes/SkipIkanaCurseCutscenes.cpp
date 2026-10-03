@@ -32,6 +32,18 @@ void skipHealingPamelasFather() {
     SET_WEEKEVENTREG(WEEKEVENTREG_75_20); // Flag for healing Gibdo dad
 }
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipIkanaCurseCutscenes_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You received the Gibdo Mask!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You received the Gibdo Mask!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_MASK_GIBDO);
+}
+
 void RegisterSkipIkanaCurseCutscenes() {
     // Must use the queue hook for the skip. If the start hook is used, cutscene cues will mess up the curtain movement.
     COND_VB_SHOULD(VB_QUEUE_CUTSCENE, CVAR, {
@@ -88,16 +100,7 @@ void RegisterSkipIkanaCurseCutscenes() {
                         .showGetItemCutscene = !CVarGetInteger("gEnhancements.Cutscenes.SkipGetItemCutscenes", 0),
                         .param = GID_MASK_GIBDO,
                         .giveItem =
-                            [](Actor* actor, PlayState* play) {
-                                if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                    CustomMessage::SetActiveCustomMessage("You received the Gibdo Mask!",
-                                                                          { .textboxType = 2 });
-                                } else {
-                                    CustomMessage::StartTextbox("You received the Gibdo Mask!\x1C\x02\x10",
-                                                                { .textboxType = 2 });
-                                }
-                                Item_Give(gPlayState, ITEM_MASK_GIBDO);
-                            },
+                            MMVR_StateEvent_SkipIkanaCurseCutscenes_giveItem0,
                     });
                 }
                 *should = false;

@@ -17,6 +17,7 @@
    <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="org.khronos.openxr.intent.category.IMMERSIVE_HMD" /></intent-filter>
   </activity>
   <activity android:name=".RomImportActivity" android:exported="false" android:process=":romimport" android:screenOrientation="landscape" android:configChanges="keyboardHidden|orientation|screenSize" />
+  <activity android:name=".StateRestartActivity" android:exported="false" android:process=":restart" android:screenOrientation="landscape" android:configChanges="keyboardHidden|orientation|screenSize" />
   <receiver android:name=".UpdateInstallReceiver" android:exported="false" />
  </application>
 </manifest>

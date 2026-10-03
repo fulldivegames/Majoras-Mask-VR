@@ -52,7 +52,26 @@ endif()
 
 #=================== STB ===================
 set(STB_DIR ${CMAKE_BINARY_DIR}/_deps/stb)
-file(DOWNLOAD "https://github.com/nothings/stb/raw/0bc88af4de5fb022db643c2d8e549a0927749354/stb_image.h" "${STB_DIR}/stb_image.h")
+set(STB_IMAGE_SHA256 "c54b15a689e6a1f32c75e2ec23afa442e3e0e37e894b73c1974d08679b20dd5c")
+set(STB_IMAGE_CACHED_SHA256 "")
+if(EXISTS "${STB_DIR}/stb_image.h")
+    file(SHA256 "${STB_DIR}/stb_image.h" STB_IMAGE_CACHED_SHA256)
+endif()
+if(NOT STB_IMAGE_CACHED_SHA256 STREQUAL STB_IMAGE_SHA256)
+    # Never truncate a working cached header when an offline/sandboxed configure
+    # cannot download it. A failed dependency fetch must fail at configure time.
+    file(DOWNLOAD "https://raw.githubusercontent.com/nothings/stb/0bc88af4de5fb022db643c2d8e549a0927749354/stb_image.h"
+         "${STB_DIR}/stb_image.h.pending" STATUS STB_IMAGE_DOWNLOAD_STATUS)
+    list(GET STB_IMAGE_DOWNLOAD_STATUS 0 STB_IMAGE_DOWNLOAD_CODE)
+    if(NOT STB_IMAGE_DOWNLOAD_CODE EQUAL 0)
+        message(FATAL_ERROR "Unable to download pinned stb_image.h: ${STB_IMAGE_DOWNLOAD_STATUS}")
+    endif()
+    file(SHA256 "${STB_DIR}/stb_image.h.pending" STB_IMAGE_DOWNLOAD_SHA256)
+    if(NOT STB_IMAGE_DOWNLOAD_SHA256 STREQUAL STB_IMAGE_SHA256)
+        message(FATAL_ERROR "Pinned stb_image.h checksum mismatch")
+    endif()
+    file(RENAME "${STB_DIR}/stb_image.h.pending" "${STB_DIR}/stb_image.h")
+endif()
 file(WRITE "${STB_DIR}/stb_impl.c" "#define STB_IMAGE_IMPLEMENTATION\n#include \"stb_image.h\"")
 
 add_library(stb STATIC)

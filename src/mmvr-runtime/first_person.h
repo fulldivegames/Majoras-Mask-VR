@@ -29,6 +29,7 @@ struct TrackingFrame {
     const void* physicalPushRenderOwner = nullptr;
     bool physicalPushRenderPoseValid = false;
     Matrix bodyBones[BodyBoneCount]{}; // Native joints at render cadence; no simulation changes.
+    Matrix bodyGeometry[6]{}; // Unblended arm joints: model dimensions must not inherit pose interpolation shrink.
 };
 struct CameraFrame {
     bool active = false, exclusiveView = false;

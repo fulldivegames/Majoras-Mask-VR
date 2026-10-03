@@ -24,7 +24,7 @@ typedef enum class ConsoleVariableType { Integer, Float, String, Color, Color24 
  */
 typedef struct CVar {
     /** @brief Discriminator indicating which union field is active. */
-    ConsoleVariableType Type;
+    ConsoleVariableType Type = ConsoleVariableType::String;
     union {
         int32_t Integer;        ///< Active when Type == ConsoleVariableType::Integer.
         float Float;            ///< Active when Type == ConsoleVariableType::Float.
@@ -195,7 +195,7 @@ class ConsoleVariable {
                       nlohmann::detail::iteration_proxy<nlohmann::detail::iter_impl<nlohmann::json>> items);
     void LoadLegacy();
 
-  private:
+  public:
     struct TransparentStringHash {
         using is_transparent = void;
         size_t operator()(std::string_view sv) const noexcept {
@@ -208,6 +208,15 @@ class ConsoleVariable {
             return a == b;
         }
     };
-    std::unordered_map<std::string, std::shared_ptr<CVar>, TransparentStringHash, TransparentStringEqual> mVariables;
+    using VariableMap = std::unordered_map<std::string, std::shared_ptr<CVar>, TransparentStringHash, TransparentStringEqual>;
+    struct PreparedSnapshot { VariableMap variables; };
+    // Typed, bounded snapshots; preparation allocates/validates without changing
+    // live settings. Swapping also retains the previous map for rollback.
+    nlohmann::json SnapshotValues() const;
+    static PreparedSnapshot PrepareSnapshot(const nlohmann::json& values);
+    void SwapSnapshot(PreparedSnapshot& prepared) noexcept;
+
+  private:
+    VariableMap mVariables;
 };
 } // namespace Ship

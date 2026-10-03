@@ -24,9 +24,10 @@ inline constexpr int AssignmentFirst = int(Setting::Count), ResetSettingsRow = A
                      DiagnosticExportRow = NativeOptionsRow + 1,
                      SetupGuideRow = NativeOptionsRow + 2,
                      ReleaseNotesFirstRow = NativeOptionsRow + 3,
-                     ReleaseNotesCount = 34,
+                     ReleaseNotesCount = 39,
                      SaveGameRow = ReleaseNotesFirstRow + ReleaseNotesCount,
-                     MenuRows = SaveGameRow + 1;
+                     SearchSettingsRow = SaveGameRow + 1,
+                     MenuRows = SearchSettingsRow + 1;
 inline bool ReleaseNotesRow(int row) { return row >= ReleaseNotesFirstRow && row < ReleaseNotesFirstRow + ReleaseNotesCount; }
 inline bool TutorialRow(int row) { return row >= TutorialFirstRow && row < NativeOptionsRow; }
 inline bool ExactStateRow(int row) { return row >= SaveStateFirstRow && row < SaveStateFirstRow + 6; }
@@ -89,6 +90,11 @@ struct MenuEntry {
 };
 // Explicit presentation order is independent of persistent setting IDs.
 inline constexpr MenuEntry OrderedMenu[] = {
+    { ReleaseNotesFirstRow + 34, 39 },
+    { ReleaseNotesFirstRow + 35, 39 },
+    { ReleaseNotesFirstRow + 36, 39 },
+    { ReleaseNotesFirstRow + 37, 39 },
+    { ReleaseNotesFirstRow + 38, 39 },
     { ReleaseNotesFirstRow + 29, 39 },
     { ReleaseNotesFirstRow + 30, 39 },
     { ReleaseNotesFirstRow + 31, 39 },
@@ -317,6 +323,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { SaveStateFirstRow, 35 }, { SaveStateFirstRow+1, 35 },
     { SaveStateFirstRow+2, 35 }, { SaveStateFirstRow+3, 35 },
     { SaveStateFirstRow+4, 35 }, { SaveStateFirstRow+5, 35 },
+    { SearchSettingsRow, 22 },
     { SaveGameRow, 22 },
     { RecenterRow, 22 },
     { MainMenuRow, 22 },
@@ -405,6 +412,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { TutorialFirstRow + 50, 36 },
     { TutorialFirstRow + 51, 36 },
     { TutorialFirstRow + 52, 36 },
+    { TutorialFirstRow + 53, 36 },
     { NativeOptionsRow, 37 },
 
 };
@@ -453,6 +461,32 @@ inline int TabSetting(int tab, int row) {
 inline bool MenuHeader(int row) {
     return row >= MenuRows && row < MenuRows + MenuSectionCount;
 }
+// Labels for built-in actions share the search index. Installed pack/folder names
+// deliberately have no entry here; they remain in the mod library only.
+inline const char* MenuActionLabel(int row) {
+    switch (row) {
+        case SearchSettingsRow: return "Search VR settings";
+        case ResetSettingsRow: return "Reset all VR tuning to defaults";
+        case ResetControlsRow: return "Restore all control bindings to defaults";
+        case DiagnosticExportRow: return "Export private-safe diagnostic report";
+        case SetupGuideRow: return "Show / hide first-time setup guide";
+        case RecenterRow: return "Recenter view and height";
+        case SaveGameRow: return "Save game (return to this entrance)";
+        case MainMenuRow: return "Return to main menu";
+        case SkipDayRow: return "Skip a full day (+24 hours)";
+        case SkipTwoHoursRow: return "Skip two in-game hours (+2 hours)";
+        case DebugReturnRow: return "Return to test hall (debug save)";
+        case SharedFilesRow: return "Connect MMVR shared folder (Quest)";
+        case RefreshModsRow: return "Refresh mods and texture packs";
+        case CheckUpdateRow: return "Check for updates";
+        case InstallUpdateRow: return "Install available update";
+    }
+    if (ExactStateRow(row)) {
+        static constexpr const char* labels[] = {"Save slot 1", "Load slot 1", "Save slot 2", "Load slot 2", "Save slot 3", "Load slot 3"};
+        return labels[row - SaveStateFirstRow];
+    }
+    return nullptr;
+}
 struct MenuState {
     bool open = false, confirmMainMenu = false, saveFailed = false;
     bool (*commitSettings)() = nullptr;
@@ -473,6 +507,13 @@ struct MenuState {
     bool expanded[MenuSectionCount]{};
     std::set<std::string> expandedModFolders;
     int rememberedRow[TabCount]{}, rememberedFirst[TabCount]{};
+    struct SearchState {
+        bool open = false;
+        char query[128]{};
+        int tab = 0, row = 0, first = 0;
+        bool expanded[MenuSectionCount]{};
+    } search;
+    bool UsesNativePanel() const { return tab == NativeTab || search.open; }
     MenuState() {
         for (int i = 0; i < MenuSectionCount; ++i)
             expanded[i] = MenuSections[i].initiallyOpen;
@@ -523,15 +564,37 @@ struct MenuState {
         nativeInput = {};
         nativeCloseRequested = false;
         searchInputRelease = false;
+        search = {};
         for (auto& value : expanded) value = false;
         expandedModFolders.clear();
         row = first = 0;
         confirmMainMenu = false;
         confirmStateRow = -1;
     }
+    void BeginSearch() {
+        if (search.open) return;
+        search = {};
+        search.open = true;
+        search.tab = tab; search.row = row; search.first = first;
+        std::copy(std::begin(expanded), std::end(expanded), std::begin(search.expanded));
+        ++nativeSession;
+        nativeInput = {};
+        nativeCloseRequested = false;
+    }
+    void EndSearch() {
+        if (!search.open) return;
+        tab = search.tab; row = search.row; first = search.first;
+        std::copy(std::begin(search.expanded), std::end(search.expanded), std::begin(expanded));
+        search = {};
+        ++nativeSession;
+        nativeInput = {};
+        nativeCloseRequested = false;
+        Normalize();
+        searchInputRelease = true;
+    }
     bool FocusSearchRow(int value) {
         // Search only navigates: commands still require their normal confirmation.
-        if (!MenuHeader(value) && (value < 0 || value >= AssignmentFirst)) return false;
+        if (!MenuHeader(value) && (value < 0 || (value >= AssignmentFirst && !MenuActionLabel(value)))) return false;
         const int section = MenuHeader(value) ? value - MenuRows : SettingSection(value);
         if (section < 0 || section >= MenuSectionCount || MenuSections[section].tab == NativeTab ||
             !MenuSectionVisible(section) || (!MenuHeader(value) && !MenuRowVisible(value)) ||

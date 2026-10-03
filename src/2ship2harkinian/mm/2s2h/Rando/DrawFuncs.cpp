@@ -85,12 +85,46 @@ void ObjTokeidai_RotateOnHourChange(ObjTokeidai* thisx, PlayState* play);
 // clang-format on
 }
 
+namespace {
+uint64_t drawGeneration = 0;
+struct DrawState {
+    bool lightInitialized = false;
+    s8 lightPhase = 0;
+    u32 lightUpdate = 0;
+    u32 dustUpdate = 0;
+    bool auraColor = false;
+    u32 batUpdate = 0, batWing = 0;
+    int16_t chuchuTimer = 25;
+    u32 clockUpdate = 0;
+    f32 clockY = 0, clockXRot = 0, clockZ = 0;
+    int16_t clockMinute = 0, clockFace = 0, clockPanel = 0;
+} drawState;
+}
+extern "C" uint64_t MMVR_RandoDrawGeneration() { return drawGeneration; }
+extern "C" void MMVR_ResetRandoDrawCaches() noexcept { ++drawGeneration; }
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "2s2h/VR/NativeStateFields.h"
+extern "C" void MMVR_VisitRandoDrawState(MMVR_StateSink* sink) {
+#define DRAW_FIELD(member) mmvrgame::NativeStateField(sink,"rando/draw/" #member,drawState.member)
+    DRAW_FIELD(lightInitialized); DRAW_FIELD(lightPhase); DRAW_FIELD(lightUpdate);
+    DRAW_FIELD(dustUpdate); DRAW_FIELD(auraColor); DRAW_FIELD(batUpdate); DRAW_FIELD(batWing);
+    DRAW_FIELD(chuchuTimer); DRAW_FIELD(clockUpdate); DRAW_FIELD(clockY); DRAW_FIELD(clockXRot);
+    DRAW_FIELD(clockZ); DRAW_FIELD(clockMinute); DRAW_FIELD(clockFace); DRAW_FIELD(clockPanel);
+#undef DRAW_FIELD
+}
+#endif
+
 #define SETUP_DRAW(LIMB_MAX)           \
     static bool initialized = false;   \
     static SkelAnime skelAnime;        \
     static Vec3s jointTable[LIMB_MAX]; \
     static Vec3s morphTable[LIMB_MAX]; \
     static u32 lastUpdate = 0;         \
+    static uint64_t cacheGeneration = 0; \
+    if (cacheGeneration != drawGeneration) { \
+        cacheGeneration = drawGeneration; \
+        initialized = false; skelAnime = {}; lastUpdate = UINT32_MAX; \
+    } \
     OPEN_DISPS(gPlayState->state.gfxCtx);
 
 #define SETUP_DRAW_TYPE(LIMB_MAX, SKEL_HEADER, ANIM_HEADER, INIT_TYPE, HEADER_TYPE)                               \
@@ -113,8 +147,14 @@ void ObjTokeidai_RotateOnHourChange(ObjTokeidai* thisx, PlayState* play);
 // Soul Effects
 extern void DrawEnLight(Color_RGB8 flameColor, Vec3f flameSize) {
     Gfx* sp68;
-    static s8 unk_144 = (s8)(Rand_ZeroOne() * 255.0f);
-    static u32 lastUpdate = 0;
+    // This first-use random draw affects the shared game RNG. Save the flag and
+    // phase rather than repeating it when a derived skeleton cache is reset.
+    auto& unk_144 = drawState.lightPhase;
+    auto& lastUpdate = drawState.lightUpdate;
+    if (!drawState.lightInitialized) {
+        unk_144 = (s8)(Rand_ZeroOne() * 255.0f);
+        drawState.lightInitialized = true;
+    }
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
 
@@ -156,8 +196,8 @@ void EnMinifrogPostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* 
 void DrawEnFirefly_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3s* rot, Actor* firefly) {
     static Color_RGBA8 auraPrimColor[2] = { { 255, 255, 100, 255 }, { 100, 200, 255, 255 } };
     static Color_RGBA8 auraEnvColor[2] = { { 255, 50, 0, 0 }, { 0, 0, 255, 0 } };
-    static uint32_t dustUpdate = 0;
-    static bool auraColor = false;
+    auto& dustUpdate = drawState.dustUpdate;
+    auto& auraColor = drawState.auraColor;
     static Vec3f auraVelocity = { 0, 0.5f, 0 };
     static Vec3f auraAccel = { 0, 0.5f, 0 };
     static Vec3f auraPos;
@@ -240,8 +280,8 @@ void EnKaizoku_TransformLimbDraw(PlayState* play, s32 limbIndex, Actor* thisx) {
 // Enemy Soul Draw Functions
 extern void DrawAlien() {
     SETUP_DRAW(ALIEN_LIMB_MAX);
-    static uintptr_t eyeTexture = (uintptr_t)Lib_SegmentedToVirtual((TexturePtr)gAlienEyeTex);
-    static AnimatedMaterial* sAlienEmptyTexAnim =
+    const uintptr_t eyeTexture = (uintptr_t)Lib_SegmentedToVirtual((TexturePtr)gAlienEyeTex);
+    AnimatedMaterial* sAlienEmptyTexAnim =
         (AnimatedMaterial*)Lib_SegmentedToVirtual((TexturePtr)gAlienEmptyTexAnim);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Matrix_Scale(0.007f, 0.007f, 0.007f, MTXMODE_APPLY);
@@ -272,8 +312,8 @@ extern void DrawArmos() {
 }
 
 extern void DrawBat() {
-    static u32 lastUpdate = 0;
-    static u32 wingAnim = 0;
+    auto& lastUpdate = drawState.batUpdate;
+    auto& wingAnim = drawState.batWing;
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
     Matrix_Scale(0.02f, 0.02f, 0.02f, MTXMODE_APPLY);
@@ -379,9 +419,9 @@ extern void DrawCaptainKeeta() {
 }
 
 extern void DrawChuchu() {
-    static int16_t timer = 25;
+    auto& timer = drawState.chuchuTimer;
     f32 timerFactor = sqrtf(timer) * 0.2f;
-    static AnimatedMaterial* sSlimeTexAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)gChuchuSlimeFlowTexAnim);
+    AnimatedMaterial* sSlimeTexAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)gChuchuSlimeFlowTexAnim);
 
     OPEN_DISPS(gPlayState->state.gfxCtx);
     Matrix_Scale(
@@ -481,7 +521,7 @@ extern void DrawDexihand() {
 }
 
 extern void DrawDinolfos() {
-    static uintptr_t eyeTexture = (uintptr_t)Lib_SegmentedToVirtual((TexturePtr)gDinolfosEyeOpenTex);
+    const uintptr_t eyeTexture = (uintptr_t)Lib_SegmentedToVirtual((TexturePtr)gDinolfosEyeOpenTex);
     SETUP_DRAW(DINOLFOS_LIMB_MAX);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Matrix_Scale(0.014f, 0.014f, 0.014f, MTXMODE_APPLY);
@@ -537,7 +577,7 @@ extern void DrawEeno() {
 }
 
 extern void DrawEyegore() {
-    static AnimatedMaterial* sEyegoreEyeLaserTexAnim =
+    AnimatedMaterial* sEyegoreEyeLaserTexAnim =
         (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)gEyegoreEyeLaserTexAnim);
     SETUP_DRAW(EYEGORE_LIMB_MAX);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
@@ -627,8 +667,8 @@ extern void DrawGiantBee() {
 }
 
 extern void DrawGomess() {
-    static AnimatedMaterial* bodyMatAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)&gGomessBodyMatAnim);
-    static AnimatedMaterial* coreMatAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)&gGomessCoreMatAnim);
+    AnimatedMaterial* bodyMatAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)&gGomessBodyMatAnim);
+    AnimatedMaterial* coreMatAnim = (AnimatedMaterial*)Lib_SegmentedToVirtual((void*)&gGomessCoreMatAnim);
     SETUP_DRAW(GOMESS_LIMB_MAX);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Matrix_Scale(0.005f, 0.005f, 0.005f, MTXMODE_APPLY);
@@ -752,6 +792,13 @@ extern void DrawLikeLike() {
         f32 unk_00;
         Vec3s unk_1A;
     } segments[5];
+    static uint64_t cacheGeneration = 0;
+    if (cacheGeneration != drawGeneration) {
+        cacheGeneration = drawGeneration;
+        initialized = false;
+        lastUpdate = UINT32_MAX;
+        textureScroll = 0;
+    }
 
     if (!initialized) {
         initialized = true;
@@ -883,7 +930,7 @@ extern void DrawPeahat() {
 }
 
 extern void DrawPirate() {
-    static uintptr_t eyeTexture = (uintptr_t)Lib_SegmentedToVirtual((TexturePtr)gFighterPirateEyeOpenTex);
+    const uintptr_t eyeTexture = (uintptr_t)Lib_SegmentedToVirtual((TexturePtr)gFighterPirateEyeOpenTex);
     SETUP_DRAW(KAIZOKU_LIMB_MAX);
     Gfx_SetupDL25_Xlu(gPlayState->state.gfxCtx);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
@@ -942,6 +989,13 @@ extern void DrawRedead() {
         (AnimationHeader*)gGibdoRedeadPirouetteAnim,
     };
     SETUP_DRAW(REDEAD_LIMB_MAX);
+    static uint64_t selectorGeneration = 0;
+    if (selectorGeneration != drawGeneration) {
+        selectorGeneration = drawGeneration;
+        animUpdate = 0;
+        rdAnimID = 0;
+        currentAnim = (AnimationHeader*)gGibdoRedeadIdleAnim;
+    }
 
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Gfx_SetupDL60_XluNoCD(gPlayState->state.gfxCtx);
@@ -1022,7 +1076,7 @@ extern void DrawSkulltula() {
 
 extern void DrawSnapper() {
     SETUP_DRAW(SNAPPER_LIMB_MAX);
-    static uintptr_t eyeTexture = (uintptr_t)Lib_SegmentedToVirtual((TexturePtr)gSnapperEyeOpenTex);
+    const uintptr_t eyeTexture = (uintptr_t)Lib_SegmentedToVirtual((TexturePtr)gSnapperEyeOpenTex);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Matrix_Scale(0.01f, 0.01f, 0.01f, MTXMODE_APPLY);
     Matrix_Translate(0, -3100.0f, 0, MTXMODE_APPLY);
@@ -1115,7 +1169,7 @@ extern void DrawWart() {
 }
 
 extern void DrawWizrobe() {
-    static uintptr_t eyeTexture = (uintptr_t)Lib_SegmentedToVirtual((TexturePtr)gWizrobeEyeTex);
+    const uintptr_t eyeTexture = (uintptr_t)Lib_SegmentedToVirtual((TexturePtr)gWizrobeEyeTex);
     SETUP_DRAW(WIZROBE_LIMB_MAX);
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
     Matrix_Translate(0.0f, -20.0f, 0.0f, MTXMODE_APPLY);
@@ -1257,13 +1311,13 @@ extern void DrawClock(RandoItemId randoItemId, Actor* actor) {
     OPEN_DISPS(gPlayState->state.gfxCtx);
 
     ObjTokeidai* clockActor = (ObjTokeidai*)actor;
-    static u32 lastUpdate = 0;
-    static f32 yTranslation = 0;
-    static f32 xRotation = 0;
-    static int16_t minuteRingOrExteriorGearRotation = 0;
-    static f32 clockFaceZTranslation = 0;
-    static int16_t clockFaceRotation = 0;
-    static int16_t sunMoonPanelRotation = 0;
+    auto& lastUpdate = drawState.clockUpdate;
+    auto& yTranslation = drawState.clockY;
+    auto& xRotation = drawState.clockXRot;
+    auto& minuteRingOrExteriorGearRotation = drawState.clockMinute;
+    auto& clockFaceZTranslation = drawState.clockZ;
+    auto& clockFaceRotation = drawState.clockFace;
+    auto& sunMoonPanelRotation = drawState.clockPanel;
 
     switch (randoItemId) {
         case RI_TIME_DAY_1:

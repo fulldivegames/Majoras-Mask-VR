@@ -13,6 +13,12 @@
 namespace Rando {
 
 void Init();
+// Rebind save-dependent hooks without clearing restored queues or changing time.
+void RegisterStateHooks();
+void RefreshStateItemCaches();
+#ifdef MMVR_LOCAL_TEST_TOOLS
+bool StateItemCacheContainsForTest(RandoItemId item);
+#endif
 void DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId = RC_UNKNOWN, Actor* actor = nullptr);
 void GiveItem(RandoItemId randoItemId);
 void RemoveItem(RandoItemId randoItemId);

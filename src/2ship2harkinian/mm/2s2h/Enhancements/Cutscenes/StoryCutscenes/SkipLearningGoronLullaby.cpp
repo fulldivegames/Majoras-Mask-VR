@@ -21,6 +21,23 @@ void EnGo_Sleep(EnGo* enGoActor, PlayState* play);
 static bool isGoronSleepQueued = false;
 
 // This is a song tutorial, so the skip is forced on in rando for now
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipLearningGoronLullaby_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You learned the complete Goron Lullaby!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You learned the complete Goron Lullaby!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_SONG_LULLABY);
+}
+
+void MMVR_StateEvent_SkipLearningGoronLullaby_drawItem0(Actor* actor, PlayState* play) {
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    Rando::DrawItem(RI_SONG_LULLABY);
+}
+
 void RegisterSkipLearningGoronLullaby() {
     // Played Lullaby Intro for Baby Goron
     COND_VB_SHOULD(VB_START_CUTSCENE, CVAR || IS_RANDO, {
@@ -51,21 +68,9 @@ void RegisterSkipLearningGoronLullaby() {
             GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
                 .showGetItemCutscene = !CVarGetInteger("gEnhancements.Cutscenes.SkipGetItemCutscenes", 0),
                 .giveItem =
-                    [](Actor* actor, PlayState* play) {
-                        if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                            CustomMessage::SetActiveCustomMessage("You learned the complete Goron Lullaby!",
-                                                                  { .textboxType = 2 });
-                        } else {
-                            CustomMessage::StartTextbox("You learned the complete Goron Lullaby!\x1C\x02\x10",
-                                                        { .textboxType = 2 });
-                        }
-                        Item_Give(gPlayState, ITEM_SONG_LULLABY);
-                    },
+                    MMVR_StateEvent_SkipLearningGoronLullaby_giveItem0,
                 .drawItem =
-                    [](Actor* actor, PlayState* play) {
-                        Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                        Rando::DrawItem(RI_SONG_LULLABY);
-                    } });
+                    MMVR_StateEvent_SkipLearningGoronLullaby_drawItem0 });
         }
     });
 

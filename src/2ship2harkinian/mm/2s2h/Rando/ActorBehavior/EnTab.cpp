@@ -189,3 +189,9 @@ void Rando::ActorBehavior::InitEnTabBehavior() {
 
     COND_ID_HOOK(OnOpenText, 0x2B0B, IS_RANDO && RANDO_SAVE_OPTIONS[RO_SHUFFLE_SHOPS], EnTab_OnOpenShopText);
 }
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "2s2h/VR/NativeStateFields.h"
+extern "C" void MMVR_VisitRandoEnTabState(MMVR_StateSink* sink) {
+    mmvrgame::NativeStateField(sink,"rando/EnTab/isInitialGiveItemMscriptCommandExecution",isInitialGiveItemMscriptCommandExecution);
+}
+#endif

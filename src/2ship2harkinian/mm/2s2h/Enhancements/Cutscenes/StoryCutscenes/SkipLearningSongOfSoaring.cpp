@@ -15,6 +15,23 @@ extern "C" {
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
 #define ENGRAVING_TEXT_ID 0xC02
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipLearningSongOfSoaring_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You learned the Song of Soaring!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You learned the Song of Soaring!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_SONG_SOARING);
+}
+
+void MMVR_StateEvent_SkipLearningSongOfSoaring_drawItem0(Actor* actor, PlayState* play) {
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    Rando::DrawItem(RI_SONG_SOARING);
+}
+
 void RegisterSkipLearningSongOfSoaring() {
     /*
      * Whether the song prompt cutscene is triggered or not depends on the actor's textId, which itself is initially
@@ -33,21 +50,9 @@ void RegisterSkipLearningSongOfSoaring() {
             GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
                 .showGetItemCutscene = !CVarGetInteger("gEnhancements.Cutscenes.SkipGetItemCutscenes", 0),
                 .giveItem =
-                    [](Actor* actor, PlayState* play) {
-                        if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                            CustomMessage::SetActiveCustomMessage("You learned the Song of Soaring!",
-                                                                  { .textboxType = 2 });
-                        } else {
-                            CustomMessage::StartTextbox("You learned the Song of Soaring!\x1C\x02\x10",
-                                                        { .textboxType = 2 });
-                        }
-                        Item_Give(gPlayState, ITEM_SONG_SOARING);
-                    },
+                    MMVR_StateEvent_SkipLearningSongOfSoaring_giveItem0,
                 .drawItem =
-                    [](Actor* actor, PlayState* play) {
-                        Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                        Rando::DrawItem(RI_SONG_SOARING);
-                    } });
+                    MMVR_StateEvent_SkipLearningSongOfSoaring_drawItem0 });
         }
     });
 }

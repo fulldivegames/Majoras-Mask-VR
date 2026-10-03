@@ -30,6 +30,7 @@ bool IsDayClock(RandoItemId itemId);
 namespace ClockShuffle {
 
 void OnFileLoad();
+void RegisterFileHooks();
 void SetTimeToHalfDayStart(int halfDayIndex);
 
 bool IsTimeOwnedForClockShuffle(s32 day, u16 time);

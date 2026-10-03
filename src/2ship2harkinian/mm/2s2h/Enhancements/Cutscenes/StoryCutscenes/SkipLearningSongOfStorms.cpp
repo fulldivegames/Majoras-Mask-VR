@@ -14,6 +14,23 @@ extern "C" {
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
 
 // This is a song tutorial, so the skip is forced on in rando for now
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipLearningSongOfStorms_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You learned the Song of Storms!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You learned the Song of Storms!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_SONG_STORMS);
+}
+
+void MMVR_StateEvent_SkipLearningSongOfStorms_drawItem0(Actor* actor, PlayState* play) {
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    Rando::DrawItem(RI_SONG_STORMS);
+}
+
 void RegisterSkipLearningSongOfStorms() {
     COND_VB_SHOULD(VB_START_CUTSCENE, CVAR || IS_RANDO, {
         s16* csId = va_arg(args, s16*);
@@ -24,21 +41,9 @@ void RegisterSkipLearningSongOfStorms() {
                 GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
                     .showGetItemCutscene = !CVarGetInteger("gEnhancements.Cutscenes.SkipGetItemCutscenes", 0),
                     .giveItem =
-                        [](Actor* actor, PlayState* play) {
-                            if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                CustomMessage::SetActiveCustomMessage("You learned the Song of Storms!",
-                                                                      { .textboxType = 2 });
-                            } else {
-                                CustomMessage::StartTextbox("You learned the Song of Storms!\x1C\x02\x10",
-                                                            { .textboxType = 2 });
-                            }
-                            Item_Give(gPlayState, ITEM_SONG_STORMS);
-                        },
+                        MMVR_StateEvent_SkipLearningSongOfStorms_giveItem0,
                     .drawItem =
-                        [](Actor* actor, PlayState* play) {
-                            Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                            Rando::DrawItem(RI_SONG_STORMS);
-                        } });
+                        MMVR_StateEvent_SkipLearningSongOfStorms_drawItem0 });
             }
             *should = false;
         }

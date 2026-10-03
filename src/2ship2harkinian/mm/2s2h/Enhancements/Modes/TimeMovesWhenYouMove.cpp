@@ -1,6 +1,7 @@
 #include <libultraship/bridge/consolevariablebridge.h>
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/ShipInit.hpp"
+#include "2s2h/VR/NativeSettingsPreparation.h"
 
 extern "C" {
 #include "variables.h"
@@ -40,7 +41,7 @@ static void UpdateTimeSpeedOffset(PauseContext* pauseCtx) {
 }
 
 static void RegisterTimeMovesWhenYouMove() {
-    if (!CVAR && sStoredTimeOffset != DEFAULT_TIME_OFFSET) {
+    if (!mmvrgame::StateSettingsPreparationActive() && !CVAR && sStoredTimeOffset != DEFAULT_TIME_OFFSET) {
         gSaveContext.save.timeSpeedOffset = sStoredTimeOffset;
         sStoredTimeOffset = DEFAULT_TIME_OFFSET;
     }
@@ -109,5 +110,35 @@ static RegisterShipInitFunc initFunc(RegisterTimeMovesWhenYouMove, { CVAR_NAME }
 // topology adapter checks compatibility before these gameplay values commit.
 extern "C" void MMVR_VisitTimeMovementState(MMVR_StateSink* sink) {
     mmvrgame::NativeStateField(sink,"enhancement/TimeMovement/sStoredTimeOffset",sStoredTimeOffset);
+}
+#endif
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND) && defined(MMVR_LOCAL_TEST_TOOLS)
+#include <stdexcept>
+extern "C" int MMVR_VerifyTimeMovementSettingPreparation() {
+    const auto originalOffset=gSaveContext.save.timeSpeedOffset;
+    const auto originalStored=sStoredTimeOffset;
+    const bool hadSetting=CVarGet(CVAR_NAME)!=nullptr;
+    const auto originalSetting=CVAR;
+    struct Restore {
+        s32 offset,stored;bool hadSetting;int setting;
+        ~Restore() {
+            gSaveContext.save.timeSpeedOffset=offset;sStoredTimeOffset=stored;
+            if(hadSetting)CVarSetInteger(CVAR_NAME,setting);else CVarClear(CVAR_NAME);
+            mmvrgame::ScopedStateSettingsPreparation preparation;
+            RegisterTimeMovesWhenYouMove();GameInteractor::Instance->RemoveAllQueuedHooks();
+        }
+    } restore{originalOffset,originalStored,hadSetting,originalSetting};
+    CVarSetInteger(CVAR_NAME,0);gSaveContext.save.timeSpeedOffset=-3;sStoredTimeOffset=-1;
+    {
+        mmvrgame::ScopedStateSettingsPreparation preparation;
+        RegisterTimeMovesWhenYouMove();GameInteractor::Instance->RemoveAllQueuedHooks();
+    }
+    if(gSaveContext.save.timeSpeedOffset!=-3||sStoredTimeOffset!=-1)
+        throw std::runtime_error("State preparation changed native time speed");
+    RegisterTimeMovesWhenYouMove();GameInteractor::Instance->RemoveAllQueuedHooks();
+    if(gSaveContext.save.timeSpeedOffset!=-1||sStoredTimeOffset!=DEFAULT_TIME_OFFSET)
+        throw std::runtime_error("Normal time-movement toggle lost native behavior");
+    return 2;
 }
 #endif

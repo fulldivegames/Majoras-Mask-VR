@@ -2,11 +2,13 @@
 #include "2s2h/VR/DebugRoom.h"
 #endif
 #include "SaveManager.h"
+#include "AtomicSaveFile.h"
 
 #include <fstream>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <chrono>
 #include <nlohmann/json.hpp>
 
 #include "BenJsonConversions.hpp"
@@ -20,6 +22,9 @@ extern "C" {
 #include "macros.h"
 #include "src/overlays/gamestates/ovl_file_choose/z_file_select.h"
 extern FileSelectState* gFileSelectState;
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+bool MMVR_StateResumeBootstrapActive();
+#endif
 }
 
 // This entire thing is temporary until we have a more robust save system that
@@ -115,25 +120,30 @@ int SaveManager_MigrateSave(nlohmann::json& j) {
     }
 }
 
-void SaveManager_WriteSaveFile(const std::filesystem::path& fileName, nlohmann::json j) {
+bool SaveManager_WriteSaveFile(const std::filesystem::path& fileName, nlohmann::json j) {
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+    if(MMVR_StateResumeBootstrapActive())return false;
+#endif
 #ifdef MMVR_LOCAL_TEST_TOOLS
     const char* protectedTest=std::getenv("MMVR_PROTECT_SAVES");
-    if(protectedTest&&std::strcmp(protectedTest,"1")==0)return;
+    if(protectedTest&&std::strcmp(protectedTest,"1")==0)return false;
 #endif
     const std::filesystem::path filePath = savesFolderPath() / fileName;
 
-    if (!std::filesystem::exists(savesFolderPath())) {
-        std::filesystem::create_directory(savesFolderPath());
-    }
-
     try {
-        std::ofstream o(filePath);
-        o << std::setw(4) << j << std::endl;
-        o.close();
-    } catch (...) { SPDLOG_ERROR("Failed to write save file"); }
+        SaveFileIO::Write(filePath,j.dump(4)+"\n");
+        return true;
+    } catch (const std::exception& error) {
+        SPDLOG_ERROR("Failed to write save file: {}",error.what());
+        Notification::Emit({ .message = "Save failed: check free space and storage permissions." });
+        return false;
+    }
 }
 
 void SaveManager_DeleteSaveFile(const std::filesystem::path& fileName) {
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+    if(MMVR_StateResumeBootstrapActive())return;
+#endif
 #ifdef MMVR_LOCAL_TEST_TOOLS
     const char* protectedTest=std::getenv("MMVR_PROTECT_SAVES");
     if(protectedTest&&std::strcmp(protectedTest,"1")==0)return;
@@ -194,6 +204,9 @@ void SaveManager_PersistSariaHintsAvailable() {
 }
 
 void SaveManager_MoveInvalidSaveFile(const std::filesystem::path& fileName, const std::string& message) {
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+    if(MMVR_StateResumeBootstrapActive())return;
+#endif
     const std::filesystem::path filePath = savesFolderPath() / fileName;
     const std::filesystem::path backupFilePath =
         savesFolderPath() / (fileName.stem().string() + "_invalid_" + std::to_string(std::time(nullptr)) + ".json");
@@ -209,21 +222,10 @@ void SaveManager_MoveInvalidSaveFile(const std::filesystem::path& fileName, cons
 }
 
 int SaveManager_GetOpenFileSlot() {
-    std::string fileName = "file1.json";
-    if (!std::filesystem::exists(savesFolderPath() / fileName)) {
-        return 1;
-    }
-
-    fileName = "file2.json";
-    if (!std::filesystem::exists(savesFolderPath() / fileName)) {
-        return 2;
-    }
-
-    fileName = "file3.json";
-    if (!std::filesystem::exists(savesFolderPath() / fileName)) {
-        return 3;
-    }
-
+    for (int slot=1;slot<=3;++slot)
+        if (!std::filesystem::exists(savesFolderPath()/SaveManager_GetFileName(slot)) &&
+            !std::filesystem::exists(savesFolderPath()/SaveManager_GetFileName(slot,true)))
+            return slot;
     return -1;
 }
 
@@ -292,16 +294,14 @@ std::string SaveManager_GetFileNameFromFlashSave(FlashSave flashSave) {
     return "file" + std::to_string(fileNum) + (isBackup ? "backup" : "") + ".json";
 }
 
+#include "SaveImport.inl"
+
 bool SaveManager_HandleFileDropped(char* filePath) {
     try {
+        if (std::filesystem::file_size(filePath)>MaxImportedSaveBytes) return false;
         std::ifstream fileStream(filePath);
 
         if (!fileStream.is_open()) {
-            return false;
-        }
-
-        // Check if first byte is "{"
-        if (fileStream.peek() != '{') {
             return false;
         }
 
@@ -321,19 +321,9 @@ bool SaveManager_HandleFileDropped(char* filePath) {
             return true;
         }
 
-        std::string fileName = SaveManager_GetFileName(saveSlot);
-
-        SaveManager_WriteSaveFile(fileName, j);
-
-        // Reset the file select state to reload the save metadata
-        if (gFileSelectState != NULL) {
-            STOP_GAMESTATE(&gFileSelectState->state);
-            SET_NEXT_GAMESTATE(&gFileSelectState->state, FileSelect_Init, sizeof(FileSelectState));
-        }
-
-        SPDLOG_INFO("Successfully imported save into slot {}", saveSlot);
-        Notification::Emit({ .message = "Successfully imported save into slot", .suffix = std::to_string(saveSlot) });
-
+        std::string message;
+        SaveManager_ImportSaveData(std::move(j),saveSlot,false,message);
+        Notification::Emit({ .message = message });
         return true;
     } catch (std::exception& e) {
         SPDLOG_ERROR("Failed to load file: {}", e.what());
@@ -351,6 +341,9 @@ bool SaveManager_HandleFileDropped(char* filePath) {
 #define CVAR_ZTARGET_SETTING "gSettings.ZTargetSetting"
 
 void SaveManager_WriteGlobalOptions(const SaveOptions& saveOptions) {
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+    if(MMVR_StateResumeBootstrapActive())return;
+#endif
     CVarSetInteger(CVAR_AUDIO_SETTING, saveOptions.audioSetting);
     CVarSetInteger(CVAR_ZTARGET_SETTING, saveOptions.zTargetSetting);
     CVarSave();
@@ -404,6 +397,9 @@ bool SaveManager_MigrateGlobalOptions(const std::filesystem::path& fileName, Sav
 }
 
 extern "C" void SaveManager_SysFlashrom_WriteData(u8* saveBuffer, u32 pageNum, u32 pageCount) {
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+    if(MMVR_StateResumeBootstrapActive())return;
+#endif
     FlashSave flashSave = SaveManager_GetFlashSaveFromPages(pageNum, pageCount);
     std::string fileName = SaveManager_GetFileNameFromFlashSave(flashSave);
 

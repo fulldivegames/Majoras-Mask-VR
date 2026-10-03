@@ -8,6 +8,10 @@ s32 Player_SetupWaitForPutAway(PlayState* play, Player* player, AfterPutAwayFunc
 }
 
 static std::vector<u8> skipCmds = {};
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+std::vector<uint8_t>& MMVR_RandoEnAnCommands() {return skipCmds;}
+#endif
+
 
 void Rando::ActorBehavior::InitEnAnBehavior() {
 

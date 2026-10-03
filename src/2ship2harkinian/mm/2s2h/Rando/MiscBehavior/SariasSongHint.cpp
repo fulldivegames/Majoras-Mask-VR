@@ -144,6 +144,13 @@ std::vector<RandoItemId> Rando::GetSariaPriorityItemCandidates() {
 }
 
 static int playedSariasSongState = 0;
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "2s2h/VR/NativeStateFields.h"
+extern "C" void MMVR_VisitRandoSariaState(MMVR_StateSink* sink) {
+    mmvrgame::NativeStateField(sink,"rando/saria/song-state",playedSariasSongState);
+}
+#endif
+
 
 RandoCheckId GetProgressiveCheckInLogic() {
     std::vector<RandoItemId> priorityItems = Rando::GetSariaPriorityItemsFromSave(gSaveContext.save.shipSaveInfo.rando);

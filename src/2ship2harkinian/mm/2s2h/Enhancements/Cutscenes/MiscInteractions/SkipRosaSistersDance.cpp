@@ -14,6 +14,18 @@ void Player_StartTalking(PlayState* play, Actor* actor);
 #define CVAR_NAME "gEnhancements.Cutscenes.SkipMiscInteractions"
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipRosaSistersDance_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You received a Piece of Heart!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You received a Piece of Heart!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_HEART_PIECE);
+}
+
 void RegisterSkipRosaSistersDance() {
     COND_VB_SHOULD(VB_START_CUTSCENE, CVAR, {
         s16* csId = va_arg(args, s16*);
@@ -29,16 +41,7 @@ void RegisterSkipRosaSistersDance() {
                     GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
                         .showGetItemCutscene = true,
                         .param = GID_HEART_PIECE,
-                        .giveItem = [](Actor* actor, PlayState* play) {
-                            if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                CustomMessage::SetActiveCustomMessage("You received a Piece of Heart!",
-                                                                      { .textboxType = 2 });
-                            } else {
-                                CustomMessage::StartTextbox("You received a Piece of Heart!\x1C\x02\x10",
-                                                            { .textboxType = 2 });
-                            }
-                            Item_Give(gPlayState, ITEM_HEART_PIECE);
-                        } });
+                        .giveItem = MMVR_StateEvent_SkipRosaSistersDance_giveItem0 });
                 }
                 Player* player = GET_PLAYER(gPlayState);
                 actor->parent = &player->actor;

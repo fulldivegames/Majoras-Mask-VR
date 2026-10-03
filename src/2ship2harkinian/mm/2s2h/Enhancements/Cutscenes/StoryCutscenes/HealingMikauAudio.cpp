@@ -26,30 +26,101 @@ extern "C" {
  * the vanilla behavior.
  */
 
-static HOOK_ID playGreatBayCoastBgmHookId = 0;
+// This phase is gameplay state, not a dynamically installed callback. Keeping
+// the callbacks registered lets exact states resume before the stop-sequence
+// command, even in a freshly started executable.
+static bool sRestoreCoastBgm = false;
+
+static bool IsHealingMikauEntrance() {
+    return gSaveContext.save.entrance == ENTRANCE(GREAT_BAY_COAST, 9);
+}
+
+static void ClearHealingMikauAudio() {
+    sRestoreCoastBgm = false;
+}
+
+static void ArmHealingMikauAudio(u16 sequenceId) {
+    if (!IsHealingMikauEntrance()) {
+        ClearHealingMikauAudio();
+    } else if (sequenceId != NA_BGM_DISABLED) {
+        // Nighttime has no main BGM. A second actor init must not discard an
+        // already armed repair if the cutscene has just stopped the sequence.
+        sRestoreCoastBgm = true;
+    }
+}
+
+static bool TakeHealingMikauAudioRepair(u16 sequenceId) {
+    if (!IsHealingMikauEntrance()) {
+        ClearHealingMikauAudio();
+    }
+    if (sRestoreCoastBgm && sequenceId == NA_BGM_DISABLED) {
+        ClearHealingMikauAudio();
+        return true;
+    }
+    return false;
+}
 
 void RegisterHealingMikauAudioFix() {
     COND_ID_HOOK(OnActorInit, ACTOR_EN_ZOG, true, [](Actor* actor) {
-        // This is the healing Mikau cutscene
-        if (gSaveContext.save.entrance == ENTRANCE(GREAT_BAY_COAST, 9) && !playGreatBayCoastBgmHookId) {
-            // The main BGM sequence is playing (no BGM plays at night)
-            if (AudioSeq_GetActiveSeqId(SEQ_PLAYER_BGM_MAIN) != NA_BGM_DISABLED) {
-                playGreatBayCoastBgmHookId =
-                    GameInteractor::Instance->RegisterGameHookForID<GameInteractor::OnActorUpdate>(
-                        ACTOR_EN_ZOG, [](Actor* actor) {
-                            // If BGM is killed, replay it and kill this update hook
-                            if (AudioSeq_GetActiveSeqId(SEQ_PLAYER_BGM_MAIN) == NA_BGM_DISABLED) {
-                                SEQCMD_PLAY_SEQUENCE(SEQ_PLAYER_BGM_MAIN, 0, NA_BGM_GREAT_BAY_REGION);
-                                if (playGreatBayCoastBgmHookId) {
-                                    GameInteractor::Instance->UnregisterGameHookForID<GameInteractor::OnActorUpdate>(
-                                        playGreatBayCoastBgmHookId);
-                                    playGreatBayCoastBgmHookId = 0;
-                                }
-                            }
-                        });
-            }
+        ArmHealingMikauAudio(AudioSeq_GetActiveSeqId(SEQ_PLAYER_BGM_MAIN));
+    });
+    COND_ID_HOOK(OnActorUpdate, ACTOR_EN_ZOG, true, [](Actor* actor) {
+        if (sRestoreCoastBgm && TakeHealingMikauAudioRepair(AudioSeq_GetActiveSeqId(SEQ_PLAYER_BGM_MAIN))) {
+            SEQCMD_PLAY_SEQUENCE(SEQ_PLAYER_BGM_MAIN, 0, NA_BGM_GREAT_BAY_REGION);
         }
+    });
+    COND_HOOK(OnSaveLoad, true, [](s16) { ClearHealingMikauAudio(); });
+    COND_HOOK(OnSceneInit, true, [](s8, s8) {
+        // Scene init runs after actor init, so retain this entrance's new arm.
+        if (!IsHealingMikauEntrance()) ClearHealingMikauAudio();
     });
 }
 
 static RegisterShipInitFunc initFunc(RegisterHealingMikauAudioFix, {});
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "2s2h/VR/NativeStateFields.h"
+extern "C" void MMVR_VisitHealingMikauAudioState(MMVR_StateSink* sink) {
+    mmvrgame::NativeStateField(sink, "enhancement/HealingMikauAudio/restoreCoastBgm", sRestoreCoastBgm);
+}
+#endif
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND) && defined(MMVR_LOCAL_TEST_TOOLS)
+#include "2s2h/VR/NativeStatePhaseCheck.h"
+extern "C" int MMVR_VerifyHealingMikauAudioState() {
+    mmvrgame::NativePhaseCheckSnapshot original(MMVR_VisitHealingMikauAudioState);
+    const auto originalEntrance = gSaveContext.save.entrance;
+    struct RestoreEntrance {
+        decltype(gSaveContext.save.entrance) entrance;
+        ~RestoreEntrance() { gSaveContext.save.entrance = entrance; }
+    } restore{originalEntrance};
+    int checks = 0;
+    auto check = [&](bool value) { ++checks; if (!value) throw std::runtime_error("Invalid Mikau audio phase"); };
+    for (bool healing : {false, true}) for (u16 sequence : {u16(NA_BGM_DISABLED), u16(NA_BGM_GREAT_BAY_REGION)}) {
+        gSaveContext.save.entrance = ENTRANCE(GREAT_BAY_COAST, healing ? 9 : 0);
+        ClearHealingMikauAudio();
+        ArmHealingMikauAudio(sequence);
+        const bool expected = healing && sequence != NA_BGM_DISABLED;
+        check(sRestoreCoastBgm == expected);
+        mmvrgame::NativePhaseCheckSnapshot saved(MMVR_VisitHealingMikauAudioState);
+        sRestoreCoastBgm = !expected;
+        saved.Restore();
+        check(sRestoreCoastBgm == expected && saved.Count() == 1);
+        check(!TakeHealingMikauAudioRepair(NA_BGM_GREAT_BAY_REGION));
+        check(sRestoreCoastBgm == expected);
+        check(TakeHealingMikauAudioRepair(NA_BGM_DISABLED) == expected);
+        check(!TakeHealingMikauAudioRepair(NA_BGM_DISABLED) && !sRestoreCoastBgm);
+    }
+    gSaveContext.save.entrance = ENTRANCE(GREAT_BAY_COAST, 9);
+    ArmHealingMikauAudio(NA_BGM_GREAT_BAY_REGION);
+    ArmHealingMikauAudio(NA_BGM_DISABLED);
+    check(sRestoreCoastBgm); // Another init while waiting must not cancel the repair.
+    gSaveContext.save.entrance = ENTRANCE(GREAT_BAY_COAST, 0);
+    check(!TakeHealingMikauAudioRepair(NA_BGM_DISABLED) && !sRestoreCoastBgm);
+    gSaveContext.save.entrance = ENTRANCE(GREAT_BAY_COAST, 9);
+    ArmHealingMikauAudio(NA_BGM_GREAT_BAY_REGION);
+    ClearHealingMikauAudio();
+    check(!TakeHealingMikauAudioRepair(NA_BGM_DISABLED));
+    return checks;
+}
+#endif

@@ -6,8 +6,38 @@
 namespace mmvr {
 struct ModPack { std::string id, name, path; bool enabled = true; };
 inline std::vector<ModPack> modPacks;
+// This is the successfully mounted startup set, in actual archive priority order.
+// Refresh/toggles only change modPacks; live resources still belong to this set.
+inline std::vector<ModPack> mountedModPacks;
+inline bool (*validateModSelection)(const std::vector<std::string>&, std::string&) = nullptr;
+// Stages an exact enabled set/order without saving CVars or touching live archives.
+// The caller owns persistence/rollback and must restart to mount a changed set.
+inline bool (*stageModSelection)(const std::vector<std::string>&, std::string&) = nullptr;
 inline void (*refreshMods)() = nullptr;
 inline void (*toggleMod)(int) = nullptr;
+inline bool ValidateModIds(const std::vector<ModPack>& packs, const std::vector<std::string>& ids,
+                           std::string& error) {
+    std::set<std::string> seen;
+    for (const auto& id : ids) {
+        if (!seen.insert(id).second) { error = "Duplicate pack in saved selection: " + id; return false; }
+        if (std::none_of(packs.begin(), packs.end(), [&](const auto& p) { return p.id == id; })) {
+            error = "Required pack is not installed: " + id;
+            return false;
+        }
+    }
+    error.clear();
+    return true;
+}
+inline void OrderModPacks(std::vector<ModPack>& packs, const std::vector<std::string>& order) {
+    // Unlisted newly discovered packs retain their normal path ordering. An exact
+    // state selection separately disables them, so they cannot alter its resources.
+    auto rank = [&](const std::string& id) {
+        return std::find(order.begin(), order.end(), id) - order.begin();
+    };
+    std::stable_sort(packs.begin(), packs.end(), [&](const auto& a, const auto& b) {
+        return rank(a.id) < rank(b.id);
+    });
+}
 struct ModFolder { std::string key, label; int depth; std::vector<int> children; };
 inline std::vector<ModFolder> modFolders;
 inline std::vector<int> modPackFolders;

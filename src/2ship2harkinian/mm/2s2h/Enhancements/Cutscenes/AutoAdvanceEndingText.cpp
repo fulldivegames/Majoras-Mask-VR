@@ -40,3 +40,32 @@ static RegisterShipInitFunc initFunc(
         });
     },
     { CVAR_NAME });
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "2s2h/VR/NativeStateFields.h"
+extern "C" void MMVR_VisitEndingTextState(MMVR_StateSink* sink) {
+    mmvrgame::NativeStateField(sink, "enhancement/AutoAdvanceEndingText/advanceMessages", sAdvanceMessages);
+    mmvrgame::NativeStateField(sink, "enhancement/AutoAdvanceEndingText/textboxTimer", sTextboxTimer);
+}
+#endif
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND) && defined(MMVR_LOCAL_TEST_TOOLS)
+#include "2s2h/VR/NativeStatePhaseCheck.h"
+extern "C" int MMVR_VerifyEndingTextState() {
+    mmvrgame::NativePhaseCheckSnapshot original(MMVR_VisitEndingTextState);
+    int checks = 0;
+    for (bool active : {false, true}) for (u32 timer : {0u, 19u, 20u, 21u}) {
+        sAdvanceMessages = active;
+        sTextboxTimer = timer;
+        mmvrgame::NativePhaseCheckSnapshot saved(MMVR_VisitEndingTextState);
+        sAdvanceMessages = !active;
+        sTextboxTimer = timer + 1;
+        saved.Restore();
+        ++checks;
+        if (saved.Count() != 2 || sAdvanceMessages != active || sTextboxTimer != timer) {
+            throw std::runtime_error("Ending text phase was not restored exactly");
+        }
+    }
+    return checks;
+}
+#endif

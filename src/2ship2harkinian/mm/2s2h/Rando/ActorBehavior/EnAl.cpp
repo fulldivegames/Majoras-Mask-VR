@@ -10,6 +10,10 @@ void Player_StartTalking(PlayState* play, Actor* actor);
 }
 
 static std::vector<u8> skipCmds = {};
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+std::vector<uint8_t>& MMVR_RandoEnAlCommands() {return skipCmds;}
+#endif
+
 
 void Rando::ActorBehavior::InitEnAlBehavior() {
 

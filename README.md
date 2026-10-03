@@ -7,7 +7,7 @@ Disclaimer: I don't want to hide the fact that I made this mod using Vibe coding
 
 One project for **Windows PCVR** and **standalone Meta Quest**. Choose the download for your platform.
 
-**Version 0.31 beta downloads:** [Windows PCVR ZIP](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.31/MMVR-Windows-0.31.zip) | [Quest standalone APK](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.31/MMVR-Quest-0.31.apk) | [Release Notes](https://github.com/fulldivegames/Majoras-Mask-VR/releases/tag/v0.31)
+**Version 0.32 beta downloads:** [Windows PCVR ZIP](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.32/MMVR-Windows-0.32.zip) | [Quest standalone APK](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.32/MMVR-Quest-0.32.apk) | [Release Notes](https://github.com/fulldivegames/Majoras-Mask-VR/releases/tag/v0.32)
 
 **v0.3 - Physical Body Hotfixes and More:** Experimental tracked body, held notebook, Moon masks, comfort and save-continuation fixes.
 

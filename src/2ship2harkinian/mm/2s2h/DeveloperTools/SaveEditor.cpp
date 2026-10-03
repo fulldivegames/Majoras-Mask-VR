@@ -843,6 +843,49 @@ void DrawSlot(InventorySlot slot) {
     }
 }
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SaveEditor_giveItem0(Actor* actor, PlayState* play) {
+    RandoItemId randoItemId = Rando::ConvertItem((RandoItemId)CUSTOM_ITEM_PARAM);
+    std::string prefix = "You found";
+    std::string message = Rando::StaticData::GetItemName(randoItemId);
+
+    CustomMessage::Entry entry = {
+        .textboxType = 2,
+        .icon = Rando::StaticData::GetIconForZMessage(randoItemId),
+        .msg = prefix + " " + message + "!",
+    };
+
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage(entry.msg, entry);
+    } else if (Rando::StaticData::ShouldShowGetItemCutscene(
+                   Rando::ConvertItem((RandoItemId)CUSTOM_ITEM_PARAM))) {
+        CustomMessage::StartTextbox(entry.msg + "\x1C\x02\x10", entry);
+    } else {
+        Notification::Emit({
+            .itemIcon = Rando::StaticData::GetIconTexturePath(randoItemId),
+            .message = prefix,
+            .suffix = message,
+        });
+    }
+    Rando::GiveItem(randoItemId);
+    CUSTOM_ITEM_PARAM = randoItemId;
+}
+
+void MMVR_StateEvent_SaveEditor_drawItem0(Actor* actor, PlayState* play) {
+    RandoItemId randoItemId;
+
+    // If the item has been given, the CUSTOM_ITEM_PARAM is set to the RI, prior to that it's
+    // the RC
+    if (CUSTOM_ITEM_FLAGS & CustomItem::CALLED_ACTION) {
+        randoItemId = (RandoItemId)CUSTOM_ITEM_PARAM;
+    } else {
+        randoItemId = Rando::ConvertItem((RandoItemId)CUSTOM_ITEM_PARAM);
+    }
+
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    Rando::DrawItem(randoItemId, RC_UNKNOWN, actor);
+}
+
 void DrawItemsAndMasksTab() {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 3.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 8.0f));
@@ -999,47 +1042,9 @@ void DrawItemsAndMasksTab() {
                         Rando::StaticData::ShouldShowGetItemCutscene(Rando::ConvertItem(randoItemId)),
                     .param = (int16_t)randoItemId,
                     .giveItem =
-                        [](Actor* actor, PlayState* play) {
-                            RandoItemId randoItemId = Rando::ConvertItem((RandoItemId)CUSTOM_ITEM_PARAM);
-                            std::string prefix = "You found";
-                            std::string message = Rando::StaticData::GetItemName(randoItemId);
-
-                            CustomMessage::Entry entry = {
-                                .textboxType = 2,
-                                .icon = Rando::StaticData::GetIconForZMessage(randoItemId),
-                                .msg = prefix + " " + message + "!",
-                            };
-
-                            if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                CustomMessage::SetActiveCustomMessage(entry.msg, entry);
-                            } else if (Rando::StaticData::ShouldShowGetItemCutscene(
-                                           Rando::ConvertItem((RandoItemId)CUSTOM_ITEM_PARAM))) {
-                                CustomMessage::StartTextbox(entry.msg + "\x1C\x02\x10", entry);
-                            } else {
-                                Notification::Emit({
-                                    .itemIcon = Rando::StaticData::GetIconTexturePath(randoItemId),
-                                    .message = prefix,
-                                    .suffix = message,
-                                });
-                            }
-                            Rando::GiveItem(randoItemId);
-                            CUSTOM_ITEM_PARAM = randoItemId;
-                        },
+                        MMVR_StateEvent_SaveEditor_giveItem0,
                     .drawItem =
-                        [](Actor* actor, PlayState* play) {
-                            RandoItemId randoItemId;
-
-                            // If the item has been given, the CUSTOM_ITEM_PARAM is set to the RI, prior to that it's
-                            // the RC
-                            if (CUSTOM_ITEM_FLAGS & CustomItem::CALLED_ACTION) {
-                                randoItemId = (RandoItemId)CUSTOM_ITEM_PARAM;
-                            } else {
-                                randoItemId = Rando::ConvertItem((RandoItemId)CUSTOM_ITEM_PARAM);
-                            }
-
-                            Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                            Rando::DrawItem(randoItemId, RC_UNKNOWN, actor);
-                        } });
+                        MMVR_StateEvent_SaveEditor_drawItem0 });
             }
         }
     }

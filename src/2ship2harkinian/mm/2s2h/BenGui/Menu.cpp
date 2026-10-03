@@ -193,11 +193,6 @@ uint32_t Menu::DrawSearchResults(std::string& menuSearchText) {
     auto menuThemeIndex = static_cast<UIWidgets::Colors>(CVarGetInteger("gSettings.Menu.Theme", defaultThemeIndex));
     ImGui::BeginChild("Search Results");
     int searchCount = 0;
-#ifdef MMVR_ENABLE
-    bool vrOpened = false;
-    searchCount += mmvrgame::DrawVRMenuSearch(menuSearchText.c_str(), &vrOpened);
-    if (vrOpened) Hide();
-#endif
     for (auto& menuLabel : menuOrder) {
         auto& menuEntry = menuEntries.at(menuLabel);
         for (auto& sidebarLabel : menuEntry.sidebarOrder) {
@@ -245,6 +240,12 @@ uint32_t Menu::DrawSearchResults(std::string& menuSearchText) {
             searchCount++;
         }
     }
+#ifdef MMVR_ENABLE
+    // Native 2Ship results take priority; VR shortcuts remain available below.
+    bool vrOpened = false;
+    searchCount += mmvrgame::DrawVRMenuSearch(menuSearchText.c_str(), &vrOpened);
+    if (vrOpened) Hide();
+#endif
     return searchCount;
 }
 

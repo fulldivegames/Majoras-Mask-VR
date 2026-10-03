@@ -31,6 +31,16 @@ inline Vec Perpendicular(Vec direction, Vec preferred) {
     }
     return Unit(p);
 }
+// Goron's head pivot is at the necklace, not at its eyes. Use the authored
+// player focus offset (1100, -700, 0 at native .01 scale) for that body only.
+// This positions the render model below/behind the stable HMD; it never changes
+// eye height, floor calibration or controller reach. Other forms retain their
+// established comfort attachment.
+inline Vec NeckOffset(int form, float trackingScale, float modelScale) {
+    if (form == 1 && std::isfinite(modelScale) && modelScale > 0)
+        return {0, -1100.f * modelScale, -700.f * modelScale};
+    return {0, -2.8f * trackingScale, -1.6f * trackingScale};
+}
 // Render-only attachment from the authored neck/torso to a level HMD neck.
 // Shoulder origins and waist identify torso lean without using either hand.
 // This preserves limb size and leg animation, but removes root bob/aim twist.
@@ -84,22 +94,52 @@ struct Arm { Matrix upper{}, lower{}, wrist{}; bool valid=false; };
 // Stateless two-bone IK, evaluated once per predicted display frame and shared
 // by both eyes. The controller is authoritative; this never moves the hand.
 inline Arm Solve(const Matrix& shoulder, const Matrix& elbow, const Matrix& wrist,
-                 const Matrix& trackedWrist, Vec pole) {
+                 const Matrix& trackedWrist, Vec pole, bool rigidForearm = false,
+                 const Matrix* geometry = nullptr) {
     Arm out;
     if(!Finite(shoulder)||!Finite(elbow)||!Finite(wrist)||!Finite(trackedWrist)) return out;
-    Vec s=Position(shoulder), e=Position(elbow), w=Position(wrist), target=Position(trackedWrist);
-    float upper=Length(e-s), lower=Length(w-e), distance=Length(target-s);
+    Vec s=Position(shoulder), target=Position(trackedWrist);
+    // Matrix interpolation blends rotations as well as translation. Measuring
+    // mesh axes/width from those blended poses makes wrists pulse during native
+    // running animation. Use the current unblended skeleton for dimensions;
+    // only the shoulder location comes from the display-time animated pose.
+    const Matrix& upperModel = geometry ? geometry[0] : shoulder;
+    const Matrix& lowerModel = geometry ? geometry[1] : elbow;
+    const Matrix& wristModel = geometry ? geometry[2] : wrist;
+    if (!Finite(upperModel) || !Finite(lowerModel) || !Finite(wristModel)) return out;
+    const Vec modelShoulder=Position(upperModel), modelElbow=Position(lowerModel), modelWrist=Position(wristModel);
+    float upper=Length(modelElbow-modelShoulder), lower=Length(modelWrist-modelElbow), distance=Length(target-s);
     if(upper<.01f||lower<.01f||distance<.001f||distance>4*(upper+lower)) return out;
     // Accommodate real arm reach without detaching the wrist. Implausible
     // tracking displacements fail closed above instead of making giant spikes.
-    float stretch=std::max(1.f,distance/(upper+lower)*1.001f);
-    upper*=stretch;lower*=stretch;
-    if(distance<=std::abs(upper-lower)+.001f) upper=lower=(upper+lower)*.5f;
+    if (rigidForearm) {
+        // Deku's forearm is a rigid woody mesh, unlike the other forms' mesh
+        // that spans elbow/wrist palettes. Preserve its bud and wrist width;
+        // absorb excess reach in the upper arm instead of stretching the hand
+        // socket. It still reaches the exact same tracked controller position.
+        upper=std::max(upper,distance-lower+.001f);
+        upper=std::clamp(upper,std::abs(lower-distance)+.0001f,lower+distance-.0001f);
+    } else {
+        float stretch=std::max(1.f,distance/(upper+lower)*1.001f);
+        upper*=stretch;lower*=stretch;
+    }
+    if(!rigidForearm && distance<=std::abs(upper-lower)+.001f) upper=lower=(upper+lower)*.5f;
     Vec direction=Unit(target-s), bend=Perpendicular(direction,pole);
     float along=std::clamp((upper*upper-lower*lower+distance*distance)/(2*distance),-upper,upper);
     Vec joint=s+direction*along+bend*std::sqrt(std::max(0.f,upper*upper-along*along));
-    out.upper=Segment(shoulder,e,s,joint,pole);
-    out.lower=Segment(elbow,w,joint,target,pole);
+    out.upper=Segment(upperModel,modelElbow,s,joint,pole);
+    Vec lowerPole=pole;
+    if (rigidForearm) {
+        // Carry controller roll to the rigid wrist socket. Project both wrist
+        // transverse axes so a single axis parallel to the forearm cannot make
+        // the elbow flip. The hand itself remains completely authoritative.
+        Vec axis=Unit(target-joint);
+        Vec y{trackedWrist.m[1][0],trackedWrist.m[1][1],trackedWrist.m[1][2]};
+        Vec z{trackedWrist.m[2][0],trackedWrist.m[2][1],trackedWrist.m[2][2]};
+        Vec desired=y-axis*Dot(axis,y)+Cross(z,axis);
+        if(Length(desired)>1e-5f) lowerPole=desired;
+    }
+    out.lower=Segment(lowerModel,modelWrist,joint,target,lowerPole);
     out.wrist=trackedWrist;
     out.valid=Finite(out.upper)&&Finite(out.lower);
     return out;

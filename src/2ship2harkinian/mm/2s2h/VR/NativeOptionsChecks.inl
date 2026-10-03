@@ -10,6 +10,7 @@ struct DesktopSearchChecks : Ship::Menu {
 };
 extern "C" void MMVR_VerifyNativeOptions() {
     if (!mmvr::PrivateDebugTools || !std::getenv("MMVR_NATIVE_OPTIONS_TEST")) return;
+    SaveManager_VerifyImport();
     auto gui = std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
     auto native = std::dynamic_pointer_cast<BenGui::BenMenu>(gui->GetMenu());
     auto* parent = ImGui::GetCurrentContext();
@@ -180,6 +181,13 @@ extern "C" void MMVR_VerifyNativeOptions() {
             check(found==(std::string(query)!="no-such-option-zzzz"),"Mask search result incorrect");
             ImGui::End();ImGui::Render();
         }
+        for(const char* query:{"Skip Story Cutscenes","Skip Enemy Cutscenes","Skip Entrance Cutscenes", "Fast Text", "no-such-timesaver-zzzz"}) {
+            FeedInput({});ImGui::NewFrame();
+            ImGui::SetNextWindowSize({928,480});ImGui::Begin("Time saver fixture");
+            check(native->DrawVrSection("Enhancements","Time Savers",query)==(std::string(query)!="no-such-timesaver-zzzz"),
+                  "Native cutscene or time-saver option missing from standalone search");
+            ImGui::End();ImGui::Render();
+        }
         for(const char* query:{"Magic arrow", "draw effects", "Bomb arrow", "no-such-edition-zzzz"}) {
             ImGui::NewFrame();
             ImGui::SetNextWindowSize({928,480});ImGui::Begin("Editions fixture");
@@ -263,6 +271,7 @@ extern "C" void MMVR_VerifyNativeOptions() {
     check(!panel.keyboard,"B did not finish real seed editing");
     CVarSetInteger("gRando.SpoilerFileIndex",savedSpoiler);
     VerifyNativeTextKeyboard(check);
+    VerifyGeneralVRSearch(*gui, check);
     menu.CollapseAll();menu.nativeInput.frame=100;
     BuildNativeOptions(frame,*gui,true);
     check(panel.category==-1&&!panel.keyboard,"Native menu did not reset on tab change");

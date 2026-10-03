@@ -52,6 +52,7 @@ int scene = -1, form = -1, bgId = -1;
 uint64_t epoch = 0, originEpoch = 0;
 float snapYaw = 0;
 double lastTime = -1;
+double topReleaseUntil = -1;
 int verticalIntent = 0;
 Player* approachOwner = nullptr;
 int approachScene = -1;
@@ -63,6 +64,35 @@ bool Climbable(PlayState* play, CollisionPoly* poly, int bg) {
     return poly && std::abs(COLPOLY_GET_NORMAL(poly->normal.y)) < .3f &&
            ((SurfaceType_GetWallFlags(&play->colCtx, poly, bg) & (WALL_FLAG_1 | WALL_FLAG_3)) ||
             SurfaceType_CheckWallFlag2(&play->colCtx, poly, bg));
+}
+// The wall and its top are different native polygons. A hand above the lip
+// cannot be found by a horizontal wall ray, even with Climb Anywhere enabled.
+// Accept only a reachable, walkable top immediately behind this same wall.
+bool ClimbTopContact(PlayState* play, Player* p, CollisionPoly* wall, int wallBg, const Vec3f& center, float reach,
+                     Vec3f& hit, CollisionPoly*& floor, int& bg) {
+    if (!Climbable(play, wall, wallBg) || !std::isfinite(reach) || reach <= 0)
+        return false;
+    const float nx = COLPOLY_GET_NORMAL(wall->normal.x),
+                ny = COLPOLY_GET_NORMAL(wall->normal.y),
+                nz = COLPOLY_GET_NORMAL(wall->normal.z);
+    Vec3f a{center.x, center.y + reach, center.z}, b{center.x, center.y - reach, center.z};
+    if (!BgCheck_EntityLineTest2(&play->colCtx, &a, &b, &hit, &floor, false, true, false, true, &bg, &p->actor) ||
+        bg != wallBg || COLPOLY_GET_NORMAL(floor->normal.y) < .5f ||
+        hit.y < p->actor.world.pos.y + 6.f || center.y < hit.y - 3.f || std::abs(hit.y - center.y) > reach)
+        return false;
+    const float fromWall = nx * hit.x + ny * hit.y + nz * hit.z + wall->dist;
+    if (fromWall > 2.f || fromWall < -reach)
+        return false;
+    // The surface must actually border this wall, not an unrelated floor above
+    // or a platform floating nearby. Query just below the proposed top edge.
+    Vec3f outside{hit.x + nx * (reach + 2), hit.y - 2, hit.z + nz * (reach + 2)},
+          inside{hit.x - nx * 2, hit.y - 2, hit.z - nz * 2}, sideHit;
+    CollisionPoly* side = nullptr;
+    int sideBg = BGCHECK_SCENE;
+    return BgCheck_EntityLineTest2(&play->colCtx, &outside, &inside, &sideHit, &side, true, false, false, true,
+                                   &sideBg, &p->actor) &&
+           sideBg == wallBg && Climbable(play, side, sideBg) &&
+           nx * COLPOLY_GET_NORMAL(side->normal.x) + nz * COLPOLY_GET_NORMAL(side->normal.z) > .95f;
 }
 void Log(PlayState* play, const char* event, const std::array<float, 3>& requested = {},
          const std::array<float, 3>& accepted = {}) {
@@ -146,6 +176,7 @@ void ClearClimbing() {
         hand.Reset();
     owner = nullptr;
     lastTime = -1;
+    topReleaseUntil = -1;
     verticalIntent = 0;
     movedAt = sampledAt = {};
 }
@@ -253,16 +284,29 @@ static int ApproachClimb(PlayState* play, const mmvr::TrackingFrame& frame, cons
         int bestBg = BGCHECK_SCENE;
         float nearest = reach * reach + 1;
         Vec3f contact{};
-        for (int ray = 0; ray < 8; ++ray) {
+        for (int ray = 0; ray < 16; ++ray) {
             float angle = ray * 3.14159265f / 4, dx = std::sin(angle) * reach, dz = std::cos(angle) * reach;
-            Vec3f a{ center.x, center.y, center.z }, b{ center.x + dx, center.y, center.z + dz }, hit;
+            // A fresh top grab can be above the vertical face. The second ring
+            // finds that face just below the hand; the top itself is separately
+            // validated when the grab latches below.
+            const float y = center.y - (ray >= 8 ? reach * .5f : 0.f);
+            Vec3f a{ center.x, y, center.z }, b{ center.x + dx, y, center.z + dz }, hit;
+            // Above a top surface, the lowered hand lies inside the solid. Native
+            // one-sided wall tests require the probe to travel outside -> inside.
+            if (ray >= 8) std::swap(a, b);
             CollisionPoly* poly = nullptr;
             int bg = BGCHECK_SCENE;
             if (!BgCheck_EntityLineTest2(&play->colCtx, &a, &b, &hit, &poly, true, false, false, true, &bg,
                                          &p->actor) ||
                 !Climbable(play, poly, bg))
                 continue;
-            float distance = SQ(hit.x - center.x) + SQ(hit.z - center.z);
+            if (ray >= 8) {
+                Vec3f topHit{};
+                CollisionPoly* topPoly = nullptr;
+                int topBg = BGCHECK_SCENE;
+                if (!ClimbTopContact(play, p, poly, bg, center, reach, topHit, topPoly, topBg)) continue;
+            }
+            float distance = SQ(hit.x - center.x) + SQ(hit.y - center.y) + SQ(hit.z - center.z);
             if (distance < nearest) {
                 nearest = distance;
                 best = poly;
@@ -366,6 +410,7 @@ void UpdateClimbing(const mmvr::TrackingFrame& frame, const mmvr::Matrix& view, 
         hands[attached].grip.armed = true;
     }
     const bool hadGrip = hands[0].grip.latched || hands[1].grip.latched;
+    bool releasedTopGrip = false;
     std::array<float, 3> steps[2]{};
     double dt = 0;
     for (int i = 0; i < 2; ++i) {
@@ -388,6 +433,7 @@ void UpdateClimbing(const mmvr::TrackingFrame& frame, const mmvr::Matrix& view, 
         int bg = BGCHECK_SCENE;
         bool tracked = frame.handValid[i] && frame.handTracked[i];
         bool finite = std::isfinite(raw.x) && std::isfinite(raw.y) && std::isfinite(raw.z);
+        Vec3f topProbe{world.m[3][0], world.m[3][1], world.m[3][2]};
         // A held hand stays on its acquired surface as the body moves underneath it.
         // Requiring the controller to remain in the original near-wall band caused
         // halfway drops when the user naturally pulled back or leaned away.
@@ -395,6 +441,7 @@ void UpdateClimbing(const mmvr::TrackingFrame& frame, const mmvr::Matrix& view, 
             auto platform = SurfacePose(play, p->actor.wallBgId);
             if (platform.m[3][3]) {
                 auto contact = mmvr::Multiply(contacts[i].local, platform);
+                topProbe = {contact.m[3][0], contact.m[3][1], contact.m[3][2]};
                 a = { contact.m[3][0] + nx * 2, contact.m[3][1], contact.m[3][2] + nz * 2 };
                 b = { contact.m[3][0] - nx * 2, contact.m[3][1], contact.m[3][2] - nz * 2 };
             } else
@@ -404,6 +451,15 @@ void UpdateClimbing(const mmvr::TrackingFrame& frame, const mmvr::Matrix& view, 
             tracked && finite &&
             BgCheck_EntityLineTest2(&play->colCtx, &a, &b, &hit, &poly, true, false, false, true, &bg, &p->actor) &&
             bg == p->actor.wallBgId && Climbable(play, poly, bg);
+        Vec3f topHit{};
+        CollisionPoly* topPoly = nullptr;
+        int topBg = BGCHECK_SCENE;
+        const bool top = tracked && finite &&
+                         ClimbTopContact(play, p, p->actor.wallPoly, p->actor.wallBgId,
+                                         topProbe, distance, topHit, topPoly, topBg);
+        if (top) { hit = topHit; poly = topPoly; bg = topBg; }
+        surface |= top;
+        releasedTopGrip |= top && hands[i].grip.latched && frame.triggers[i] < .25f;
         handSurfaces[i] = surface;
         handVolumes[i] = tracked && finite
                              ? std::array<float, 4>{ world.m[3][0], world.m[3][1], world.m[3][2], distance }
@@ -470,13 +526,28 @@ void UpdateClimbing(const mmvr::TrackingFrame& frame, const mmvr::Matrix& view, 
         movedAt = std::chrono::steady_clock::now();
     }
     if (!hands[0].grip.latched && !hands[1].grip.latched) {
-        verticalIntent = 0;
         if (hadGrip) {
+            // A deliberate upward pull followed by opening the last top grip
+            // gets one short native handoff window. The usual ledge/floor and
+            // ceiling checks still own the mantle; no launch velocity or warp
+            // is injected, and tracking loss never gets this assistance.
+            if (releasedTopGrip && verticalIntent > 0 &&
+                std::chrono::steady_clock::now() - movedAt < std::chrono::milliseconds(100)) {
+                topReleaseUntil = frame.timeSeconds + .1;
+                return;
+            }
             MMVR_PlayerEndTriggerClimb(play, p);
             ClearClimbing();
             return;
         }
-    }
+        if (topReleaseUntil >= 0) {
+            if (frame.timeSeconds < topReleaseUntil) return;
+            MMVR_PlayerEndTriggerClimb(play, p);
+            ClearClimbing();
+            return;
+        }
+        verticalIntent = 0;
+    } else topReleaseUntil = -1;
     auto accepted = ResolveClimbDisplacement(play, p, worldStep);
     if (accepted != std::array<float, 3>{}) {
         const auto pos = p->actor.world.pos;
@@ -517,6 +588,7 @@ extern "C" void MMVR_VisitVrClimbingState(MMVR_StateSink* sink) {
     mmvrgame::NativeStateField(sink,"vr/climb/originEpoch",originEpoch);
     mmvrgame::NativeStateField(sink,"vr/climb/snapYaw",snapYaw);
     mmvrgame::NativeStateField(sink,"vr/climb/lastTime",lastTime);
+    mmvrgame::NativeStateField(sink,"vr/climb/topReleaseUntil",topReleaseUntil);
     mmvrgame::NativeStateField(sink,"vr/climb/verticalIntent",verticalIntent);
     mmvrgame::NativeStateField(sink,"vr/climb/approachOwner",approachOwner);
     mmvrgame::NativeStateField(sink,"vr/climb/approachScene",approachScene);
@@ -540,7 +612,7 @@ void RebaseClimbTracking(const mmvr::TrackingFrame& f) {
     }
     epoch=approachEpoch=f.epoch;originEpoch=approachOrigin=f.originEpoch;
     snapYaw=f.snapYaw;lastTime=approachTime=f.timeSeconds;
-    verticalIntent=0;movedAt=sampledAt={};
+    verticalIntent=0;topReleaseUntil=-1;movedAt=sampledAt={};
     // Keep native action/latched surface ownership; the first fresh sample
     // seeds a new pull origin, so the old hand position cannot move the body.
 }

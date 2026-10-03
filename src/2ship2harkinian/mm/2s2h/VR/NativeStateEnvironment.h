@@ -21,6 +21,26 @@
 extern "C" void MMVR_PrepareDebugStateAssets();
 namespace mmvrgame {
 void RegisterManualNativeStateContract(MMVR_StateSink* sink);
+inline const NativeCompatibilityContract& CurrentNativeStateContract() {
+#ifdef _WIN32
+    constexpr auto abi="windows-x64/64-le";
+#elif defined(__ANDROID__) && defined(__aarch64__)
+    constexpr auto abi="android-arm64/64-le";
+#else
+    throw mmvr::states::Error("Unsupported native save-state ABI");
+    constexpr auto abi="unsupported";
+#endif
+    static const auto contract=BuildNativeCompatibilityContract(abi,NativeManualStatePolicy,RegisterManualNativeStateContract);
+    return contract;
+}
+// Archive indices are stable under a moved installation and retain override
+// priority. Content fingerprints independently verify the bytes at each index.
+inline std::string StateArchiveName(const std::shared_ptr<Ship::Archive>& parent) {
+    if(!parent)return {};
+    const auto archives=Ship::Context::GetRawInstance()->GetResourceManager()->GetArchiveManager()->GetArchives();
+    for(size_t i=0;i<archives->size();++i)if((*archives)[i]==parent)return "archive/"+std::to_string(i);
+    throw mmvr::states::Error("Resource belongs to an unmounted archive");
+}
 inline std::filesystem::path NativeStateModulePath() {
 #ifdef _WIN32
     HMODULE module=nullptr;
@@ -39,7 +59,9 @@ inline std::filesystem::path NativeStateModulePath() {
 inline std::optional<mmvr::states::Identity> PrepareNativeStateIdentity(bool wait=false) {
     using namespace mmvr::states;
     struct Content { std::string name; std::vector<std::string> members; size_t first, count; };
-    std::vector<std::filesystem::path> files{NativeStateModulePath()};
+    // Executable compatibility is the native-layout contract, not its file
+    // hash. Only mounted content needs byte hashing here.
+    std::vector<std::filesystem::path> files;
     std::vector<Content> contents;
     auto archives=Ship::Context::GetRawInstance()->GetResourceManager()->GetArchiveManager()->GetArchives();
     if(!archives||archives->empty())throw Error("No mounted state content");
@@ -68,7 +90,7 @@ inline std::optional<mmvr::states::Identity> PrepareNativeStateIdentity(bool wai
     if(!digests)return std::nullopt;
     Fingerprint assets;
     for(const auto& item:contents) {
-        assets.Field(item.name);
+        assets.Field("archive/"+std::to_string(&item-contents.data()));
         if(item.members.empty()&&item.count==1)assets.Field((*digests)[item.first]);
         else for(size_t i=0;i<item.members.size();++i) {
             assets.Field(item.members[i]);assets.Field((*digests)[item.first+i]);
@@ -83,7 +105,7 @@ inline std::optional<mmvr::states::Identity> PrepareNativeStateIdentity(bool wai
 #endif
     if(std::endian::native!=std::endian::little||sizeof(uintptr_t)!=8||std::string_view(platform)=="unsupported")
         throw Error("Unsupported native save-state ABI");
-    return Identity{"native-development-v3/"+(*digests)[0],assets.Hex(),std::string(platform)+"/64-le"};
+    return Identity{"native-portable-v1/"+CurrentNativeStateContract().digest,assets.Hex(),std::string(platform)+"/64-le"};
 }
 inline mmvr::states::Identity NativeStateIdentity() {
     bool wait=false;
@@ -100,7 +122,7 @@ inline nlohmann::json ResourceEntry(const Ship::ResourceManager::CachedResourceV
     if(entry.identifier.Owner)throw Error("State resource has an unsupported process-local owner: "+entry.identifier.Path);
     if(!entry.resource||entry.resource->IsDirty())throw Error("State resource is unavailable or dirty: "+entry.identifier.Path);
     auto info=entry.resource->GetInitData();if(!info)throw Error("State resource lacks initialization metadata");
-    return {{"path",entry.identifier.Path},{"parent",entry.identifier.Parent?entry.identifier.Parent->GetPath():""},
+    return {{"path",entry.identifier.Path},{"parent",StateArchiveName(entry.identifier.Parent)},
             {"type",info->Type},{"version",info->ResourceVersion},{"format",info->Format},{"id",info->Id},{"custom",info->IsCustom}};
 }
 inline std::vector<Ship::ResourceIdentifier> ReadStateResourceManifest(const mmvr::states::Block& block) {
@@ -118,7 +140,7 @@ inline std::vector<Ship::ResourceIdentifier> ReadStateResourceManifest(const mmv
            !seen.emplace(parent,path).second)throw Error("Invalid/duplicate state resource path");
         std::shared_ptr<Ship::Archive> origin;
         if(!parent.empty()) {
-            for(const auto& archive:*archives)if(archive->GetPath()==parent) {
+            for(const auto& archive:*archives)if(StateArchiveName(archive)==parent) {
                 if(origin)throw Error("Ambiguous state archive");origin=archive;
             }
             if(!origin)throw Error("State archive is no longer mounted");

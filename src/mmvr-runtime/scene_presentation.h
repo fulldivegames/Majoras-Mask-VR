@@ -65,15 +65,15 @@ inline SceneView ResolveSceneView(const SceneFacts& s, bool cameraCutscenes) {
     return SceneView::Theater;
 }
 // Opening narration and the scripted horse sequence share one presentation window.
-// Only genuine player control in the first playable clearing ends it. Scene loads,
+// Genuine player control in the clearing or after a native intro skip ends it. Scene loads,
 // absent cues between shots, focus loss and settings changes must not end it early.
 struct IntroPresentation {
     bool active = false;
     void Begin(bool newGameIntro) { active = newGameIntro; }
-    void Update(bool firstPlayableArea, const SceneFacts& f, bool controlsEnabled) {
-        if (active && firstPlayableArea && controlsEnabled && f.play && f.alive && f.playerPresent &&
+    void Update(bool openingComplete, const SceneFacts& f, bool controlsEnabled) {
+        if (active && openingComplete && controlsEnabled && f.play && f.alive && f.playerPresent &&
             !f.frontEnd && !f.worldUnavailable && !f.transition && !f.cinematic && !f.scripted &&
-            !f.playerCue && !f.playerLocked)
+            !f.playerCue && !f.playerLocked && !f.titleSequence)
             active = false;
     }
     SceneView Resolve(const SceneFacts& f, bool cameraCutscenes, bool experimentalIntro) const {

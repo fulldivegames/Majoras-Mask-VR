@@ -1060,6 +1060,8 @@ int main(){
       f.cinematic=f.scripted=false;f.transition=true;intro.Update(true,f,true);check(intro.active);
       f.transition=false;f.playerLocked=true;intro.Update(true,f,true);check(intro.active);
       f.playerLocked=false;intro.Update(true,f,false);check(intro.active);
+      f.titleSequence=true;intro.Update(true,f,true);check(intro.active);
+      f.titleSequence=false;
       intro.Update(false,f,true);check(intro.active); // Not first playable clearing.
       intro.Update(true,f,true);check(!intro.active);
       f.cinematic=f.scripted=f.distantAction=true;
@@ -1496,6 +1498,61 @@ int main(){
             check(Length(Transform({float(side)*1000,0,0},result.lower)-Position(target))<.001f);
             check(std::memcmp(&target,&result.wrist,sizeof(target))==0);
             check(Finite(result.upper)&&Finite(result.lower));
+        }
+        // Linear interpolation of rotating animation matrices must not alter
+        // arm dimensions when the controller and shoulder stay stationary.
+        for (bool rigid : {false,true}) for (int side : {-1,1}) {
+            Matrix geometry[]{YawPose(0,0,30),YawPose(0,side*10.f,30),YawPose(0,side*20.f,30)};
+            for(auto& joint:geometry) for(int r=0;r<3;++r) for(int c=0;c<3;++c) joint.m[r][c]*=.01f;
+            auto target=YawPose(.2f,side*12.f,22,8);
+            const Vec pole{side*.6f,-.85f,0};
+            auto reference=Solve(geometry[0],geometry[1],geometry[2],target,pole,rigid,geometry);
+            check(reference.valid);
+            for(int sample=0;sample<=40;++sample) {
+                const float alpha=sample/40.f;
+                Matrix blended[3];
+                for(int joint=0;joint<3;++joint) {
+                    blended[joint]=geometry[joint];
+                    const auto rotated=Multiply(geometry[joint],YawPose(1.7f));
+                    for(int r=0;r<3;++r) for(int c=0;c<3;++c)
+                        blended[joint].m[r][c]=geometry[joint].m[r][c]*(1-alpha)+rotated.m[r][c]*alpha;
+                }
+                auto actual=Solve(blended[0],blended[1],blended[2],target,pole,rigid,geometry);
+                check(actual.valid);
+                for(int r=0;r<4;++r) for(int c=0;c<4;++c) {
+                    check(std::abs(actual.upper.m[r][c]-reference.upper.m[r][c])<.00001f);
+                    check(std::abs(actual.lower.m[r][c]-reference.lower.m[r][c])<.00001f);
+                }
+            }
+        }
+        // Deku has a rigid forearm with an open wrist socket, not the other
+        // forms' elbow-to-wrist palette skinning. Preserve its physical length
+        // and thickness across reach and controller roll, with exact hand pose.
+        for(float scale:{.4f,1.f,2.f}) for(int i=0;i<80;++i) {
+            auto shoulder=mmvr::YawPose(.13f*i,0,30,0);
+            for(int r=0;r<3;++r) for(int c=0;c<3;++c) shoulder.m[r][c]*=.01f*scale;
+            auto elbow=shoulder,wrist=shoulder;
+            const auto e=Transform({406,0,0},shoulder),w=Transform({762,0,0},shoulder);
+            elbow.m[3][0]=e.x;elbow.m[3][1]=e.y;elbow.m[3][2]=e.z;
+            wrist.m[3][0]=w.x;wrist.m[3][1]=w.y;wrist.m[3][2]=w.z;
+            auto target=mmvr::PoseMatrix({{std::sin(i*.09f),0,0,std::cos(i*.09f)},
+                {scale*(.1f+20*std::sin(.17f*i)),30+scale*12*std::cos(.23f*i),scale*10*std::sin(.11f*i)}});
+            auto result=Solve(shoulder,elbow,wrist,target,{.6f,-.85f,0},true);
+            check(result.valid);
+            check(Length(Transform({406,0,0},result.upper)-Position(result.lower))<.001f);
+            check(Length(Transform({356,0,0},result.lower)-Position(target))<.001f);
+            check(std::abs(Length(Position(result.lower)-Position(target))-3.56f*scale)<.001f);
+            check(std::abs(Length(Transform({0,100,0},result.lower)-Position(result.lower))-scale)<.001f);
+            check(std::memcmp(&target,&result.wrist,sizeof(target))==0);
+        }
+        for(float trackingScale:{.25f,1.f,3.f}) {
+            const auto goron=NeckOffset(1,trackingScale,.01f);
+            check(std::abs(goron.y+11.f)<.0001f && std::abs(goron.z+7.f)<.0001f);
+            for(int form:{0,2,3,4}) {
+                const auto unchanged=NeckOffset(form,trackingScale,.01f);
+                check(std::abs(unchanged.y+2.8f*trackingScale)<.0001f &&
+                      std::abs(unchanged.z+1.6f*trackingScale)<.0001f);
+            }
         }
         // Animated root displacement, torso lean/turn, head yaw and world scale:
         // the visible neck is fixed to the HMD target without stretching torso.

@@ -433,11 +433,14 @@ static void EnforceOwnedTime() {
 }
 
 void Rando::ClockShuffle::OnFileLoad() {
-    bool shouldRegister = IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE];
-
-    if (shouldRegister) {
+    if (IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE]) {
         EnforceOwnedTime();
     }
+    RegisterFileHooks();
+}
+
+void Rando::ClockShuffle::RegisterFileHooks() {
+    const bool shouldRegister = IS_RANDO && RANDO_SAVE_OPTIONS[RO_CLOCK_SHUFFLE];
 
     COND_HOOK(OnPlayDestroy, shouldRegister, []() { EnforceOwnedTime(); });
 

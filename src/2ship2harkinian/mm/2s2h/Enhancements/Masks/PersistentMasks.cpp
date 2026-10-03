@@ -2,6 +2,7 @@
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
 #include "2s2h/ShipInit.hpp"
+#include "2s2h/VR/NativeSettingsPreparation.h"
 #ifdef MMVR_ENABLE
 #include "2s2h/VR/Camera.h"
 #endif
@@ -25,16 +26,16 @@ void UpdatePersistentMasksState() {
     static Vtx* persistentMasksVtx;
     static HOOK_ID beforePageDrawHook = 0;
     static HOOK_ID onPlayerPostLimbDrawHook = 0;
-    GameInteractor::Instance->UnregisterGameHook<GameInteractor::BeforeKaleidoDrawPage>(beforePageDrawHook);
+    GameInteractor::Instance->UnregisterGameHookForID<GameInteractor::BeforeKaleidoDrawPage>(beforePageDrawHook);
     GameInteractor::Instance->UnregisterGameHookForID<GameInteractor::OnPlayerPostLimbDraw>(onPlayerPostLimbDrawHook);
 
     if (!CVAR) {
-        CVarClear(STATE_CVAR_NAME);
+        if (!mmvrgame::StateSettingsPreparationActive()) CVarClear(STATE_CVAR_NAME);
         return;
     }
 
     // If the mask is equipped, unequip it
-    if (gSaveContext.save.equippedMask == PLAYER_MASK_BUNNY) {
+    if (!mmvrgame::StateSettingsPreparationActive() && gSaveContext.save.equippedMask == PLAYER_MASK_BUNNY) {
         gSaveContext.save.equippedMask = PLAYER_MASK_NONE;
         CVarSetInteger(STATE_CVAR_NAME, 1);
 
@@ -46,7 +47,7 @@ void UpdatePersistentMasksState() {
     }
 
     // If they don't have the mask, clear the state
-    if (INV_CONTENT(ITEM_MASK_BUNNY) != ITEM_MASK_BUNNY) {
+    if (!mmvrgame::StateSettingsPreparationActive() && INV_CONTENT(ITEM_MASK_BUNNY) != ITEM_MASK_BUNNY) {
         CVarClear(STATE_CVAR_NAME);
     }
 

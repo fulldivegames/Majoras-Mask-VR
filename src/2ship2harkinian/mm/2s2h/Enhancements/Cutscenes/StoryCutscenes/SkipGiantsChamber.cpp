@@ -54,6 +54,21 @@ void HandleGiantsCutsceneSkip() {
 }
 
 // Only reached if the cutscene is skipped
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipGiantsChamber_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You learned the Oath to Order!", { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You learned the Oath to Order!\x1C\x02\x10", { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_SONG_OATH);
+}
+
+void MMVR_StateEvent_SkipGiantsChamber_drawItem0(Actor* actor, PlayState* play) {
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    Rando::DrawItem(RI_SONG_OATH);
+}
+
 void handleGiantsCheck(SceneId sceneId) {
     /*
      * This whole block comes from func_808B9CE8 in z_door_warp1.c. unk_EA8[0] represents which particular Giants have
@@ -104,19 +119,9 @@ void handleGiantsCheck(SceneId sceneId) {
         GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
             .showGetItemCutscene = !CVarGetInteger("gEnhancements.Cutscenes.SkipGetItemCutscenes", 0),
             .giveItem =
-                [](Actor* actor, PlayState* play) {
-                    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                        CustomMessage::SetActiveCustomMessage("You learned the Oath to Order!", { .textboxType = 2 });
-                    } else {
-                        CustomMessage::StartTextbox("You learned the Oath to Order!\x1C\x02\x10", { .textboxType = 2 });
-                    }
-                    Item_Give(gPlayState, ITEM_SONG_OATH);
-                },
+                MMVR_StateEvent_SkipGiantsChamber_giveItem0,
             .drawItem =
-                [](Actor* actor, PlayState* play) {
-                    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                    Rando::DrawItem(RI_SONG_OATH);
-                } });
+                MMVR_StateEvent_SkipGiantsChamber_drawItem0 });
     }
 }
 

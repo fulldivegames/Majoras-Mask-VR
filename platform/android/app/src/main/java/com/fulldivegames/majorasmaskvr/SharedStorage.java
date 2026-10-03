@@ -19,7 +19,7 @@ final class SharedStorage {
  static final String README="Majora's Mask VR / 2Ship2Harkinian shared files\n\n"
   +"mods and texturepacks: unpack the downloaded ZIP; place .o2r or .otr packs here. Subfolders work.\n"
   +"VR Settings > System > Mods and texture packs: select this MMVR folder once. Restart to reload packs.\n"
-  +"Private app mods load first, then shared mods, then texture packs in alphabetical path order.\n"
+  +"Packs load in alphabetical relative-path order; later packs win conflicts. Saved state selections preserve their order.\n"
   +"Use the VR menu checkboxes to enable or disable packs, then restart. VR item icons use pack textures.\n"
   +"cache/shaders is reserved; this preview does not persist compiled shader binaries there.\n"
   +"exports is for your manual backups. Active saves, settings and the imported game archive stay in\n"
@@ -61,24 +61,78 @@ final class SharedStorage {
   Uri cache=ensure(c,tree,ID,"cache",DocumentsContract.Document.MIME_TYPE_DIR);ensure(c,tree,DocumentsContract.getDocumentId(cache),"shaders",DocumentsContract.Document.MIME_TYPE_DIR);
   Uri readme=ensure(c,tree,ID,"README.txt","text/plain");try(OutputStream out=c.getContentResolver().openOutputStream(readme,"wt")){if(out==null)throw new IOException("Cannot write MMVR README");out.write(README.getBytes(StandardCharsets.UTF_8));}
  }
- static void scan(Context c,Uri tree,String dir,String relative,File cache,JSONObject previous,JSONArray current,int depth,Set<String> visited,boolean force)throws Exception{
+ static void scan(Context c,Uri tree,String dir,String relative,File cache,JSONObject previous,JSONArray current,int depth,Set<String> visited,boolean force,List<String> warnings)throws Exception{
   if(depth>12||!visited.add(dir))throw new IOException("Pack folder nesting is too deep or repeated");
-  for(Entry e:children(c,tree,dir)){
-   String name=relative+e.name;
-   if(DocumentsContract.Document.MIME_TYPE_DIR.equals(e.mime)){scan(c,tree,e.id,name+"/",cache,previous,current,depth+1,visited,force);continue;}
-   String lower=e.name.toLowerCase(Locale.ROOT);if(!lower.endsWith(".o2r")&&!lower.endsWith(".otr"))continue;
-   String ext=lower.endsWith(".o2r")?".o2r":".otr";MessageDigest digest=MessageDigest.getInstance("SHA-256");
-   byte[] bytes=digest.digest(e.id.getBytes(StandardCharsets.UTF_8));StringBuilder key=new StringBuilder();for(byte b:bytes)key.append(String.format(Locale.ROOT,"%02x",b&255));
-   String filename=key+ext;File local=new File(cache,filename);JSONObject old=previous.optJSONObject(filename);
-   if(force||!local.isFile()||old==null||e.modified<=0||old.optLong("modified")!=e.modified||old.optLong("size")!=e.size||(e.size>=0&&local.length()!=e.size)){
-    File stage=new File(cache,filename+".pending");
-    SetupActivity.copy(c.getContentResolver().openInputStream(DocumentsContract.buildDocumentUriUsingTree(tree,e.id)),stage,8L*1024*1024*1024);
-    if(e.size>=0&&stage.length()!=e.size)throw new IOException("Incomplete pack: "+name);
-    Files.move(stage.toPath(),local.toPath(),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
+  final List<Entry> entries;
+  try { entries=children(c,tree,dir); }
+  catch(Exception failure) {
+   warnings.add(relative+": "+failure.getMessage());
+   for(Iterator<String> keys=previous.keys();keys.hasNext();) {
+    JSONObject old=previous.getJSONObject(keys.next());
+    if(old.optString("name").startsWith(relative)&&cached(cache,old))current.put(old);
    }
-   current.put(new JSONObject().put("file",filename).put("name",name).put("size",e.size).put("modified",e.modified));
+   return;
+  }
+  for(Entry e:entries){
+   String name=relative+e.name;
+   // The root grant also accepts user-created pack folders, but never imports
+   // exported backups or reserved caches back into the running mod collection.
+   if(relative.isEmpty()&&(e.name.equals("exports")||e.name.equals("cache")))continue;
+   if(DocumentsContract.Document.MIME_TYPE_DIR.equals(e.mime)){
+    try{scan(c,tree,e.id,name+"/",cache,previous,current,depth+1,visited,force,warnings);}
+    catch(Exception failure){warnings.add(name+": "+failure.getMessage());}
+    continue;
+   }
+   String lower=e.name.toLowerCase(Locale.ROOT);if(!lower.endsWith(".o2r")&&!lower.endsWith(".otr"))continue;
+   if(relative.isEmpty()&&(lower.equals("mm.o2r")||lower.equals("2ship.o2r")))continue;
+   JSONObject old=previous.optJSONObject(name);
+   try {
+    String ext=lower.endsWith(".o2r")?".o2r":".otr";
+    // Retain legacy IDs so disabled choices from older releases migrate.
+    String legacy=PackCache.hex(MessageDigest.getInstance("SHA-256").digest(e.id.getBytes(StandardCharsets.UTF_8)))+ext;
+    Uri source=DocumentsContract.buildDocumentUriUsingTree(tree,e.id);
+    String file=old==null?"":old.optString("file");
+    String sha=old==null?"":old.optString("sha256");
+    long size=old==null?-1:old.optLong("size",-1);
+    boolean unchanged=cached(cache,old)&&e.modified>0&&old.optLong("modified")==e.modified&&size==e.size;
+    if(force||!unchanged) {
+     // Explicit refresh verifies source bytes even if a provider repeats its
+     // timestamp. An unchanged huge pack requires no second full disk copy.
+     PackCache.Result observed=null;
+     if(cached(cache,old))observed=PackCache.hash(c.getContentResolver().openInputStream(source),e.size);
+     // Older manifests used a path hash and did not record a content digest.
+     // Verify that complete copy once rather than requiring another pack-sized
+     // allocation just to migrate its metadata. Its file is never overwritten.
+     if(observed!=null&&sha.isEmpty())
+      sha=PackCache.hash(new FileInputStream(new File(cache,file)),size).sha256;
+     if(observed!=null&&!sha.isEmpty()&&sha.equals(observed.sha256)) {
+      size=observed.size;
+     } else {
+      PackCache.Result copied=PackCache.copy(c.getContentResolver().openInputStream(source),cache,ext,e.size);
+      if(observed!=null&&!observed.sha256.equals(copied.sha256))throw new IOException("Pack changed during refresh; retry");
+      file=copied.file;sha=copied.sha256;size=copied.size;
+     }
+    }
+    current.put(new JSONObject().put("file",file).put("name",name).put("legacyFile",old==null?legacy:old.optString("legacyFile",legacy))
+      .put("sha256",sha).put("size",size).put("modified",e.modified));
+   } catch(Exception failure) {
+    warnings.add(name+": "+failure.getMessage());
+    android.util.Log.w("MMVR-Storage","Pack import failed: "+name,failure);
+    // One broken/oversized archive must not suppress unrelated working packs.
+    // Keep its previous complete copy when available; never index partial data.
+    if(cached(cache,old))current.put(old);
+   }
   }
  }
+ static boolean cached(File cache,JSONObject entry){
+  if(entry==null||!PackCache.validName(entry.optString("file")))return false;
+  File file=new File(cache,entry.optString("file"));
+  long size=entry.optLong("size",-1);
+  return file.isFile()&&(size<0||file.length()==size);
+ }
+ static volatile String lastSyncStatus="";
+ static String syncStatus(){return lastSyncStatus;}
+
  // Refresh and picker callbacks run on separate workers. One transaction owns
  // the shared staging filenames and manifest until its atomic publish finishes.
  static synchronized void sync(Context c)throws Exception{sync(c,false);}
@@ -89,12 +143,14 @@ final class SharedStorage {
   Uri tree=Uri.parse(selected);if(!AUTHORITY.equals(tree.getAuthority())||!allowed(DocumentsContract.getTreeDocumentId(tree)))throw new IOException("Invalid shared folder selection");
   if(ID.equals(DocumentsContract.getTreeDocumentId(tree)))layout(c,tree);File root=c.getExternalFilesDir(null);if(root==null)throw new IOException("App storage is unavailable");File cache=new File(root,"shared-pack-cache");if(!cache.isDirectory()&&!cache.mkdirs())throw new IOException("Cannot prepare pack cache");
   File manifest=new File(cache,"packs.json");JSONObject previous=new JSONObject();
-  if(manifest.isFile())try{JSONArray old=new JSONArray(SetupActivity.read(new FileInputStream(manifest)));for(int i=0;i<old.length();++i){JSONObject entry=old.getJSONObject(i);previous.put(entry.getString("file"),entry);}}catch(JSONException invalid){android.util.Log.w("MMVR-Storage","Rebuilding pack cache index");}
-  JSONArray current=new JSONArray();Set<String> visited=new HashSet<>();
+  if(manifest.isFile())try{JSONArray old=new JSONArray(SetupActivity.read(new FileInputStream(manifest)));for(int i=0;i<old.length();++i){JSONObject entry=old.getJSONObject(i);previous.put(entry.getString("name"),entry);}}catch(JSONException invalid){android.util.Log.w("MMVR-Storage","Rebuilding pack cache index");}
+  JSONArray current=new JSONArray();Set<String> visited=new HashSet<>();List<String> warnings=new ArrayList<>();
   String selectedId=DocumentsContract.getTreeDocumentId(tree);
-  if(ID.equals(selectedId))for(String folder:new String[]{"mods","texturepacks"})scan(c,tree,ID+"/"+folder,folder+"/",cache,previous,current,0,visited,force);
-  else scan(c,tree,selectedId,selectedId.substring(ID.length()+1)+"/",cache,previous,current,0,visited,force);
+  if(ID.equals(selectedId))scan(c,tree,ID,"",cache,previous,current,0,visited,force,warnings);
+  else scan(c,tree,selectedId,selectedId.substring(ID.length()+1)+"/",cache,previous,current,0,visited,force,warnings);
   File stage=new File(cache,"packs.json.pending");Files.write(stage.toPath(),current.toString(2).getBytes(StandardCharsets.UTF_8));Files.move(stage.toPath(),manifest.toPath(),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);
-  android.util.Log.i("MMVR-Storage","Prepared "+current.length()+" shared packs");
+  lastSyncStatus="Prepared "+current.length()+" shared packs. Restart to apply selections.";
+  if(!warnings.isEmpty())lastSyncStatus+=" "+warnings.size()+" import issue(s): "+warnings.get(0);
+  android.util.Log.i("MMVR-Storage",lastSyncStatus);
  }
 }

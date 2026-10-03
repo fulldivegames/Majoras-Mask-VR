@@ -80,3 +80,10 @@ void Rando::ActorBehavior::InitPlayerBehavior() {
         }
     });
 }
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "2s2h/VR/NativeStateFields.h"
+extern "C" void MMVR_VisitRandoPlayerState(MMVR_StateSink* sink) {
+    mmvrgame::NativeStateField(sink,"rando/Player/lastOcarinaButton",lastOcarinaButton);
+}
+#endif

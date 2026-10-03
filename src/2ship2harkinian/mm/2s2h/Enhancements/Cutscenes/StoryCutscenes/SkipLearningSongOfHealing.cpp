@@ -26,6 +26,33 @@ void Player_StopHorizontalMovement(Player* player);
 #define OSN_STATE_END_CONVERSATION (1 << 5)
 
 static EnOsn* sPendingHealingConversation=nullptr;
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipLearningSongOfHealing_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You received the Song of Healing!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox(
+            "You received the Song of Healing!\x1C\x02\x10", { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_SONG_HEALING);
+}
+
+void MMVR_StateEvent_SkipLearningSongOfHealing_drawItem0(Actor* actor, PlayState* play) {
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    Rando::DrawItem(RI_SONG_HEALING);
+}
+
+void MMVR_StateEvent_SkipLearningSongOfHealing_giveItem1(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You received the Deku Mask!", { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You received the Deku Mask!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_MASK_DEKU);
+}
+
 void RegisterSkipLearningSongOfHealing() {
     // Stable hooks with explicit world-owned state can survive an exact restore;
     // a temporary actor-address closure cannot survive a process restart.
@@ -85,34 +112,14 @@ void RegisterSkipLearningSongOfHealing() {
             GameInteractor::Instance->events.emplace_back(
                 GIEventGiveItem{ .showGetItemCutscene = true,
                                  .giveItem =
-                                     [](Actor* actor, PlayState* play) {
-                                         if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                             CustomMessage::SetActiveCustomMessage("You received the Song of Healing!",
-                                                                                   { .textboxType = 2 });
-                                         } else {
-                                             CustomMessage::StartTextbox(
-                                                 "You received the Song of Healing!\x1C\x02\x10", { .textboxType = 2 });
-                                         }
-                                         Item_Give(gPlayState, ITEM_SONG_HEALING);
-                                     },
+                                     MMVR_StateEvent_SkipLearningSongOfHealing_giveItem0,
                                  .drawItem =
-                                     [](Actor* actor, PlayState* play) {
-                                         Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                                         Rando::DrawItem(RI_SONG_HEALING);
-                                     } });
+                                     MMVR_StateEvent_SkipLearningSongOfHealing_drawItem0 });
             GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
                 .showGetItemCutscene = true,
                 .param = GID_MASK_DEKU,
                 .giveItem =
-                    [](Actor* actor, PlayState* play) {
-                        if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                            CustomMessage::SetActiveCustomMessage("You received the Deku Mask!", { .textboxType = 2 });
-                        } else {
-                            CustomMessage::StartTextbox("You received the Deku Mask!\x1C\x02\x10",
-                                                        { .textboxType = 2 });
-                        }
-                        Item_Give(gPlayState, ITEM_MASK_DEKU);
-                    },
+                    MMVR_StateEvent_SkipLearningSongOfHealing_giveItem1,
             });
         }
     });

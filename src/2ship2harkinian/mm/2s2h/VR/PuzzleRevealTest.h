@@ -29,6 +29,35 @@ static void NativePuzzleRevealTest(PlayState* play) {
     ActorCutscene entry={1,-1,CS_CAM_ID_NONE,CS_SCRIPT_ID_NONE,CS_ID_NONE,CS_END_SFX_NONE,
                         0,CS_HUD_VISIBILITY_ALL,CS_END_CAM_1,0};
     CutsceneManager_Init(play,&entry,1);
+    {
+        const auto oldScene = play->sceneId;
+        const auto oldForm = player->transformation;
+        const auto oldFirstCycle = gSaveContext.save.isFirstCycle;
+        const auto oldPause = play->pauseCtx.state;
+        play->sceneId = SCENE_CLOCKTOWER;
+        play->pauseCtx.state = PAUSE_STATE_OFF;
+        for (auto form : { PLAYER_FORM_HUMAN, PLAYER_FORM_DEKU }) {
+            player->transformation = form;
+            gSaveContext.save.isFirstCycle = false;
+            mmvrgame::introPresentation.Begin(true);
+            mmvrgame::UpdateIntroPresentation(play);
+            check(mmvrgame::introPresentation.active, "opening theater is retained without native arrival progress");
+            gSaveContext.save.isFirstCycle = true;
+            player->csAction = PLAYER_CSACTION_WAIT;
+            mmvrgame::UpdateIntroPresentation(play);
+            check(mmvrgame::introPresentation.active, "skipped opening retains theater until gameplay control returns");
+            player->csAction = PLAYER_CSACTION_NONE;
+            mmvrgame::UpdateIntroPresentation(play);
+            check(!mmvrgame::introPresentation.active && mmvrgame::SceneView(play) == mmvr::SceneView::Player,
+                  "opening and first-cycle skips release theater for Human and Deku gameplay");
+        }
+        play->sceneId = oldScene;
+        player->transformation = oldForm;
+        play->pauseCtx.state = oldPause;
+        gSaveContext.save.isFirstCycle = oldFirstCycle;
+        check(mmvr::SettingDefinitions[size_t(mmvr::Setting::ViewMode)].initial == 2,
+              "fresh settings default to first-person view");
+    }
     CutsceneManager_StartWithPlayerCs(0,&target);
     auto* nativeCamera=GET_ACTIVE_CAM(play);
     const auto originalEye=nativeCamera->eye;

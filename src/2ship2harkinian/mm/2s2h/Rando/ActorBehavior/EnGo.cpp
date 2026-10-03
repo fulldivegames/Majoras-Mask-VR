@@ -13,6 +13,10 @@ s32 Player_SetupWaitForPutAway(PlayState* play, Player* player, AfterPutAwayFunc
 }
 
 static std::vector<u8> skipCmds = {};
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+std::vector<uint8_t>& MMVR_RandoEnGoCommands() {return skipCmds;}
+#endif
+
 static bool freePowderKegGrantActive = false;
 
 void Rando::ActorBehavior::InitEnGoBehavior() {
@@ -205,3 +209,10 @@ void Rando::ActorBehavior::InitEnGoBehavior() {
         }
     });
 }
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "2s2h/VR/NativeStateFields.h"
+extern "C" void MMVR_VisitRandoEnGoState(MMVR_StateSink* sink) {
+    mmvrgame::NativeStateField(sink,"rando/EnGo/freePowderKegGrantActive",freePowderKegGrantActive);
+}
+#endif

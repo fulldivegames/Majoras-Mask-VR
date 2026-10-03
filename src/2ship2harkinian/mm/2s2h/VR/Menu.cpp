@@ -41,6 +41,7 @@ extern "C" {
 void MMVR_PlayerEquipSword(PlayState*, Player*, ItemId);
 }
 #include "NativeMenuChecks.h"
+#include "SaveImport.h"
 #include "NativeTest.h"
 #include "DebugMenu.h"
 #include "NativeOptions.h"
@@ -114,7 +115,7 @@ void Render(const mmvr::UiDrawFrame& frame) {
     auto gui = Gui();
     if (!gui || !ImGui::GetCurrentContext())
         return;
-    if (frame.kind == mmvr::UiKind::Menu && mmvr::GetMenu().tab == mmvr::NativeTab) {
+    if (frame.kind == mmvr::UiKind::Menu && mmvr::GetMenu().UsesNativePanel()) {
         // Native widgets persist to the same application config when settings close.
         Save();
         mmvrgame::DrawNativeOptions(frame, *gui);
@@ -297,6 +298,11 @@ extern "C" int MMVR_InstrumentOverlay(void) {
 extern "C" void MMVR_ApplyGameInput(void* data) {
     auto* input = static_cast<Input*>(data);
     static uint16_t previous = 0;
+#if defined(MMVR_STATE_NATIVE_BACKEND)
+    if(MMVR_StateResumeBootstrapActive()) {
+        *input={};previous=0;return;
+    }
+#endif
     const bool controlledKafei = gPlayState && MMVR_ControlledKafei(GET_PLAYER(gPlayState));
     constexpr uint16_t itemButtons = BTN_CUP | BTN_CDOWN | BTN_CLEFT | BTN_CRIGHT;
     if (controlledKafei) {
@@ -347,6 +353,7 @@ extern "C" void MMVR_ApplyGameInput(void* data) {
 extern "C" void MMVR_PollUpdater();
 extern "C" void MMVR_RegisterMenu(void) {
     MMVR_PollUpdater();
+    mmvrgame::PollSaveImport();
     mmvrgame::SyncDebugCutsceneSkips();
     mmvr::SetUiCallbacks(Render, Change, Assign);
     mmvr::GetMenu().commitSettings = CommitSettings;
@@ -568,6 +575,9 @@ extern "C" int MMVR_NotebookTouch(float* x, float* y) {
     return x && y && mmvr::ConsumeNotebookTouch(*x, *y);
 }
 extern "C" int MMVR_MenuPaused(void) {
+#if defined(MMVR_STATE_NATIVE_BACKEND)
+    if(MMVR_StateResumeBootstrapActive())return false;
+#endif
 #if defined(MMVR_STATE_NATIVE_BACKEND)
     if (mmvrgame::StateTrackingResumePending()) return true;
 #endif

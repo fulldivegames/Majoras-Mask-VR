@@ -1,6 +1,9 @@
 #include "ship/config/ConsoleVariable.h"
 
 #include <functional>
+#include <cmath>
+#include <limits>
+#include <stdexcept>
 #include "ship/utils/filesystemtools/DiskFile.h"
 #include "ship/utils/Utils.h"
 #include "ship/config/Config.h"
@@ -11,6 +14,29 @@
 #endif
 
 namespace Ship {
+namespace {
+void ReleaseString(CVar& variable) {
+    if (variable.Type == ConsoleVariableType::String) {
+        free(variable.String);
+        variable.String = nullptr;
+    }
+}
+// Native randomizer lists are deliberately kept in Config, not mVariables.
+// Preserve those lists (including explicit null/empty values) when replacing
+// the scalar CVar snapshot, without resurrecting removed scalar preferences.
+nlohmann::json ConfigOnlyValues(const nlohmann::json& value) {
+    if (value.is_array() || value.is_null()) return value;
+    auto result=nlohmann::json::object();
+    if (value.is_object()) for (const auto& [key,child]:value.items()) {
+        if (child.is_array() || child.is_null()) result[key]=child;
+        else if (child.is_object()) {
+            auto nested=ConfigOnlyValues(child);
+            if (!nested.empty()) result[key]=std::move(nested);
+        }
+    }
+    return result;
+}
+}
 
 ConsoleVariable::ConsoleVariable() {
     Load();
@@ -94,6 +120,7 @@ void ConsoleVariable::SetInteger(const char* name, int32_t value) {
         variable = std::make_shared<CVar>();
     }
 
+    ReleaseString(*variable);
     variable->Type = ConsoleVariableType::Integer;
     variable->Integer = value;
 }
@@ -104,21 +131,24 @@ void ConsoleVariable::SetFloat(const char* name, float value) {
         variable = std::make_shared<CVar>();
     }
 
+    ReleaseString(*variable);
     variable->Type = ConsoleVariableType::Float;
     variable->Float = value;
 }
 
 void ConsoleVariable::SetString(const char* name, const char* value) {
+    // The caller may pass this CVar's own string. Copy before freeing it, and
+    // never interpret the previous numeric union member as an allocation.
+    auto copy = std::unique_ptr<char, decltype(&free)>(strdup(value ? value : ""), &free);
+    if (!copy) throw std::bad_alloc();
     auto& variable = mVariables[name];
     if (variable == nullptr) {
         variable = std::make_shared<CVar>();
     }
 
+    ReleaseString(*variable);
     variable->Type = ConsoleVariableType::String;
-    if (variable->String != nullptr) {
-        free(variable->String);
-    }
-    variable->String = strdup(value);
+    variable->String = copy.release();
 }
 
 void ConsoleVariable::SetColor(const char* name, Color_RGBA8 value) {
@@ -127,6 +157,7 @@ void ConsoleVariable::SetColor(const char* name, Color_RGBA8 value) {
         variable = std::make_shared<CVar>();
     }
 
+    ReleaseString(*variable);
     variable->Type = ConsoleVariableType::Color;
     variable->Color = value;
 }
@@ -137,6 +168,7 @@ void ConsoleVariable::SetColor24(const char* name, Color_RGB8 value) {
         variable = std::make_shared<CVar>();
     }
 
+    ReleaseString(*variable);
     variable->Type = ConsoleVariableType::Color24;
     variable->Color24 = value;
 }
@@ -208,72 +240,146 @@ void ConsoleVariable::ClearBlock(const char* name) {
 }
 
 void ConsoleVariable::CopyVariable(const char* from, const char* to) {
-    auto& variableFrom = mVariables[from];
-    if (!variableFrom) {
-        return;
-    }
-    auto& variableTo = mVariables[to];
-    if (!variableTo) {
-        variableTo = std::make_shared<CVar>();
-    }
-
-    variableTo->Type = variableFrom->Type;
-    switch (variableTo->Type) {
+    const auto variableFrom = Get(from);
+    if (!variableFrom || std::string_view(from) == to) return;
+    switch (variableFrom->Type) {
         case ConsoleVariableType::Integer:
-            variableTo->Integer = variableFrom->Integer;
+            SetInteger(to, variableFrom->Integer);
             break;
         case ConsoleVariableType::Float:
-            variableTo->Float = variableFrom->Float;
+            SetFloat(to, variableFrom->Float);
             break;
         case ConsoleVariableType::String:
-            if (variableTo->String != nullptr) {
-                free(variableTo->String);
-            }
-            variableTo->String = strdup(variableFrom->String);
+            SetString(to, variableFrom->String);
             break;
         case ConsoleVariableType::Color:
-            variableTo->Color = variableFrom->Color;
+            SetColor(to, variableFrom->Color);
             break;
         case ConsoleVariableType::Color24:
-            variableTo->Color24 = variableFrom->Color24;
+            SetColor24(to, variableFrom->Color24);
             break;
     }
 }
 
-void ConsoleVariable::Save() {
-    std::shared_ptr<Config> conf = Context::GetRawInstance()->GetConfig();
+nlohmann::json ConsoleVariable::SnapshotValues() const {
+    auto values = nlohmann::json::object();
+    for (const auto& [name, variable] : mVariables) {
+        if (!variable) continue;
+        nlohmann::json value;
+        switch (variable->Type) {
+            case ConsoleVariableType::Integer: value = variable->Integer; break;
+            case ConsoleVariableType::Float: value = variable->Float; break;
+            case ConsoleVariableType::String: value = variable->String ? variable->String : ""; break;
+            case ConsoleVariableType::Color:
+                value = {variable->Color.r, variable->Color.g, variable->Color.b, variable->Color.a}; break;
+            case ConsoleVariableType::Color24:
+                value = {variable->Color24.r, variable->Color24.g, variable->Color24.b}; break;
+        }
+        values[name] = {{"type", int(variable->Type)}, {"value", std::move(value)}};
+    }
+    return values;
+}
 
-    for (const auto& variable : mVariables) {
-        const std::string key = StringHelper::Sprintf("CVars.%s", variable.first.c_str());
-
-        if (variable.second->Type == ConsoleVariableType::String && variable.second != nullptr) {
-            conf->SetString(key, variable.second->String);
-        } else if (variable.second->Type == ConsoleVariableType::Integer) {
-            conf->SetInt(key, variable.second->Integer);
-        } else if (variable.second->Type == ConsoleVariableType::Float) {
-            conf->SetFloat(key, variable.second->Float);
-        } else if (variable.second->Type == ConsoleVariableType::Color ||
-                   variable.second->Type == ConsoleVariableType::Color24) {
-            auto keyStr = key.c_str();
-            conf->SetUInt(StringHelper::Sprintf("%s.R", keyStr), variable.second->Type == ConsoleVariableType::Color
-                                                                     ? variable.second->Color.r
-                                                                     : variable.second->Color24.r);
-            conf->SetUInt(StringHelper::Sprintf("%s.G", keyStr), variable.second->Type == ConsoleVariableType::Color
-                                                                     ? variable.second->Color.g
-                                                                     : variable.second->Color24.g);
-            conf->SetUInt(StringHelper::Sprintf("%s.B", keyStr), variable.second->Type == ConsoleVariableType::Color
-                                                                     ? variable.second->Color.b
-                                                                     : variable.second->Color24.b);
-            if (variable.second->Type == ConsoleVariableType::Color) {
-                conf->SetUInt(StringHelper::Sprintf("%s.A", keyStr), variable.second->Color.a);
-                conf->SetString(StringHelper::Sprintf("%s.Type", keyStr), "RGBA");
-            } else {
-                conf->SetString(StringHelper::Sprintf("%s.Type", keyStr), "RGB");
+ConsoleVariable::PreparedSnapshot ConsoleVariable::PrepareSnapshot(const nlohmann::json& values) {
+    if (!values.is_object() || values.size() > 65536) throw std::runtime_error("Invalid settings snapshot");
+    PreparedSnapshot result;
+    result.variables.reserve(values.size());
+    size_t stringBytes = 0;
+    for (const auto& [name, entry] : values.items()) {
+        if (name.empty() || name.size() > 1024 || name.find('\0') != std::string::npos)
+            throw std::runtime_error("Invalid setting name");
+        const auto& value = entry.at("value");
+        const auto tag = entry.at("type").get<int>();
+        if (tag < int(ConsoleVariableType::Integer) || tag > int(ConsoleVariableType::Color24))
+            throw std::runtime_error("Invalid setting type");
+        auto variable = std::make_shared<CVar>();
+        variable->Type = ConsoleVariableType(tag);
+        switch (variable->Type) {
+            case ConsoleVariableType::Integer: {
+                if (!value.is_number_integer()) throw std::runtime_error("Invalid integer setting");
+                if (value.is_number_unsigned() && value.get<uint64_t>() > INT32_MAX)
+                    throw std::runtime_error("Integer setting out of range");
+                const auto n = value.get<int64_t>();
+                if (n < INT32_MIN || n > INT32_MAX) throw std::runtime_error("Integer setting out of range");
+                variable->Integer = int32_t(n); break;
+            }
+            case ConsoleVariableType::Float: {
+                if (!value.is_number()) throw std::runtime_error("Invalid float setting");
+                const auto n = value.get<double>();
+                if (!std::isfinite(n) || std::abs(n) > std::numeric_limits<float>::max())
+                    throw std::runtime_error("Float setting out of range");
+                variable->Float = float(n); break;
+            }
+            case ConsoleVariableType::String: {
+                const auto text = value.get<std::string>();
+                stringBytes += text.size();
+                if (text.find('\0') != std::string::npos || stringBytes > 16 * 1024 * 1024)
+                    throw std::runtime_error("Invalid/oversized string settings");
+                variable->String = strdup(text.c_str());
+                if (!variable->String) throw std::bad_alloc();
+                break;
+            }
+            case ConsoleVariableType::Color:
+            case ConsoleVariableType::Color24: {
+                const size_t count = variable->Type == ConsoleVariableType::Color ? 4 : 3;
+                if (!value.is_array() || value.size() != count) throw std::runtime_error("Invalid color setting");
+                uint8_t channels[4] = {0, 0, 0, 255};
+                for (size_t i = 0; i < count; ++i) {
+                    if (!value[i].is_number_integer()) throw std::runtime_error("Invalid color channel");
+                    if (value[i].is_number_unsigned() && value[i].get<uint64_t>() > 255)
+                        throw std::runtime_error("Color channel out of range");
+                    const auto n = value[i].get<int64_t>();
+                    if (n < 0 || n > 255) throw std::runtime_error("Color channel out of range");
+                    channels[i] = uint8_t(n);
+                }
+                if (count == 4) variable->Color = {channels[0], channels[1], channels[2], channels[3]};
+                else variable->Color24 = {channels[0], channels[1], channels[2]};
+                break;
             }
         }
+        result.variables.emplace(name, std::move(variable));
     }
+    return result;
+}
 
-    conf->Save();
+void ConsoleVariable::SwapSnapshot(PreparedSnapshot& prepared) noexcept {
+    mVariables.swap(prepared.variables);
+}
+
+void ConsoleVariable::Save() {
+    auto conf = Context::GetRawInstance()->GetConfig();
+    // Prepare the entire tree first. EraseBlock writes immediately and would
+    // briefly publish an empty configuration; array settings are not CVars.
+    auto next = conf->SnapshotValues();
+    next["CVars"] = ConfigOnlyValues(next.value("CVars", nlohmann::json::object()));
+    for (const auto& [name, variable] : mVariables) {
+        if (!variable) continue;
+        nlohmann::json value;
+        switch (variable->Type) {
+            case ConsoleVariableType::Integer: value = variable->Integer; break;
+            case ConsoleVariableType::Float: value = variable->Float; break;
+            case ConsoleVariableType::String: value = variable->String ? variable->String : ""; break;
+            case ConsoleVariableType::Color:
+                value = {{"R", variable->Color.r}, {"G", variable->Color.g}, {"B", variable->Color.b},
+                         {"A", variable->Color.a}, {"Type", "RGBA"}}; break;
+            case ConsoleVariableType::Color24:
+                value = {{"R", variable->Color24.r}, {"G", variable->Color24.g},
+                         {"B", variable->Color24.b}, {"Type", "RGB"}}; break;
+        }
+        auto* node = &next["CVars"];
+        size_t start = 0;
+        for (;;) {
+            if (!node->is_object()) *node = nlohmann::json::object();
+            const auto dot = name.find('.', start);
+            const auto part = name.substr(start, dot == std::string::npos ? dot : dot - start);
+            if (dot == std::string::npos) { (*node)[part] = std::move(value); break; }
+            node = &(*node)[part]; start = dot + 1;
+        }
+    }
+    auto previous = Config::PrepareSnapshot(std::move(next));
+    conf->SwapSnapshot(previous);
+    try { conf->Save(); }
+    catch (...) { conf->SwapSnapshot(previous); throw; }
 }
 
 void ConsoleVariable::Load() {

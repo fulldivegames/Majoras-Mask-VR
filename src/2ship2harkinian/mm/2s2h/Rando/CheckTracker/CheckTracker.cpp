@@ -270,13 +270,17 @@ bool CheckTrackerIsFiltered(RandoCheckId randoCheckId) {
 
 std::unordered_map<RandoCheckId, bool> checksInLogic;
 static u32 lastFrame = 0;
+// A state/file switch invalidates derived reachability, even when its frame
+// counter happens to be within the previous file's refresh interval.
+static bool logicRefreshNeeded = true;
 
 void RefreshChecksInLogic() {
-    if (gGameState == NULL || gGameState->frames - lastFrame < 20 || CVAR_OUT_OF_LOGIC_MODE == CHECK_MODE_NORMAL) {
+    if (gGameState == NULL || (!logicRefreshNeeded && gGameState->frames - lastFrame < 20) || CVAR_OUT_OF_LOGIC_MODE == CHECK_MODE_NORMAL) {
         return;
     }
 
     lastFrame = gGameState->frames;
+    logicRefreshNeeded = false;
     checksInLogic.clear();
 
     // Clear all events so they're re-evaluated fresh each refresh
@@ -764,11 +768,15 @@ static RegisterShipInitFunc initFunc(
     { CVAR_NAME_VISIBILITY_MODE });
 
 void OnFileLoad() {
-    if (!IS_RANDO) {
-        return;
+    checksInLogic.clear();
+    logicRefreshNeeded = true;
+    sceneChecks.clear();
+    sortedSceneIds.clear();
+    regionParentSceneMap.clear();
+    checkTypeFiltersAvailable.clear();
+    if (IS_RANDO) {
+        initializeSceneChecks();
     }
-
-    initializeSceneChecks();
 }
 
 } // namespace CheckTracker

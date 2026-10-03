@@ -11,7 +11,8 @@ struct MenuSearchEntry {
     const char* label;
     std::string Terms() const {
         const auto& group = MenuSections[section];
-        return std::string("VR menu ") + TabNames[group.tab] + " " + group.label + " " + label;
+        return std::string("VR menu ") + TabNames[group.tab] + " " + group.label + " " + label +
+            (section == 34 ? " mods texture packs enable disable" : "");
     }
 };
 
@@ -24,8 +25,12 @@ inline std::vector<MenuSearchEntry> VrMenuSearchEntries(const MenuState& menu) {
             (section == 35 && (!menu.exactStatesAvailable || !menu.gameplayAvailable))) continue;
         entries.push_back({MenuRows + section, section, MenuSections[section].label});
         for (const auto& entry : OrderedMenu) {
-            if (entry.section != section || entry.row >= AssignmentFirst ||
+            if (entry.section != section || entry.row == SearchSettingsRow ||
                 !MenuRowVisible(entry.row) || !menu.RowAvailable(entry.row)) continue;
+            if (entry.row >= AssignmentFirst) {
+                if (const auto* label = MenuActionLabel(entry.row)) entries.push_back({entry.row, section, label});
+                continue;
+            }
             int setting = entry.row;
             if (setting == int(Setting::EyeHeight) && ProfileForForm(menu.playerForm))
                 setting = int(ProfileForForm(menu.playerForm)->eyeHeight);

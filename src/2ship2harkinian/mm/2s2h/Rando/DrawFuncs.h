@@ -3,6 +3,11 @@
 
 #include "Rando/Rando.h"
 
+// Derived display skeletons are process-local caches. Rebind on the first draw
+// after a successful state restore; do not rewind this generation with the state.
+extern "C" uint64_t MMVR_RandoDrawGeneration();
+extern "C" void MMVR_ResetRandoDrawCaches() noexcept;
+
 void DrawEnLight(Color_RGB8 flameColor, Vec3f flameSize);
 
 // Boss Functions

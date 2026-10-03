@@ -22,6 +22,18 @@ static constexpr u16 NOTEBOOK_EVENTS_TEXT_ID = 0x2955;
 static Vec3f POSITION = { -420.0f, 210.0f, -160.0f };
 static Vec3s ROTATION = { 0x0000, -0x2AAB, 0x0000 };
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipCouplesMaskCutscene_giveItem0(Actor* actor, PlayState* play) {
+    CustomMessage::Entry text = CustomMessage::LoadVanillaMessageTableEntry(GET_COUPLES_MASK_TEXT_ID);
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage(text.msg, text);
+    } else {
+        CustomMessage::StartTextbox(text.msg + "\x1C\x02\x10", text);
+    }
+
+    Item_Give(play, ITEM_MASK_COUPLE);
+}
+
 static void SkipHandleCouplesMaskCs(EnTest3* kafei) {
     EnAn* anju = (EnAn*)SubS_FindActor(gPlayState, NULL, ACTORCAT_NPC, ACTOR_EN_AN);
     if (anju == NULL) {
@@ -40,16 +52,7 @@ static void SkipHandleCouplesMaskCs(EnTest3* kafei) {
             .showGetItemCutscene = true,
             .param = GID_MASK_COUPLE,
             .giveItem =
-                [](Actor* actor, PlayState* play) {
-                    CustomMessage::Entry text = CustomMessage::LoadVanillaMessageTableEntry(GET_COUPLES_MASK_TEXT_ID);
-                    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                        CustomMessage::SetActiveCustomMessage(text.msg, text);
-                    } else {
-                        CustomMessage::StartTextbox(text.msg + "\x1C\x02\x10", text);
-                    }
-
-                    Item_Give(play, ITEM_MASK_COUPLE);
-                },
+                MMVR_StateEvent_SkipCouplesMaskCutscene_giveItem0,
         });
     }
 

@@ -154,7 +154,7 @@ void DrawUiLayer(GlContext*) {
     }
     if (!uiVisible)
         return;
-    const unsigned wantedHeight = menu.open && menu.tab == NativeTab && !VisibleFullViewFade()
+    const unsigned wantedHeight = menu.open && menu.UsesNativePanel() && !VisibleFullViewFade()
         ? NativeMenuSurfaceHeight : 768;
     if (uiChain && uiHeight != wantedHeight) {
         Check(xrDestroySwapchain(uiChain), "Resize VR UI swapchain");

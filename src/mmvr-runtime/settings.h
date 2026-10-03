@@ -412,12 +412,12 @@ inline constexpr SettingDefinition SettingDefinitions[] = {
     { "gVR.LockOnOrbit", "Lock-on target camera orbit", 0, 0, 1, 1, "off/on" },
     { "gVR.QuickWheelItems", "Ready masks and ocarina on selection", 0, 0, 1, 1, "off/on" },
     { "gVR.TelescopeComfort", "Stable telescope screen", 1, 0, 1, 1, "off/on" },
-    { "gVR.FullBody", "Human body with tracked arms (Experimental)", 1, 0, 1, 1, "off/on" },
+    { "gVR.FullBody", "Human body with tracked arms", 1, 0, 1, 1, "off/on" },
     { "gVR.MotionBlur", "Motion blur", 0, 0, 1, 1, "off/on" },
-    { "gVR.GoronBody", "Goron body (Very experimental)", 0, 0, 1, 1, "off/on" },
-    { "gVR.ZoraBody", "Zora body (Experimental)", 1, 0, 1, 1, "off/on" },
-    { "gVR.DekuBody", "Deku body (Experimental)", 1, 0, 1, 1, "off/on" },
-    { "gVR.FierceDeityBody", "Fierce Deity body (Experimental)", 0, 0, 1, 1, "off/on" },
+    { "gVR.GoronBody", "Goron body", 0, 0, 1, 1, "off/on" },
+    { "gVR.ZoraBody", "Zora body", 1, 0, 1, 1, "off/on" },
+    { "gVR.DekuBody", "Deku body", 1, 0, 1, 1, "off/on" },
+    { "gVR.FierceDeityBody", "Fierce Deity body", 0, 0, 1, 1, "off/on" },
     { "gVR.AlwaysShield", "Always hold shield when sword is drawn", 0, 0, 1, 1, "off/on" },
 };
 static_assert(sizeof(SettingDefinitions) / sizeof(SettingDefinitions[0]) == size_t(Setting::Count));

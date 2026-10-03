@@ -13,6 +13,23 @@ extern "C" {
 #define CVAR_NAME "gEnhancements.Cutscenes.SkipStoryCutscenes"
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipLearningSonataOfAwakening_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You learned the Sonata of Awakening!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You learned the Sonata of Awakening!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_SONG_SONATA);
+}
+
+void MMVR_StateEvent_SkipLearningSonataOfAwakening_drawItem0(Actor* actor, PlayState* play) {
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    Rando::DrawItem(RI_SONG_SONATA);
+}
+
 void RegisterSkipLearningSonataOfAwakening() {
     /*
      * Forced on for rando for now. If this ever changes, look at the Item_Give calls in
@@ -30,21 +47,9 @@ void RegisterSkipLearningSonataOfAwakening() {
                     GameInteractor::Instance->events.emplace_back(GIEventGiveItem{
                         .showGetItemCutscene = !CVarGetInteger("gEnhancements.Cutscenes.SkipGetItemCutscenes", 0),
                         .giveItem =
-                            [](Actor* actor, PlayState* play) {
-                                if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                    CustomMessage::SetActiveCustomMessage("You learned the Sonata of Awakening!",
-                                                                          { .textboxType = 2 });
-                                } else {
-                                    CustomMessage::StartTextbox("You learned the Sonata of Awakening!\x1C\x02\x10",
-                                                                { .textboxType = 2 });
-                                }
-                                Item_Give(gPlayState, ITEM_SONG_SONATA);
-                            },
+                            MMVR_StateEvent_SkipLearningSonataOfAwakening_giveItem0,
                         .drawItem =
-                            [](Actor* actor, PlayState* play) {
-                                Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                                Rando::DrawItem(RI_SONG_SONATA);
-                            } });
+                            MMVR_StateEvent_SkipLearningSonataOfAwakening_drawItem0 });
                 }
                 gPlayState->nextEntrance = ENTRANCE(DEKU_PALACE, 1);
                 gPlayState->transitionType = TRANS_TYPE_64;

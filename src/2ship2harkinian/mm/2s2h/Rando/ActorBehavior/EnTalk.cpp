@@ -6,8 +6,11 @@ extern "C" {
 #include "variables.h"
 }
 
+static int remainsHintIndex = 0;
+static int transformHintIndex = 0;
+
 void ApplyRemainsHint(u16* textId, bool* loadFromMessageTable) {
-    static int remainsHintIndex = 0;
+
 
     if (remainsHintIndex > 4) {
         remainsHintIndex = 0;
@@ -63,7 +66,7 @@ void ApplyRemainsHint(u16* textId, bool* loadFromMessageTable) {
 
 void ApplyTransformationHints(u16* textId, bool* loadFromMessageTable) {
     static std::string placeholderMsg = "Last seen in";
-    static int transformHintIndex = 0;
+
 
     if (transformHintIndex > 3) {
         transformHintIndex = 0;
@@ -143,3 +146,11 @@ void Rando::ActorBehavior::InitEnTalkBehavior() {
     COND_ID_HOOK(OnOpenText, 0x1C18, IS_RANDO && RANDO_SAVE_OPTIONS[RO_HINTS_TRANSFORMATIONS],
                  ApplyTransformationHints);
 }
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "2s2h/VR/NativeStateFields.h"
+extern "C" void MMVR_VisitRandoEnTalkState(MMVR_StateSink* sink) {
+    mmvrgame::NativeStateField(sink,"rando/EnTalk/remainsHintIndex",remainsHintIndex);
+    mmvrgame::NativeStateField(sink,"rando/EnTalk/transformHintIndex",transformHintIndex);
+}
+#endif

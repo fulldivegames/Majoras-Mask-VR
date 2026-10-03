@@ -4,6 +4,7 @@
 #include "2s2h/GameInteractor/GameInteractor.h"
 #include "2s2h/ShipInit.hpp"
 #include "2s2h/CustomMessage/CustomMessage.h"
+#include <stdexcept>
 
 extern "C" {
 #include <variables.h>
@@ -29,8 +30,9 @@ extern "C" void SavingEnhancements_SetVRDefaults() {
 static int lastEntrance = -1;
 static int entranceToSave = -1;
 
-static HOOK_ID skipEntranceCutsceneHookId = 0;
-static HOOK_ID gameplayStartHookId = 0;
+// Runtime phase, not registry ownership: exact states can restore this flag
+// even when their bootstrap never loaded an ordinary save.
+static bool skipEntranceCutsceneActive = false;
 
 static bool IsSettingUpZerothDayGlitch() {
     // On file select
@@ -208,48 +210,36 @@ void LoadRespawnData(s16 fileNum) {
 /*
  * Upon loading a save, skip any cutscenes that would play if the save is from a cutscene entrance (e.g. owl warps, Link
  * bowing at Mikau's grave, etc.). An OnPassPlayerInputs hook is used to detect when gameplay actually starts (any
- * entrance cutscenes are done), at which point the cutscene skip hook is unregistered. This handles any potential cases
+ * entrance cutscenes are done), at which point the cutscene skip phase ends. This handles any potential cases
  * where multiple cutscenes play in succession.
  */
-static void UnregisterEntranceCutsceneSkip() {
-    if (skipEntranceCutsceneHookId) {
-        GameInteractor::Instance->UnregisterGameHookForID<GameInteractor::ShouldVanillaBehavior>(
-            skipEntranceCutsceneHookId);
-        skipEntranceCutsceneHookId = 0;
-    }
-
-    if (gameplayStartHookId) {
-        GameInteractor::Instance->UnregisterGameHook<GameInteractor::OnPassPlayerInputs>(gameplayStartHookId);
-        gameplayStartHookId = 0;
-    }
+static void FinishEntranceCutsceneSkip(Input*) {
+    skipEntranceCutsceneActive = false;
 }
 
 void SkipEntranceCutsceneOnLoad(s16 fileNum) {
-    // Clean up any existing hooks first
-    UnregisterEntranceCutsceneSkip();
-    // Only remembered pause/auto saves restore a previously visited entrance.
-    // A Song of Time save must retain its native story/arrival sequence.
-    if (!gSaveContext.save.isOwlSave || gSaveContext.save.shipSaveInfo.pauseSaveEntrance == -1) return;
-    // Register hook to skip entrance cutscenes - may skip multiple if they chain
-    skipEntranceCutsceneHookId = REGISTER_VB_SHOULD(VB_START_CUTSCENE, {
-        // Only skip normal cutscenes
-        // The Clock Tower arrival starts mandatory Mask Salesman progression.
-        // Its actor waits for cutscene cues; suppressing them can strand cursed Deku.
-        if (gSaveContext.gameMode == GAMEMODE_NORMAL && gPlayState != nullptr &&
-            gPlayState->sceneId != SCENE_SPOT00 && gPlayState->sceneId != SCENE_INSIDETOWER) {
-            *should = false;
-        }
-    });
-
-    // Register hook to detect when gameplay starts (all cutscenes done)
-    // OnPassPlayerInputs only fires during normal gameplay, not during cutscenes
-    gameplayStartHookId =
-        GameInteractor::Instance->RegisterGameHook<GameInteractor::OnPassPlayerInputs>([](Input* input) {
-            // Gameplay has started; any entrance cutscenes are done
-            // Now unregister both hooks so normal cutscenes can play
-            UnregisterEntranceCutsceneSkip();
-        });
+    // Every file load clears the previous phase, including when the option was
+    // disabled. Cycle/statue saves retain their native arrival sequence.
+    skipEntranceCutsceneActive = CVAR_REMEMBER_SAVE_LOCATION && gSaveContext.save.isOwlSave &&
+                                gSaveContext.save.shipSaveInfo.pauseSaveEntrance != -1;
 }
+
+static RegisterShipInitFunc registerEntranceCutsceneHooks(
+    []() {
+        static bool registered = false;
+        if (registered) return;
+        REGISTER_VB_SHOULD(VB_START_CUTSCENE, {
+            // The Clock Tower arrival starts mandatory Mask Salesman progression.
+            // Its actor waits for cutscene cues, so those scenes always keep them.
+            if (skipEntranceCutsceneActive && gSaveContext.gameMode == GAMEMODE_NORMAL && gPlayState != nullptr &&
+                gPlayState->sceneId != SCENE_SPOT00 && gPlayState->sceneId != SCENE_INSIDETOWER) {
+                *should = false;
+            }
+        });
+        GameInteractor::Instance->RegisterGameHook<GameInteractor::OnPassPlayerInputs>(FinishEntranceCutsceneSkip);
+        registered = true;
+    },
+    {});
 
 static RegisterShipInitFunc registerSavingEnhancements(
     []() {
@@ -367,17 +357,67 @@ static RegisterShipInitFunc registerRememberSaveLocation(
             lastEntrance = gSaveContext.save.entrance;
         });
 
-        COND_HOOK(OnSaveLoad, CVAR_REMEMBER_SAVE_LOCATION, SkipEntranceCutsceneOnLoad);
+        COND_HOOK(OnSaveLoad, true, SkipEntranceCutsceneOnLoad);
         COND_HOOK(OnSaveLoad, CVAR_REMEMBER_SAVE_LOCATION, LoadRespawnData);
     },
     { CVAR_REMEMBER_SAVE_LOCATION_NAME });
 
 #if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
 #include "2s2h/VR/NativeStateFields.h"
-// Hook handles remain owned by the current registry; the separate hook
-// topology adapter checks compatibility before these gameplay values commit.
+// Hook registration is stable; the native state captures only its active
+// arrival phase along with the remembered entrance values.
 extern "C" void MMVR_VisitSaveEntranceState(MMVR_StateSink* sink) {
     mmvrgame::NativeStateField(sink,"enhancement/SaveEntrance/lastEntrance",lastEntrance);
     mmvrgame::NativeStateField(sink,"enhancement/SaveEntrance/entranceToSave",entranceToSave);
+    mmvrgame::NativeStateField(sink,"enhancement/SaveEntrance/skipActive",skipEntranceCutsceneActive);
+}
+#endif
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND) && defined(MMVR_LOCAL_TEST_TOOLS)
+extern "C" int MMVR_VerifyEntranceCutscenePhase() {
+    if (!gPlayState) throw std::runtime_error("Entrance phase check requires a native scene");
+    const auto originalSave = gSaveContext;
+    auto* const originalPlay = gPlayState;
+    const auto originalScene = gPlayState->sceneId;
+    const bool originalActive = skipEntranceCutsceneActive;
+    const bool hadSetting = CVarGet(CVAR_REMEMBER_SAVE_LOCATION_NAME) != nullptr;
+    const int originalSetting = CVAR_REMEMBER_SAVE_LOCATION;
+    struct Restore {
+        const SaveContext& save; PlayState* play; s16 scene; bool active, hadSetting; int setting;
+        ~Restore() {
+            gSaveContext = save; gPlayState = play; play->sceneId = scene;
+            skipEntranceCutsceneActive = active;
+            if (hadSetting) CVarSetInteger(CVAR_REMEMBER_SAVE_LOCATION_NAME, setting);
+            else CVarClear(CVAR_REMEMBER_SAVE_LOCATION_NAME);
+        }
+    } restore{originalSave, originalPlay, originalScene, originalActive, hadSetting, originalSetting};
+    int checks = 0;
+    auto check = [&](bool good) { ++checks; if (!good) throw std::runtime_error("Invalid saved entrance cutscene phase"); };
+    s16 cutscene = 1;
+    auto starts = [&]() { return bool(GameInteractor_Should(VB_START_CUTSCENE, true, &cutscene, (Actor*)nullptr)); };
+    gSaveContext.gameMode = GAMEMODE_NORMAL;
+    gPlayState->sceneId = SCENE_BACKTOWN;
+    for (int enabled : {0, 1}) for (int owl : {0, 1}) for (int remembered : {0, 1}) {
+        CVarSetInteger(CVAR_REMEMBER_SAVE_LOCATION_NAME, enabled);
+        gSaveContext.save.isOwlSave = owl;
+        gSaveContext.save.shipSaveInfo.pauseSaveEntrance = remembered ? ENTRANCE(NORTH_CLOCK_TOWN, 0) : -1;
+        skipEntranceCutsceneActive = true; // A prior file's unfinished arrival must not leak.
+        SkipEntranceCutsceneOnLoad(0);
+        const bool expected = enabled && owl && remembered;
+        check(skipEntranceCutsceneActive == expected);
+        check(starts() == !expected);
+        Input input{};
+        GameInteractor::Instance->ExecuteHooks<GameInteractor::OnPassPlayerInputs>(&input);
+        check(!skipEntranceCutsceneActive && starts());
+    }
+    skipEntranceCutsceneActive = true;
+    for (s16 scene : {s16(SCENE_SPOT00), s16(SCENE_INSIDETOWER)}) {
+        gPlayState->sceneId = scene; check(starts());
+    }
+    gPlayState->sceneId = SCENE_BACKTOWN;
+    gSaveContext.gameMode = GAMEMODE_FILE_SELECT; check(starts());
+    gSaveContext.gameMode = GAMEMODE_NORMAL;
+    gPlayState = nullptr; check(starts());
+    return checks;
 }
 #endif

@@ -2390,7 +2390,8 @@ bool BenMenu::DrawVrSection(const char* main, const char* sidebar, const char* s
         (mainName == "FullDiveGames Additions" && sidebarName == "Visuals") ||
         (mainName == "Settings" && sidebarName == "Audio") ||
         (mainName == "Enhancements" && (sidebarName == "Gameplay" || sidebarName == "Cheats" ||
-                                         sidebarName == "Difficulty Options" || sidebarName == "Items/Songs" || sidebarName == "Graphics")) ||
+                                         sidebarName == "Difficulty Options" || sidebarName == "Items/Songs" ||
+                                         sidebarName == "Time Savers" || sidebarName == "Graphics")) ||
         (mainName == "Rando" && (sidebarName == "General" || sidebarName == "Logic/Conditions" ||
                                  sidebarName == "Check Pool" || sidebarName == "Check Exclusions" ||
                                  sidebarName == "Item Pool" || sidebarName == "Starting Items" ||

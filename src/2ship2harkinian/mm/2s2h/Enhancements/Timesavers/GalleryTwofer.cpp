@@ -18,6 +18,18 @@ extern "C" {
 
 static s16 highestScore = 0;
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_GalleryTwofer_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You received a Piece of Heart!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You received a Piece of Heart!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_HEART_PIECE);
+}
+
 void RegisterGalleryTwofer() {
     COND_HOOK(OnFlagSet, CVAR, [](FlagType flagType, u32 flag) {
         bool queueHeartPiece = false;
@@ -41,16 +53,7 @@ void RegisterGalleryTwofer() {
                 .showGetItemCutscene = true,
                 .param = GID_HEART_PIECE,
                 .giveItem =
-                    [](Actor* actor, PlayState* play) {
-                        if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                            CustomMessage::SetActiveCustomMessage("You received a Piece of Heart!",
-                                                                  { .textboxType = 2 });
-                        } else {
-                            CustomMessage::StartTextbox("You received a Piece of Heart!\x1C\x02\x10",
-                                                        { .textboxType = 2 });
-                        }
-                        Item_Give(gPlayState, ITEM_HEART_PIECE);
-                    },
+                    MMVR_StateEvent_GalleryTwofer_giveItem0,
             });
         }
     });

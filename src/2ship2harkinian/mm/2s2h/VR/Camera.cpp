@@ -51,6 +51,9 @@ extern "C" {
 bool Player_IsZTargeting(Player*);
 #include "objects/object_link_child/object_link_child.h"
 #include "objects/object_link_goron/object_link_goron.h"
+#include "objects/object_link_nuts/object_link_nuts.h"
+#include "objects/object_link_zora/object_link_zora.h"
+#include "objects/object_link_boy/object_link_boy.h"
 #include "objects/object_test3/object_test3.h"
 #include "overlays/actors/ovl_En_Fall/z_en_fall.h"
 }
@@ -644,13 +647,11 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
         // Move the visible skeleton to the HMD, never the camera to an animated
         // skeleton. Remove native torso lean/aim twist before solving the arms.
         const float neckYaw = mmvr::PoseYaw(viewPose) - Pi + mmvr::PoseYaw(relative);
-        // Goron's high necklace needs another 8 cm of visual clearance. This
-        // moves the torso anchor only; eye height and controller poses stay put.
-        const float neckDropMeters = p->transformation == PLAYER_FORM_GORON ? .15f : .07f;
+        const auto neckOffset = mmvr::body::NeckOffset(p->transformation, tracking.trackingScale, p->actor.scale.y);
         auto neck = mmvr::YawPose(neckYaw,
-            viewPose.m[3][0] - std::sin(neckYaw) * Units * tracking.trackingScale * .04f,
-            viewPose.m[3][1] + relative.m[3][1] * Units - Units * tracking.trackingScale * neckDropMeters,
-            viewPose.m[3][2] - std::cos(neckYaw) * Units * tracking.trackingScale * .04f);
+            viewPose.m[3][0] + std::sin(neckYaw) * neckOffset.z,
+            viewPose.m[3][1] + relative.m[3][1] * Units + neckOffset.y,
+            viewPose.m[3][2] + std::cos(neckYaw) * neckOffset.z);
         mmvr::Matrix correction;
         const float nativeYaw = tracking.visualValid ? tracking.visualYaw : Radians(drawYaw);
         if (mmvr::body::AnchorTorso(tracking.bodyBones, nativeYaw, neck, correction))
@@ -725,13 +726,15 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
             auto outward=mmvr::body::Unit(mmvr::body::Position(bones[side*3])-
                                           mmvr::body::Position(bones[(1-side)*3]));
             mmvr::body::Vec pole={outward.x*.6f,-.85f,outward.z*.6f};
-            auto arm=mmvr::body::Solve(bones[side*3],bones[side*3+1],bones[side*3+2],result.hands[hand],pole);
+            // Resolve the anatomical wrist before solving: the selected native
+            // item mesh can be the mirrored opposite hand in left-hand mode.
+            auto wrist=result.hands[hand];
+            if(hand!=side) for(int c=0;c<3;++c) wrist.m[2][c]=-wrist.m[2][c];
+            auto arm=mmvr::body::Solve(bones[side*3],bones[side*3+1],bones[side*3+2],wrist,pole,
+                p->transformation==PLAYER_FORM_DEKU, &tracking.bodyGeometry[side*3]);
             if(arm.valid) {
                 result.bodyArms[side*3]=arm.upper;
                 result.bodyArms[side*3+1]=arm.lower;
-                // The arm palette belongs to its anatomical side, while the
-                // existing item hand may be a mirrored opposite-hand mesh.
-                if(hand!=side) for(int c=0;c<3;++c) arm.wrist.m[2][c]=-arm.wrist.m[2][c];
                 result.bodyArms[side*3+2]=arm.wrist;
             }
         }
@@ -745,19 +748,20 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
         if (!offer) {
             // Capture the gaze when the item first appears. The body/cutscene
             // yaw alone can disagree with the headset until a system recenter.
-            // Hold the result in world space while the player looks around.
+            // Keep the captured direction while looking around, but follow
+            // eye translation. Native receipt animations can move the player;
+            // an absolute world anchor could otherwise end up inside the head.
             if (!rewardViewAnchored || rewardViewOwner != p || rewardViewScene != play->sceneId ||
-                rewardViewItem != p->getItemDrawIdPlusOne) {
+                rewardViewItem != p->getItemDrawIdPlusOne || reset || scaleChanged) {
                 const float forward = Units * .3048f * tracking.trackingScale;
-                target.x += std::sin(heading) * forward;
-                target.z += std::cos(heading) * forward;
-                rewardViewAnchor=target;
+                rewardViewAnchor={std::sin(heading)*forward,0,std::cos(heading)*forward};
                 rewardViewOwner=p;
                 rewardViewScene=play->sceneId;
                 rewardViewItem=p->getItemDrawIdPlusOne;
                 rewardViewAnchored=true;
             }
-            target=rewardViewAnchor;
+            target.x+=rewardViewAnchor.x;
+            target.z+=rewardViewAnchor.z;
         }
         else rewardViewAnchored=false;
         if(trackedOffer)target={hand.m[3][0],hand.m[3][1]+9,hand.m[3][2]};
@@ -827,12 +831,18 @@ extern "C" int MMVR_ItemPresentationPosition(float* position) {
             return true;
         }
     }
-    if (!position || !active || !wasCinematic || !mmvr::FirstPersonRequested() ||
-        !mmvrgame::InWorldCinematic(gPlayState))
+    if (!position || !gPlayState || !mmvr::FirstPersonRequested() ||
+        mmvrgame::SceneView(gPlayState)!=mmvr::SceneView::Player)
         return false;
+    auto* player=GET_PLAYER(gPlayState);
+    if (!player || (!player->getItemDrawIdPlusOne && !mmvrgame::InWorldCinematic(gPlayState))) return false;
+    // This is only the native draw origin. The current display frame places
+    // every child matrix in front of the HMD. Register it even on the first
+    // receipt frame, before the camera has observed the new cinematic state.
+    const bool currentPose=active && owner==player && scene==gPlayState->sceneId;
     for (int k = 0; k < 3; ++k)
-        position[k] = lastViewPose.m[3][k];
-    position[1] += lastHead.m[3][1] * Units + 18;
+        position[k] = currentPose ? lastViewPose.m[3][k] : (&player->actor.world.pos.x)[k];
+    position[1] += (currentPose ? lastHead.m[3][1]*Units : mmvrgame::FormEyeHeight(player))+18;
     return true;
 }
 extern "C" int MMVR_EnvironmentEye(PlayState* play, float* eye) {
@@ -1500,8 +1510,8 @@ void BeginStateTrackingResume() {
     ++sceneWitnessGeneration;
     boundaryPlay=gPlayState;boundaryScene=gPlayState?gPlayState->sceneId:-1;
     boundaryFrame=gPlayState?gPlayState->gameplayFrames:0;
-    if(!mmvr::StereoActive()) {RebasePresentationClock(mmvr::PresentationTime());return;}
     ResetCameraHistory(false,true);
+    if(!mmvr::StereoActive()) {RebasePresentationClock(mmvr::PresentationTime());return;}
     stateTrackingPending=true;stateCameraRebased=false;
     mmvr::SetStateTrackingCallback(ResumeStateTracking);
     if(gPlayState) *CONTROLLER1(&gPlayState->state)={};

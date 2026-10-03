@@ -18,16 +18,20 @@ bool TestFullBodyRig() {
         const auto* address=mmvr::BodyBoneAddress(bone);
         check(address!=nullptr,"native-bone-address");
         if(address) {MtxF native;Matrix_MtxToMtxF((Mtx*)address,&native);std::memcpy(&frame.bodyBones[bone],&native,sizeof(native));}
+        if(bone<6) frame.bodyGeometry[bone]=frame.bodyBones[bone];
     }
-    mmvr::GetSettings().Set(mmvr::Setting::FullBody,1);
+    constexpr mmvr::Setting formOptions[]{mmvr::Setting::FierceDeityBody,mmvr::Setting::GoronBody,
+        mmvr::Setting::ZoraBody,mmvr::Setting::DekuBody,mmvr::Setting::FullBody};
+    const auto bodyOption=formOptions[player->transformation];
+    mmvr::GetSettings().Set(bodyOption,1);
     check(MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_HEAD),"head-hidden");
     check(!MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_TORSO),"torso-visible");
-    check(MMVR_PlayerNeckCap(&player->actor,PLAYER_LIMB_TORSO)!=nullptr,"human-neck-closed");
+    check(MMVR_PlayerNeckCap(&player->actor,PLAYER_LIMB_TORSO)!=nullptr,"form-torso-closed");
     check(MMVR_PlayerNeckCap(&player->actor,PLAYER_LIMB_HEAD)==nullptr,"no-head-geometry-restored");
     Actor unrelated{};check(!MMVR_PlayerNeckCap(&unrelated,PLAYER_LIMB_TORSO),"npc-unchanged");
-    mmvr::GetSettings().Set(mmvr::Setting::FullBody,0);
+    mmvr::GetSettings().Set(bodyOption,0);
     check(!MMVR_PlayerNeckCap(&player->actor,PLAYER_LIMB_TORSO),"neck-cap-off-with-body");
-    mmvr::GetSettings().Set(mmvr::Setting::FullBody,1);
+    mmvr::GetSettings().Set(bodyOption,1);
     check(!MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_LEFT_THIGH),"legs-visible");
     for(int left=0;left<2;++left) {
         mmvr::GetSettings().Set(mmvr::Setting::SwordLeftHanded,float(left));
@@ -41,15 +45,16 @@ bool TestFullBodyRig() {
             auto view=mmvr::InversePose(enabled.view);
             const float yaw=mmvr::PoseYaw(view)-Pi;
             const auto neck=mmvr::body::Transform(mmvr::body::Position(frame.bodyBones[6]),enabled.bodyCorrection);
-            check(std::abs(neck.x-(view.m[3][0]-std::sin(yaw)*Units*enabled.trackingScale*.04f))<.01f &&
-                  std::abs(neck.y-(view.m[3][1]-Units*enabled.trackingScale*.07f))<.01f &&
-                  std::abs(neck.z-(view.m[3][2]-std::cos(yaw)*Units*enabled.trackingScale*.04f))<.01f,"neck-attached-to-headset");
+            const auto offset=mmvr::body::NeckOffset(player->transformation,enabled.trackingScale,player->actor.scale.y);
+            check(std::abs(neck.x-(view.m[3][0]+std::sin(yaw)*offset.z))<.01f &&
+                  std::abs(neck.y-(view.m[3][1]+offset.y))<.01f &&
+                  std::abs(neck.z-(view.m[3][2]+std::cos(yaw)*offset.z))<.01f,"neck-attached-to-headset");
             if(pose) for(int r=0;r<4;++r) for(int c=0;c<4;++c)
                 check(std::abs(enabled.bodyCorrection.m[r][c]-previousTorso.m[r][c])<.001f,"hands-do-not-move-torso");
             previousTorso=enabled.bodyCorrection;
-            mmvr::GetSettings().Set(mmvr::Setting::FullBody,0);
+            mmvr::GetSettings().Set(bodyOption,0);
             auto disabled=Update(frame);
-            mmvr::GetSettings().Set(mmvr::Setting::FullBody,1);
+            mmvr::GetSettings().Set(bodyOption,1);
             check(!disabled.fullBodyArms,"off-restores-original-rendering");
             for(int hand=0;hand<2;++hand) for(int r=0;r<4;++r) for(int c=0;c<4;++c)
                 check(std::abs(enabled.hands[hand].m[r][c]-disabled.hands[hand].m[r][c])<.001f,"hands-unchanged");
@@ -70,6 +75,40 @@ bool TestFullBodyRig() {
             }
         }
     }
+    // Exercise the display-frame reward path, including its first native draw
+    // before any cinematic camera frame, movement, world size and handedness.
+    const auto oldItem=player->getItemDrawIdPlusOne;
+    const auto oldPosition=player->actor.world.pos;
+    const auto oldFlags=player->stateFlags1;
+    player->getItemDrawIdPlusOne=GID_MASK_TRUTH+1;
+    player->stateFlags1|=PLAYER_STATE1_400;
+    const bool oldActive=active,oldCinematic=wasCinematic;
+    active=wasCinematic=false;
+    float rewardOrigin[3]{};
+    check(MMVR_ItemPresentationPosition(rewardOrigin),"reward-first-draw-does-not-need-previous-camera");
+    active=oldActive;wasCinematic=oldCinematic;
+    const auto oldRewardPosition=rewardDrawPosition;
+    const auto oldRewardFrame=rewardDrawFrame;
+    const bool oldRewardValid=rewardDrawValid;
+    rewardDrawPosition={rewardOrigin[0],rewardOrigin[1],rewardOrigin[2]};
+    rewardDrawValid=true;rewardDrawFrame=gPlayState->gameplayFrames;
+    rewardViewAnchored=false;
+    for(int sample=0;sample<8;++sample) {
+        player->actor.world.pos.x=oldPosition.x+sample*3.f;
+        frame.timeSeconds+=1./90.;
+        auto received=Update(frame);
+        const auto item=mmvr::Multiply(mmvr::YawPose(0,rewardOrigin[0],rewardOrigin[1],rewardOrigin[2]),received.rewardCorrection);
+        const float dx=item.m[3][0]-lastViewPose.m[3][0],dz=item.m[3][2]-lastViewPose.m[3][2];
+        check(received.active&&received.rewardActive,"reward-late-pose-active");
+        check(std::abs(std::hypot(dx,dz)-Units*.3048f*received.trackingScale)<.001f,"reward-one-foot-in-front-not-inside-head");
+        for(int side=0;side<2;++side) {
+            const int hand=ControllerFor(player,0)==side?0:1;
+            check(mmvr::body::Length(mmvr::body::Position(received.bodyArms[side*3+2])-
+                                    mmvr::body::Position(received.hands[hand]))<.001f,"receipt-arms-stay-on-anatomical-controllers");
+        }
+    }
+    player->getItemDrawIdPlusOne=oldItem;player->actor.world.pos=oldPosition;player->stateFlags1=oldFlags;
+    rewardDrawPosition=oldRewardPosition;rewardDrawFrame=oldRewardFrame;rewardDrawValid=oldRewardValid;rewardViewAnchored=false;
     frame.handTracked[0]=false;
     auto lost=Update(frame);
     check(!lost.bodyArms[0].m[3][3]&&!lost.bodyArms[1].m[3][3],"lost-hand-hides-arm");

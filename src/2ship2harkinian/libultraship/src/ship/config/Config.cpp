@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <unordered_map>
 #include <any>
+#include <stdexcept>
 #include <spdlog/spdlog.h>
 #include "ship/utils/StringHelper.h"
 #include "ship/Context.h"
@@ -231,6 +232,21 @@ template <typename T> void Config::SetArray(const std::string& key, std::vector<
 
 nlohmann::json Config::GetNestedJson() {
     return mNestedJson;
+}
+
+nlohmann::json Config::SnapshotValues() const {
+    return mFlattenedJson.unflatten();
+}
+
+Config::PreparedSnapshot Config::PrepareSnapshot(nlohmann::json values) {
+    if (!values.is_object()) throw std::runtime_error("Invalid configuration snapshot");
+    auto flattened=values.flatten();
+    return {std::move(values),std::move(flattened)};
+}
+
+void Config::SwapSnapshot(PreparedSnapshot& prepared) noexcept {
+    mNestedJson.swap(prepared.nested);
+    mFlattenedJson.swap(prepared.flattened);
 }
 
 bool Config::RegisterVersionUpdater(std::shared_ptr<ConfigVersionUpdater> versionUpdater) {

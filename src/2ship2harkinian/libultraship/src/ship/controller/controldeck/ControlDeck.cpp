@@ -53,6 +53,10 @@ bool ControlDeck::ProcessKeyboardEvent(KbEventType eventType, KbScancode scancod
     return result;
 }
 
+uint8_t* ControlDeck::GetControllerBits() {
+    return mControllerBits;
+}
+
 bool ControlDeck::ProcessMouseButtonEvent(bool isPressed, MouseBtn button) {
     bool result = false;
     for (auto port : mPorts) {

@@ -277,9 +277,14 @@ inline mmvr::SceneFacts SceneFacts(PlayState* play) {
 inline void UpdateIntroPresentation(PlayState* play) {
     if (!play || !introPresentation.active) return;
     auto* player = GET_PLAYER(play);
-    const bool controls = player && player->transformation == PLAYER_FORM_HUMAN &&
+    const bool controls = player &&
         play->pauseCtx.state == PAUSE_STATE_OFF && !Player_InCsMode(play);
-    introPresentation.Update(play->sceneId == SCENE_LOST_WOODS, SceneFacts(play), controls);
+    // Skip Intro bypasses the forest clearing. Native progress marks arrival in
+    // Clock Town for both the Deku opening skip and the Human first-cycle skip.
+    // End only once control actually returns, retaining the authored intro,
+    // arrival fades and title cards without changing the selected view setting.
+    const bool openingComplete = play->sceneId == SCENE_LOST_WOODS || gSaveContext.save.isFirstCycle;
+    introPresentation.Update(openingComplete, SceneFacts(play), controls);
 }
 inline mmvr::SceneView SceneView(PlayState* play) {
     const auto facts = SceneFacts(play);

@@ -31,6 +31,8 @@ s32 StrayFairyOverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3
     return false;
 }
 
+static void EnsureGICopyDLs();
+
 void DrawStrayFairy(RandoItemId randoItemId) {
     OPEN_DISPS(gPlayState->state.gfxCtx);
 
@@ -57,14 +59,19 @@ void DrawStrayFairy(RandoItemId randoItemId) {
     Matrix_ReplaceRotation(&gPlayState->billboardMtxF);
     Matrix_Scale(0.03f, 0.03f, 0.03f, MTXMODE_APPLY);
 
-    // Kind of a hack to draw the stray fairy, the drawback of this is that all stray fairies in the scene will animate
-    // together, but worse is that the more there are the faster their animation will play (because of the
-    // SkelAnime_Update below). This is still better than the previous solution which hand drew the fairy with DL
-    // calls...
+    // All displayed fairy rewards share one cosmetic pose, updated once per
+    // native frame. State restore rebinds this derived cache before it is drawn.
     static bool initialized = false;
     static SkelAnime skelAnime;
     static Vec3s jointTable[STRAY_FAIRY_LIMB_MAX];
     static u32 lastUpdate = 0;
+    static uint64_t cacheGeneration = 0;
+    if (cacheGeneration != MMVR_RandoDrawGeneration()) {
+        cacheGeneration = MMVR_RandoDrawGeneration();
+        initialized = false;
+        skelAnime = {};
+        lastUpdate = UINT32_MAX;
+    }
     if (!initialized) {
         initialized = true;
         SkelAnime_InitFlex(gPlayState, &skelAnime, (FlexSkeletonHeader*)&gStrayFairySkel,
@@ -199,6 +206,7 @@ void DrawOwlStatue() {
 static Gfx gGiSmallKeyCopyDL[75];
 
 void DrawSmallKey(RandoItemId randoItemId) {
+    EnsureGICopyDLs();
     OPEN_DISPS(gPlayState->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
@@ -232,6 +240,7 @@ void DrawSmallKey(RandoItemId randoItemId) {
 static Gfx gGiBossKeyCopyDL[87];
 
 void DrawBossKey(RandoItemId randoItemId) {
+    EnsureGICopyDLs();
     OPEN_DISPS(gPlayState->state.gfxCtx);
 
     Gfx_SetupDL25_Opa(gPlayState->state.gfxCtx);
@@ -270,6 +279,7 @@ void DrawBossKey(RandoItemId randoItemId) {
 static Gfx gSkulltulaTokenFlameCopyDL[76];
 
 void DrawSkulltulaToken(RandoItemId randoItemId, Actor* actor) {
+    EnsureGICopyDLs();
     // It is not known why this happens, but the eyes on the skulltula tokens disappear if they are are perfectly
     // parallel with the camera. This most likely a problem in our Fast3D (maybe z-index stuff?).
     // Tilting the token down by 16 units seems to be enough to get it to always render the eyes without being
@@ -708,24 +718,39 @@ void Rando::DrawItem(RandoItemId randoItemId, RandoCheckId randoCheckId, Actor* 
     }
 }
 
-static RegisterShipInitFunc initializeGICopyDLs(
-    []() {
-        // Small keys
-        Gfx* baseDL = ResourceMgr_LoadGfxByName(gGiSmallKeyDL);
-        memcpy(gGiSmallKeyCopyDL, baseDL, sizeof(gGiSmallKeyCopyDL));
-        gGiSmallKeyCopyDL[5] = gsDPNoOp();
-        gGiSmallKeyCopyDL[6] = gsDPNoOp();
+// Copies contain resource-backed commands. Rebuild them after successful
+// restores instead of retaining pointers from a different warmed resource set.
+static void EnsureGICopyDLs() {
+    static uint64_t cacheGeneration = UINT64_MAX;
+    if (cacheGeneration == MMVR_RandoDrawGeneration()) return;
+    // Small keys
+    Gfx* baseDL = ResourceMgr_LoadGfxByName(gGiSmallKeyDL);
+    memcpy(gGiSmallKeyCopyDL, baseDL, sizeof(gGiSmallKeyCopyDL));
+    gGiSmallKeyCopyDL[5] = gsDPNoOp();
+    gGiSmallKeyCopyDL[6] = gsDPNoOp();
 
-        // Boss keys
-        baseDL = ResourceMgr_LoadGfxByName(gGiBossKeyDL);
-        memcpy(gGiBossKeyCopyDL, baseDL, sizeof(gGiBossKeyCopyDL));
-        gGiBossKeyCopyDL[5] = gsDPNoOp();
-        gGiBossKeyCopyDL[6] = gsDPNoOp();
+    // Boss keys
+    baseDL = ResourceMgr_LoadGfxByName(gGiBossKeyDL);
+    memcpy(gGiBossKeyCopyDL, baseDL, sizeof(gGiBossKeyCopyDL));
+    gGiBossKeyCopyDL[5] = gsDPNoOp();
+    gGiBossKeyCopyDL[6] = gsDPNoOp();
 
-        // Token Flame
-        baseDL = ResourceMgr_LoadGfxByName(gSkulltulaTokenFlameDL);
-        memcpy(gSkulltulaTokenFlameCopyDL, baseDL, sizeof(gSkulltulaTokenFlameCopyDL));
-        gSkulltulaTokenFlameCopyDL[5] = gsDPNoOp();
-        gSkulltulaTokenFlameCopyDL[6] = gsDPNoOp();
-    },
-    {});
+    // Token Flame
+    baseDL = ResourceMgr_LoadGfxByName(gSkulltulaTokenFlameDL);
+    memcpy(gSkulltulaTokenFlameCopyDL, baseDL, sizeof(gSkulltulaTokenFlameCopyDL));
+    gSkulltulaTokenFlameCopyDL[5] = gsDPNoOp();
+    gSkulltulaTokenFlameCopyDL[6] = gsDPNoOp();
+    cacheGeneration = MMVR_RandoDrawGeneration();
+}
+static RegisterShipInitFunc initializeGICopyDLs(EnsureGICopyDLs, {});
+
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+#include "2s2h/VR/NativeStateFields.h"
+extern "C" void MMVR_VisitRandoDrawItemState(MMVR_StateSink* sink) {
+    // Runtime graphics references may point at these host-owned display lists;
+    // register stable owners, but rebuild their contents rather than serializing.
+    sink->constant(sink->context,"rando/draw/small-key-list",gGiSmallKeyCopyDL,sizeof(gGiSmallKeyCopyDL));
+    sink->constant(sink->context,"rando/draw/boss-key-list",gGiBossKeyCopyDL,sizeof(gGiBossKeyCopyDL));
+    sink->constant(sink->context,"rando/draw/token-flame-list",gSkulltulaTokenFlameCopyDL,sizeof(gSkulltulaTokenFlameCopyDL));
+}
+#endif

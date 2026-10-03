@@ -11,6 +11,18 @@ extern "C" {
 #define CVAR_NAME "gEnhancements.Cutscenes.SkipStoryCutscenes"
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipHealingDarmani_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You received the Goron Mask!",
+                                              { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You received the Goron Mask!\x1C\x02\x10",
+                                    { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_MASK_GORON);
+}
+
 void RegisterSkipHealingDarmani() {
     /*
      * Use the cutscene queue hook here. This allows us to kill the actor while it is still invisible. Using the
@@ -25,16 +37,7 @@ void RegisterSkipHealingDarmani() {
                     .showGetItemCutscene = !CVarGetInteger("gEnhancements.Cutscenes.SkipGetItemCutscenes", 0),
                     .param = GID_MASK_GORON,
                     .giveItem =
-                        [](Actor* actor, PlayState* play) {
-                            if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                                CustomMessage::SetActiveCustomMessage("You received the Goron Mask!",
-                                                                      { .textboxType = 2 });
-                            } else {
-                                CustomMessage::StartTextbox("You received the Goron Mask!\x1C\x02\x10",
-                                                            { .textboxType = 2 });
-                            }
-                            Item_Give(gPlayState, ITEM_MASK_GORON);
-                        },
+                        MMVR_StateEvent_SkipHealingDarmani_giveItem0,
                 });
             }
             /*

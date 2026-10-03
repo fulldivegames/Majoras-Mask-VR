@@ -650,6 +650,11 @@ bool BinarySaveConverter_HandleFileDropped(char* filePath) {
         }
 
         std::streamsize size = fileStream.tellg();
+        // This handler sees every dropped file before the JSON importer. In
+        // particular, a tiny text file must not underflow the signature loop.
+        if (size < 0x28 || size > 32 * 1024 * 1024) {
+            return false;
+        }
         fileStream.seekg(0, std::ios::beg);
 
         std::vector<char> buffer(size);
@@ -660,11 +665,14 @@ bool BinarySaveConverter_HandleFileDropped(char* filePath) {
         std::string sequence = "ZELD";
         std::string swappedSequence = "DLEZ";
         std::vector<size_t> saveOffsets = {};
+        bool swapped=false;
 
-        for (size_t i = 0; i <= size - sequence.size(); ++i) {
+        for (size_t i = 0; i + sequence.size() <= buffer.size(); ++i) {
             if (std::equal(sequence.begin(), sequence.end(), buffer.begin() + i)) {
                 saveOffsets.push_back(i);
             } else if (std::equal(swappedSequence.begin(), swappedSequence.end(), buffer.begin() + i)) {
+                if (swapped || buffer.size() % 4 != 0) return false;
+                swapped=true;
                 // Swap the entire file and start over
                 std::vector<char> byteSwapBuffer(4);
                 for (size_t i = 0; i < buffer.size(); i += 4) {
@@ -674,13 +682,19 @@ bool BinarySaveConverter_HandleFileDropped(char* filePath) {
                     byteSwapBuffer[3] = buffer[i];
                     memcpy(&buffer[i], byteSwapBuffer.data(), 4);
                 }
-                i = 0;
+                saveOffsets.clear();
+                i = size_t(-1); // Resume at byte zero after the loop increment.
             }
         }
 
         if (saveOffsets.size() == 0) {
             SPDLOG_DEBUG("Not a valid binary save file");
             return false;
+        }
+        if (saveOffsets[0] < 0x24) return false;
+        if (!SaveManager_CanImportSave()) {
+            Notification::Emit({ .message = "Return to file selection before importing a save." });
+            return true;
         }
 
         int saveSlot = SaveManager_GetOpenFileSlot();
@@ -690,7 +704,7 @@ bool BinarySaveConverter_HandleFileDropped(char* filePath) {
             return true;
         }
 
-        Legacy_SaveContext saveContext;
+        Legacy_SaveContext saveContext{};
         auto reader = std::make_shared<Ship::BinaryReader>(buffer.data(), buffer.size());
         reader->SetEndianness(Ship::Endianness::Big);
 
@@ -698,7 +712,6 @@ bool BinarySaveConverter_HandleFileDropped(char* filePath) {
         reader->Seek(saveOffsets[0] - 0x24, Ship::SeekOffsetType::Start);
         BinarySaveConverter_ReadBufferToSave(&saveContext, reader);
         nlohmann::json j;
-        std::string fileName = SaveManager_GetFileName(saveSlot);
 
         j["newCycleSave"]["save"] = saveContext.save;
         j["type"] = "2S2H_SAVE";
@@ -722,16 +735,9 @@ bool BinarySaveConverter_HandleFileDropped(char* filePath) {
             j["owlSave"] = saveContext;
         }
 
-        SaveManager_WriteSaveFile(fileName, j);
-
-        // Reset the file select state to reload the save metadata
-        if (gFileSelectState != NULL) {
-            STOP_GAMESTATE(&gFileSelectState->state);
-            SET_NEXT_GAMESTATE(&gFileSelectState->state, FileSelect_Init, sizeof(FileSelectState));
-        }
-
-        SPDLOG_INFO("Successfully imported save into slot {}", saveSlot);
-        Notification::Emit({ .message = "Successfully imported save into slot", .suffix = std::to_string(saveSlot) });
+        std::string message;
+        SaveManager_ImportSaveData(std::move(j),saveSlot,false,message);
+        Notification::Emit({ .message = message });
 
         return true;
     } catch (std::exception& e) {

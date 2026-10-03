@@ -8,6 +8,12 @@ void Player_SetupTalk(PlayState* play, Player* player);
 s32 Player_SetupWaitForPutAway(PlayState* play, Player* player, AfterPutAwayFunc afterPutAwayFunc);
 }
 
+static std::vector<u8> skipCmds = {};
+#if defined(MMVR_ENABLE) && defined(MMVR_STATE_NATIVE_BACKEND)
+std::vector<uint8_t>& MMVR_RandoOfferGetItemCommands() {return skipCmds;}
+#endif
+
+
 // This prevents actors from giving items with Actor_OfferGetItem, along with preventing them from waiting on the
 // GetItem textbox to close
 void Rando::MiscBehavior::InitOfferGetItemBehavior() {
@@ -16,7 +22,7 @@ void Rando::MiscBehavior::InitOfferGetItemBehavior() {
         u32 cmdId = va_arg(args, u32);
         Actor* actor = va_arg(args, Actor*);
         Player* player = GET_PLAYER(gPlayState);
-        static std::vector<u8> skipCmds = {};
+
 
         // SPDLOG_INFO("VB_EXEC_MSG_EVENT {}", cmdId);
 

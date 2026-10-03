@@ -13,6 +13,21 @@ extern "C" {
 #define CVAR_NAME "gEnhancements.Cutscenes.SkipStoryCutscenes"
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
 
+// Named item callbacks retain identity across compatible save-state updates.
+void MMVR_StateEvent_SkipLearningSongOfTime_giveItem0(Actor* actor, PlayState* play) {
+    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
+        CustomMessage::SetActiveCustomMessage("You received the Song of Time!", { .textboxType = 2 });
+    } else {
+        CustomMessage::StartTextbox("You received the Song of Time!\x1C\x02\x10", { .textboxType = 2 });
+    }
+    Item_Give(gPlayState, ITEM_SONG_TIME);
+}
+
+void MMVR_StateEvent_SkipLearningSongOfTime_drawItem0(Actor* actor, PlayState* play) {
+    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
+    Rando::DrawItem(RI_SONG_TIME);
+}
+
 void RegisterSkipLearningSongOfTime() {
     COND_VB_SHOULD(VB_PLAY_SONG_OF_TIME_CS, CVAR, {
         if (!*should) {
@@ -26,19 +41,9 @@ void RegisterSkipLearningSongOfTime() {
             .showGetItemCutscene = true,
             .param = GID_MASK_DEKU,
             .giveItem =
-                [](Actor* actor, PlayState* play) {
-                    if (CUSTOM_ITEM_FLAGS & CustomItem::GIVE_ITEM_CUTSCENE) {
-                        CustomMessage::SetActiveCustomMessage("You received the Song of Time!", { .textboxType = 2 });
-                    } else {
-                        CustomMessage::StartTextbox("You received the Song of Time!\x1C\x02\x10", { .textboxType = 2 });
-                    }
-                    Item_Give(gPlayState, ITEM_SONG_TIME);
-                },
+                MMVR_StateEvent_SkipLearningSongOfTime_giveItem0,
             .drawItem =
-                [](Actor* actor, PlayState* play) {
-                    Matrix_Scale(30.0f, 30.0f, 30.0f, MTXMODE_APPLY);
-                    Rando::DrawItem(RI_SONG_TIME);
-                } });
+                MMVR_StateEvent_SkipLearningSongOfTime_drawItem0 });
     });
 }
 
