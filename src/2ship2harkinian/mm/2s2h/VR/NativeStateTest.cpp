@@ -930,6 +930,7 @@ bool PreflightStateSlot(int slot) {
     }
 }
 bool PrepareStateMenuContent() {
+    if (!mmvr::ExactStatesEnabled) return false;
     if(MMVR_StateResumeBootstrapActive()) {
         mmvr::GetMenu().stateStatus="A save-state restore is already in progress. Please wait.";
         return false;
@@ -954,6 +955,7 @@ bool DiscardExactStateRequestDuringResume() noexcept {
     return true;
 }
 void ProcessExactStateRequest() {
+    if (!mmvr::ExactStatesEnabled) { mmvr::exactStateRequested.exchange(0); return; }
     // Discover a durable startup request before accepting a new menu request.
     // The native fixture can invoke this path without the normal title frames.
     if(!state_resume::checked)PollPendingStateResume();
@@ -1049,6 +1051,7 @@ int VerifyStateRequestBlocking() {
 #endif
 }
 void InitializeExactStateMenu() {
+    if (!mmvr::ExactStatesEnabled) { mmvr::GetMenu().exactStatesAvailable=false; return; }
     static bool initialized=false;
     if(initialized)return;
     initialized=true;
@@ -1058,6 +1061,7 @@ void InitializeExactStateMenu() {
 }
 }
 extern "C" bool MMVR_ExactStateWorkPending() {
+    if (!mmvr::ExactStatesEnabled) return false;
 #ifdef MMVR_LOCAL_TEST_TOOLS
     if(std::getenv("MMVR_NATIVE_STATE_PENDING_SLOT"))return true;
     if(const auto* test=std::getenv("MMVR_NATIVE_TEST");test&&std::string_view(test)=="1")
@@ -1066,6 +1070,7 @@ extern "C" bool MMVR_ExactStateWorkPending() {
     return mmvr::exactStateRequested.load()!=0||mmvrgame::PendingStateResumeWork();
 }
 extern "C" bool MMVR_StateResumeBootstrapActive() {
+    if (!mmvr::ExactStatesEnabled) return false;
     return mmvrgame::state_resume::pending.has_value() || mmvrgame::state_resume::bootstrap ||
            mmvrgame::state_resume::returning;
 }

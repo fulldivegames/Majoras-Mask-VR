@@ -1113,7 +1113,7 @@ class TheaterRuntime {
                 }
                 else if (confirmed == RecenterRow)
                     centerPending = true;
-                else if (ExactStateRow(confirmed) && sceneGameplay && menu.exactStatesAvailable) {
+                else if (ExactStatesEnabled && ExactStateRow(confirmed) && sceneGameplay && menu.exactStatesAvailable) {
                     const int slot=(confirmed-SaveStateFirstRow)/2;
                     const bool load=(confirmed-SaveStateFirstRow)%2;
                     if(load&&!menu.stateSlotsPresent[slot]) menu.stateStatus="That save-state slot is empty.";

@@ -75,9 +75,11 @@ inline void ReturnToFiles() {
 }
 }
 inline bool PendingStateResumeWork() {
+    if (!mmvr::ExactStatesEnabled) return false;
     return !state_resume::checked||state_resume::pending.has_value()||state_resume::returning;
 }
 inline void PollPendingStateResume() {
+    if (!mmvr::ExactStatesEnabled) return;
     using namespace state_resume;
     if(returning) {
         if(gFileSelectState&&gGameState==&gFileSelectState->state&&gGameState->running) {

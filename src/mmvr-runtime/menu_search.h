@@ -21,6 +21,7 @@ struct MenuSearchEntry {
 inline std::vector<MenuSearchEntry> VrMenuSearchEntries(const MenuState& menu) {
     std::vector<MenuSearchEntry> entries;
     for (int section = 0; section < MenuSectionCount; ++section) {
+        if (section == 35 && !ExactStatesEnabled) continue;
         if (MenuSections[section].tab == NativeTab || !MenuSectionVisible(section) ||
             (section == 35 && (!menu.exactStatesAvailable || !menu.gameplayAvailable))) continue;
         entries.push_back({MenuRows + section, section, MenuSections[section].label});

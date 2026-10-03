@@ -187,7 +187,10 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
             float y = 200.f + (local - first) * 72;
             if (local == row)
                 list.AddRectFilled({ 49, y - 7 }, { 975, y + 52 }, IM_COL32(24, 75, 81, 245), 5);
-            if (MenuHeader(i)) {
+            if (i == MenuRows + 35 && !ExactStatesEnabled) {
+                Text(list, 64, y, "Save states disabled", 25);
+                Text(list, 64, y + 29, "Use menu and owl saving.", 20);
+            } else if (MenuHeader(i)) {
                 const int section = i - MenuRows;
                 const bool expanded = menu.expanded[section];
                 Text(list, 64, y + 10, expanded ? "-" : "+", 30);
@@ -233,7 +236,8 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
                     { "Form bodies and climbing", "Improved form necks, Goron view and Deku wrists.", "Climb Anywhere can grab ledge tops and climb over." },
                     { "Save and mod improvements", "Import/export ordinary saves between PCVR and Quest.", "Improved nested mod and texture-pack discovery." },
                     { "Save-state restoration", "New compatible states restore settings and recorded pack selection.", "Keep required packs installed; incompatible old states need their old build." },
-                    { "Menu and shield options", "VR settings search; 2Ship results come first in 2Ship search.", "Editable cutscene options and optional sword-drawn shield for human Link." }
+                    { "Menu and shield options", "VR settings search; 2Ship results come first in 2Ship search.", "Editable cutscene options and optional sword-drawn shield for human Link." },
+                    { "v0.33 - Save states disabled", "Save states are temporarily disabled.", "Use menu and owl saving to keep your progress." }
                 };
                 static_assert(std::size(notes) == ReleaseNotesCount);
                 const auto& note = notes[i - ReleaseNotesFirstRow];

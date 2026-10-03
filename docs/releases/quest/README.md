@@ -3,7 +3,7 @@ Full Motion Majora's Mask VR mod, made by Full Dive Games.
 
 Disclaimer: This is made using Vibe coding. I make no money from this mod, and I've put a lot of time and testing into making it polished, fun, and fully playable.
 
-**v0.32 - Body and Gameplay Hotfixes:** Body, item-receiving, climbing, saves and menu improvements. See System > Release notes in VR.
+**v0.33 - Save states disabled:** Use menu and owl saving. Existing save files are preserved.
 
 ## First installation
 
@@ -21,7 +21,7 @@ The APK uses Android OpenXR and OpenGL ES. Quest 3 is the principal performance 
 
 ## Before updating
 
-**New save states support compatible updates and restore their saved settings and pack selection.** Keep the required pack versions installed. Older states and incompatible game layouts may still need their original build. Make an ordinary game save before updating.
+**Save states are temporarily disabled. Use menu and owl saving.** Existing state files are preserved, but cannot be saved or loaded in this version.
 
 ## Beta release status
 
@@ -53,7 +53,7 @@ Eye resolution scale defaults to 1.0 of the runtime-recommended eye size. Leave 
 
 Use **System > Session and files > Save game** for a normal save. Pause Menu Save, Persistent Owl Saves and Remember Save Location are enabled by default. Continue your file to return to its saved entrance; finish dialogue or minigames before saving.
 
-**Save states are available on both PCVR and Quest.** During gameplay, click the right thumbstick to open the VR menu, then go to **System > Save states**. Choose **Save slot 1, 2 or 3** to capture your current game state, and the matching **Load slot** to resume it. Loading replaces your current progress with that state. Keep ordinary in-game saves too; exact states require compatible game data and state layouts. See [Exact save states and ordinary saves](#exact-save-states-and-ordinary-saves) below for compatibility and backup details.
+**Save states are temporarily disabled. Use menu and owl saving.** Existing state files are preserved, but cannot be saved or loaded in this version.
 
 An in-game guide is available under **Controls > How to play tutorial** in the VR menu, including before entering a save. Expand it and scroll with the left stick to read controls, item use, physical gestures, forms, songs and saving. It uses default Touch button names; your custom bindings still apply.
 
@@ -149,11 +149,11 @@ VR settings are global across game-save files. Close the VR menu after changes t
 
 ## Exact save states and ordinary saves
 
-During gameplay, open **System > Save states**. There are three Save entries and three matching Load entries. Follow overwrite/load confirmation prompts and the resulting status message. Loading replaces the current live state. An empty slot cannot be loaded.
+Save states are temporarily disabled. Use **System > Session and files > Save game**, the pause-menu save option, or owl statues.
 
-New states restore your progress, player settings, and enabled packs in their saved order. If the pack selection differs, the game selects the saved packs and restarts to resume safely. Missing or changed pack files are reported before restoring gameplay. Compatible updates can load these states; incompatible layouts and older states may still require the original build. Exact states stay platform-specific—use ordinary saves to move between PCVR and Quest.
 
-Keep ordinary game saves as your long-term progress backup. Exact states are separate files in `saves/save-states/slot-1.mmstate` through `slot-3.mmstate` under the app's data folder. They can be large (sampled scenes approximately 65 MB per slot), and capture/load briefly pauses play. Saved player settings return when loading; your current headset origin and device setup remain current. Release controls after loading before starting another gesture. Automated coverage is substantial but does not certify every mod, boss, cutscene or mid-action combination.
+
+
 
 At the file-selection screen, open **2Ship > Save files** to import or export a normal save. Choose the destination slot and confirm replacement. The JSON includes normal and persistent owl progress and works between PCVR and Quest; the previous destination is backed up. This is separate from save-state slots.
 
@@ -201,7 +201,7 @@ Use the separate Human, Deku, Goron, Zora and Fierce Deity world-size sliders to
 
 The first launch shows a short setup guide. Stand or sit comfortably and recenter. Choose your dominant hand under Hands. Controls contains the full tutorial and button rebinding. You can reopen the guide under System > Session and files. Close settings to save changes. World scale is optional; measure floor to your eyes, not the top of your head. Hands and carried equipment follow that scale together.
 
-The game checks for updates once on launch by default. A newer version is shown in the VR menu; checking never installs automatically. You can turn launch checks off under System > Updates. Before installing, make an ordinary game save. New save states restore their saved settings and installed pack selection across compatible updates. Older states, incompatible layouts, missing pack versions and different platforms may still require the original setup; ordinary saves remain the long-term backup.
+The game checks for updates once on launch by default. A newer version is shown in the VR menu; checking never installs automatically. You can turn launch checks off under System > Updates. Before installing, make an ordinary game save.
 
 System > Diagnostics and reset > Export diagnostic report writes `diagnostics/mmvr-report.json` in the game's files folder. It includes build, runtime, numeric VR settings, anonymous mod identifiers and recent error counts. It excludes saves, personal paths and raw logs. Review it before sharing it with a bug report. Describe where you were and what you did too.
 
@@ -222,7 +222,7 @@ Bottle pickup includes hot-spring water and bugs, with world-scale support.
 
 Frame rate options: Uncapped, 120, 90, 80 or 72 FPS. Uncapped removes the game limiter; the headset/runtime still controls display refresh.
 
-Large texture packs are verified in the background before save states are available. If the menu says verification is still running, retry Save/Load shortly. Keep the pack versions required by your states.
+Save before changing texture packs or mods; restart after changing enabled packs.
 
 Bow hand angles and holding-hand smoothing are under **Items → Bow and aiming**. The item wheel shows consumable counts. Release notes are under **System → Release notes**.
 

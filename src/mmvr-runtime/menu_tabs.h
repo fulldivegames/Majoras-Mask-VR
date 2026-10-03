@@ -1,5 +1,6 @@
 #pragma once
 #include "native_menu_input.h"
+#include "state_availability.h"
 #include "settings.h"
 #include "updater.h"
 #include "forms.h"
@@ -24,7 +25,7 @@ inline constexpr int AssignmentFirst = int(Setting::Count), ResetSettingsRow = A
                      DiagnosticExportRow = NativeOptionsRow + 1,
                      SetupGuideRow = NativeOptionsRow + 2,
                      ReleaseNotesFirstRow = NativeOptionsRow + 3,
-                     ReleaseNotesCount = 39,
+                     ReleaseNotesCount = 40,
                      SaveGameRow = ReleaseNotesFirstRow + ReleaseNotesCount,
                      SearchSettingsRow = SaveGameRow + 1,
                      MenuRows = SearchSettingsRow + 1;
@@ -90,6 +91,7 @@ struct MenuEntry {
 };
 // Explicit presentation order is independent of persistent setting IDs.
 inline constexpr MenuEntry OrderedMenu[] = {
+    { ReleaseNotesFirstRow + 39, 39 },
     { ReleaseNotesFirstRow + 34, 39 },
     { ReleaseNotesFirstRow + 35, 39 },
     { ReleaseNotesFirstRow + 36, 39 },
@@ -418,6 +420,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
 };
 static_assert(sizeof(OrderedMenu) / sizeof(OrderedMenu[0]) == MenuRows);
 inline bool MenuRowVisible(int row) {
+    if (!ExactStatesEnabled && ExactStateRow(row)) return false;
     if (row == int(Setting::PhysicalSword) || row == int(Setting::PhysicalShield) || row == int(Setting::PhysicalBow) || row == int(Setting::PhysicalBottle) || row == int(Setting::PhysicalCarry) || row == int(Setting::PhysicalMasks) || row == int(Setting::PhysicalFists) || row == int(Setting::PhysicalFins) || row == int(Setting::TrackedAim)) return false;
     if (row == int(Setting::AreaPanoramaScreens)) return false;
     if(!PrivateDebugTools && (row==DebugReturnRow || row==SkipDayRow || row==SkipTwoHoursRow || row==int(Setting::DebugRoomSpawn) ||
@@ -429,6 +432,7 @@ inline bool MenuRowVisible(int row) {
            row - AssignmentFirst < ActiveItemSlots(GetSettings());
 }
 inline bool MenuSectionVisible(int section) {
+    if (section == 35 && !ExactStatesEnabled) return true; // Static withdrawal notice.
     if (!PrivateDebugTools && section == 33) return false; // Never expose the public Debug heading.
     for (auto entry : OrderedMenu)
         if (entry.section == section && MenuRowVisible(entry.row)) return true;
@@ -497,7 +501,7 @@ struct MenuState {
     int confirmStateRow = -1;
     std::string stateStatus;
     bool RowAvailable(int value) const {
-        if (ExactStateRow(value)) return exactStatesAvailable && gameplayAvailable;
+        if (ExactStateRow(value)) return ExactStatesEnabled && exactStatesAvailable && gameplayAvailable;
         return gameplayAvailable || (value != MainMenuRow && value != DebugReturnRow && value != SkipDayRow && value != SkipTwoHoursRow);
     }
     NativeMenuInput nativeInput;
@@ -520,7 +524,7 @@ struct MenuState {
     }
     int VisibleSetting(int at, bool resolveForm = true) const {
         for (int section = 0; section < MenuSectionCount; ++section) {
-            if (MenuSections[section].tab != tab || !MenuSectionVisible(section) || (section == 35 && (!exactStatesAvailable || !gameplayAvailable)))
+            if (MenuSections[section].tab != tab || !MenuSectionVisible(section) || (section == 35 && ExactStatesEnabled && (!exactStatesAvailable || !gameplayAvailable)))
                 continue;
             if (at-- == 0)
                 return MenuRows + section;
@@ -540,7 +544,7 @@ struct MenuState {
     int VisibleRows() const {
         int count = 0;
         for (int section = 0; section < MenuSectionCount; ++section) {
-            if (MenuSections[section].tab != tab || !MenuSectionVisible(section) || (section == 35 && (!exactStatesAvailable || !gameplayAvailable)))
+            if (MenuSections[section].tab != tab || !MenuSectionVisible(section) || (section == 35 && ExactStatesEnabled && (!exactStatesAvailable || !gameplayAvailable)))
                 continue;
             ++count;
             if (expanded[section])
@@ -598,7 +602,7 @@ struct MenuState {
         const int section = MenuHeader(value) ? value - MenuRows : SettingSection(value);
         if (section < 0 || section >= MenuSectionCount || MenuSections[section].tab == NativeTab ||
             !MenuSectionVisible(section) || (!MenuHeader(value) && !MenuRowVisible(value)) ||
-            !RowAvailable(value) || (section == 35 && (!exactStatesAvailable || !gameplayAvailable))) return false;
+            !RowAvailable(value) || (section == 35 && (!ExactStatesEnabled || !exactStatesAvailable || !gameplayAvailable))) return false;
         CollapseAll();
         tab = MenuSections[section].tab;
         expanded[section] = true;
@@ -683,7 +687,7 @@ struct MenuState {
             Normalize();return;
         }
         int section = MenuHeader(selected) ? selected - MenuRows : SettingSection(selected);
-        if (section < 0)
+        if (section < 0 || (section == 35 && !ExactStatesEnabled))
             return;
         expanded[section] = expand;
         if (!expand || MenuHeader(selected)) {

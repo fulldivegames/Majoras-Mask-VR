@@ -601,7 +601,7 @@ int main(){
         mmvr::MenuState menu;menu.tab=mmvr::SystemTab;menu.expanded[35]=true;
         for(int row=mmvr::SaveStateFirstRow;row<mmvr::SaveStateFirstRow+6;++row)check(!menu.RowAvailable(row));
         menu.exactStatesAvailable=true;
-        for(int row=mmvr::SaveStateFirstRow;row<mmvr::SaveStateFirstRow+6;++row)check(menu.RowAvailable(row));
+        for(int row=mmvr::SaveStateFirstRow;row<mmvr::SaveStateFirstRow+6;++row)check(menu.RowAvailable(row)==mmvr::ExactStatesEnabled);
         menu.gameplayAvailable=false;
         for(int row=mmvr::SaveStateFirstRow;row<mmvr::SaveStateFirstRow+6;++row)check(!menu.RowAvailable(row));
         menu.gameplayAvailable=true;menu.confirmStateRow=mmvr::SaveStateFirstRow;

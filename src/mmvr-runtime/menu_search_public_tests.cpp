@@ -28,5 +28,24 @@ int main() {
     require(!menu.FocusSearchRow(mmvr::MenuRows + 33));
     require(!menu.FocusSearchRow(int(mmvr::Setting::DebugRoomSpawn)));
     require(!menu.FocusSearchRow(int(mmvr::Setting::PhysicalSword)));
+    menu.tab=mmvr::SystemTab;
+    menu.exactStatesAvailable=true; // Stale availability must not reactivate slots.
+    for(bool gameplay:{false,true}) {
+        menu.gameplayAvailable=gameplay;
+        bool notice=false;
+        for(int i=0;i<menu.VisibleRows();++i) {
+            const int value=menu.VisibleSetting(i);
+            require(!mmvr::ExactStateRow(value));
+            if(value==mmvr::MenuRows+35) {
+                notice=true;menu.row=i;
+                menu.ToggleSection();require(!menu.expanded[35]);
+            }
+        }
+        require(notice);
+        for(int row=mmvr::SaveStateFirstRow;row<mmvr::SaveStateFirstRow+6;++row) {
+            require(!menu.RowAvailable(row));require(!menu.FocusSearchRow(row));
+        }
+        require(!menu.FocusSearchRow(mmvr::MenuRows+35));
+    }
     std::printf("Public VR menu search: %u checks passed\n", checks);
 }
