@@ -9,6 +9,8 @@ One project for **Windows PCVR** and **standalone Meta Quest**. Choose the downl
 
 **Version 0.33 beta downloads:** [Windows PCVR ZIP](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.33/MMVR-Windows-0.33.zip) | [Quest standalone APK](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.33/MMVR-Quest-0.33.apk) | [Release Notes](https://github.com/fulldivegames/Majoras-Mask-VR/releases/tag/v0.33)
 
+**Save states are temporarily disabled. Use menu and owl saving.**
+
 **v0.3 - Physical Body Hotfixes and More:** Experimental tracked body, held notebook, Moon masks, comfort and save-continuation fixes.
 
 **v0.26 - Saving and Gameplay Hotfixes:** VR saving, wired controller remapping, VR search, optional lock-on orbit, stage-song and rock fixes.
