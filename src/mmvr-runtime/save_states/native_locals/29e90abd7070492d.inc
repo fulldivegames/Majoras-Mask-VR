@@ -3052,7 +3052,13 @@ void func_8012669C(PlayState* play, Player* player, Vec3f* arg2, Vec3f* arg3) {
 
     if (player->meleeWeaponState != PLAYER_MELEE_WEAPON_STATE_0) {
         if (func_80126440(play, NULL, &player->meleeWeaponInfo[0], &sp3C, &sp30) &&
-            (player->transformation != PLAYER_FORM_GORON) && !(player->stateFlags1 & PLAYER_STATE1_400000)) {
+            (player->transformation != PLAYER_FORM_GORON) && !(player->stateFlags1 & PLAYER_STATE1_400000)
+#ifdef MMVR_ENABLE
+            // Native Zora fin meshes are hidden behind the tracked fins. Their
+            // animation-driven ribbons must follow the same render policy.
+            && ((player->transformation != PLAYER_FORM_ZORA) || !MMVR_HideNativeBodyRender())
+#endif
+        ) {
             EffectBlure_AddVertex(Effect_GetByIndex(player->meleeWeaponEffectIndex[0]), &player->meleeWeaponInfo[0].tip,
                                   &player->meleeWeaponInfo[0].base);
         }
@@ -3283,7 +3289,11 @@ void func_80126BD0(PlayState* play, Player* player, s32 arg2) {
         Matrix_MultVec3f(&D_801C0ADC[arg2], &sp4C);
 
         if (func_80126440(play, NULL, &player->meleeWeaponInfo[arg2], &sp58, &sp4C) &&
-            (player->stateFlags1 & PLAYER_STATE1_8000000)) {
+            (player->stateFlags1 & PLAYER_STATE1_8000000)
+#ifdef MMVR_ENABLE
+            && !MMVR_HideNativeBodyRender()
+#endif
+        ) {
             EffectBlure_AddVertex(Effect_GetByIndex(player->meleeWeaponEffectIndex[arg2]),
                                   &player->meleeWeaponInfo[arg2].tip, &player->meleeWeaponInfo[arg2].base);
         }
@@ -3375,8 +3385,8 @@ void Player_DrawCouplesMask(PlayState* play, Player* player) {
     AnimatedMat_DrawOpa(play, Lib_SegmentedToVirtual(&object_mask_meoto_Matanimheader_001CD8));
 }
 
-static Vec3f mmvr_local_2ff09e49265aedd4 = { 0.0f, 0.0f, 0.0f };
-static Vec3f mmvr_local_911e2be8239ccdb2 = { 0.0f, 0.0f, 0.0f };
+static Vec3f mmvr_local_039539ea97c61873 = { 0.0f, 0.0f, 0.0f };
+static Vec3f mmvr_local_a1737c11842ce326 = { 0.0f, 0.0f, 0.0f };
 void Player_DrawCircusLeadersMask(PlayState* play, Player* player) {
     /* persistent local storage is declared above */
     /* persistent local storage is declared above */
@@ -3419,8 +3429,8 @@ void Player_DrawCircusLeadersMask(PlayState* play, Player* player) {
             s16 phi_s0 = speedXZ * 2000.0f;
             f32 temp_f20;
 
-            mmvr_local_2ff09e49265aedd4.y = speedXZ * 0.4f;
-            mmvr_local_911e2be8239ccdb2.y = -0.3f;
+            mmvr_local_039539ea97c61873.y = speedXZ * 0.4f;
+            mmvr_local_a1737c11842ce326.y = -0.3f;
 
             if (phi_s0 > 0x3E80) {
                 phi_s0 = 0x3E80;
@@ -3430,10 +3440,10 @@ void Player_DrawCircusLeadersMask(PlayState* play, Player* player) {
             temp_f20 = speedXZ * 0.2f;
             temp_f20 = CLAMP_MAX(temp_f20, 4.0f);
 
-            mmvr_local_2ff09e49265aedd4.x = -Math_SinS(phi_s0) * temp_f20;
-            mmvr_local_2ff09e49265aedd4.z = -Math_CosS(phi_s0) * temp_f20;
+            mmvr_local_039539ea97c61873.x = -Math_SinS(phi_s0) * temp_f20;
+            mmvr_local_039539ea97c61873.z = -Math_CosS(phi_s0) * temp_f20;
 
-            EffectSsDtBubble_SpawnColorProfile(play, &D_801F59B0[i], &mmvr_local_2ff09e49265aedd4, &mmvr_local_911e2be8239ccdb2, 20, 20, 3, 0);
+            EffectSsDtBubble_SpawnColorProfile(play, &D_801F59B0[i], &mmvr_local_039539ea97c61873, &mmvr_local_a1737c11842ce326, 20, 20, 3, 0);
             D_801F59C8[i] -= 400;
         }
     }
@@ -3443,11 +3453,11 @@ void Player_DrawCircusLeadersMask(PlayState* play, Player* player) {
     CLOSE_DISPS(play->state.gfxCtx);
 }
 
-static Gfx mmvr_local_c7a3f96d89dd3a2c[] = {
+static Gfx mmvr_local_bd9512cb0cad4581[] = {
         gsDPSetEnvColor(0, 0, 0, 255),
         gsSPEndDisplayList(),
     };
-static Gfx mmvr_local_f6421f7cf9c96b9e[] = {
+static Gfx mmvr_local_7a1ad2d54ce24069[] = {
         gsDPSetRenderMode(AA_EN | Z_CMP | Z_UPD | IM_RD | CLR_ON_CVG | CVG_DST_WRAP | ZMODE_XLU | FORCE_BL |
                               G_RM_FOG_SHADE_A,
                           AA_EN | Z_CMP | Z_UPD | IM_RD | CLR_ON_CVG | CVG_DST_WRAP | ZMODE_XLU | FORCE_BL |
@@ -3475,10 +3485,10 @@ void Player_DrawBlastMask(PlayState* play, Player* player) {
 
         gDPSetEnvColor(POLY_OPA_DISP++, 0, 0, 0, (u8)alpha);
         gSPDisplayList(POLY_OPA_DISP++, object_mask_bakuretu_DL_000440);
-        gSPSegment(POLY_OPA_DISP++, 0x09, mmvr_local_f6421f7cf9c96b9e);
+        gSPSegment(POLY_OPA_DISP++, 0x09, mmvr_local_7a1ad2d54ce24069);
         gDPSetEnvColor(POLY_OPA_DISP++, 0, 0, 0, (u8)(255 - alpha));
     } else {
-        gSPSegment(POLY_OPA_DISP++, 0x09, mmvr_local_c7a3f96d89dd3a2c);
+        gSPSegment(POLY_OPA_DISP++, 0x09, mmvr_local_bd9512cb0cad4581);
     }
 
     CLOSE_DISPS(play->state.gfxCtx);
@@ -3853,7 +3863,7 @@ s32 func_80128640(PlayState* play, Player* player, Gfx* dlist) {
         // Note this does not check for PLAYER_BOTTLE_NONE, which would produce an OoB access on sPlayerBottleColors.
         // Under normal circunstances it should not be a problem because of the previous
         // `player->leftHandType == PLAYER_MODELTYPE_LH_BOTTLE` check
-        if (bottle != PLAYER_BOTTLE_EMPTY) {
+        if ((bottle > PLAYER_BOTTLE_EMPTY) && (bottle < ARRAY_COUNT(sPlayerBottleColors))) {
             Color_RGB8* bottleColor = &sPlayerBottleColors[bottle];
 
             gDPSetEnvColor(POLY_XLU_DISP++, bottleColor->r, bottleColor->g, bottleColor->b, 0);
@@ -3909,47 +3919,47 @@ void Player_SetFeetPos(PlayState* play, Player* player, s32 limbIndex) {
     Actor_SetFeetPos(&player->actor, limbIndex, PLAYER_LIMB_LEFT_FOOT, footPos, PLAYER_LIMB_RIGHT_FOOT, footPos);
 }
 
-static Vec3f mmvr_local_271a335309f99623 = { 398.0f, 1419.0f, 244.0f };
-static Vec3f mmvr_local_794e27bf9aa66438 = { 420.0f, 1210.0f, 380.0f };
-static Gfx* mmvr_local_40b3102530d61ba0 = object_link_child_DL_017818;
-static Vec3f mmvr_local_e7ecd2799f75d996 = { -35.0f, -395.0f, 0.0f };
-static s32 mmvr_local_e41aed5e47b1e149 = 0;
-static Vec3f mmvr_local_8c136009e9e90484[4] = {
+static Vec3f mmvr_local_ebd1e3ddf273642a = { 398.0f, 1419.0f, 244.0f };
+static Vec3f mmvr_local_c78ec1eb55f67ec8 = { 420.0f, 1210.0f, 380.0f };
+static Gfx* mmvr_local_2ef1cf073b8dff31 = object_link_child_DL_017818;
+static Vec3f mmvr_local_2288e28250da2ee3 = { -35.0f, -395.0f, 0.0f };
+static s32 mmvr_local_ece8661d243238ce = 0;
+static Vec3f mmvr_local_e303b70e58174452[4] = {
                     { -4500.0f, -3000.0f, -600.0f },
                     { 1500.0f, -3000.0f, -600.0f },
                     { -4500.0f, 3000.0f, -600.0f },
                     { 1500.0f, 3000.0f, -600.0f },
                 };
-static Vec3f mmvr_local_d811093ca290e44d = { 50.0f, 800.0f, 0.0f };
-static Vec3f mmvr_local_548825be1cb98d0f = { 50.0f, 850.0f, 0.0f };
-static Gfx* mmvr_local_048c3998c0ad277a[] = {
+static Vec3f mmvr_local_a48d3d3581bfa25f = { 50.0f, 800.0f, 0.0f };
+static Vec3f mmvr_local_14d435d0939a5b86 = { 50.0f, 850.0f, 0.0f };
+static Gfx* mmvr_local_366658dc715703b2[] = {
                     object_link_goron_DL_010590, object_link_goron_DL_010368, object_link_goron_DL_010140,
                     object_link_goron_DL_00FF18, object_link_goron_DL_00FCF0,
                 };
-static Vec2f mmvr_local_8c2adfce288f6837[PLAYER_FORM_MAX] = {
+static Vec2f mmvr_local_c5f2571dd7876c61[PLAYER_FORM_MAX] = {
                         { 140.0f, -130.0f }, // PLAYER_FORM_FIERCE_DEITY
                         { 0.0f, -200.0f },   // PLAYER_FORM_GORON
                         { -160.0f, 0.0f },   // PLAYER_FORM_ZORA
                         { 220.0f, -200.0f }, // PLAYER_FORM_DEKU
                         { 0.0f, 0.0f },      // PLAYER_FORM_HUMAN
                     };
-static Gfx* mmvr_local_20aca60bfa9acb12[] = {
+static Gfx* mmvr_local_85713cca34de6a08[] = {
                         object_link_nuts_DL_007A28, object_link_nuts_DL_0077D0, object_link_nuts_DL_007548,
                         object_link_nuts_DL_007900, object_link_nuts_DL_0076A0,
                     };
-static Vec3f mmvr_local_23b17371a981f87e[PLAYER_FORM_MAX] = {
+static Vec3f mmvr_local_58005425399a844f[PLAYER_FORM_MAX] = {
                 { 0.0f, 0.0f, 0.0f },        // PLAYER_FORM_FIERCE_DEITY
                 { -578.3f, -1100.9f, 0.0f }, // PLAYER_FORM_GORON
                 { -189.5f, -594.87f, 0.0f }, // PLAYER_FORM_ZORA
                 { -570.0f, -812.0f, 0.0f },  // PLAYER_FORM_DEKU
                 { -230.0f, -520.0f, 0.0f },  // PLAYER_FORM_HUMAN
             };
-static Vec3f mmvr_local_c091232ba49bd1f5 = { 1100.0f, -700.0f, 0.0f };
-static Vec3f mmvr_local_5504c8081c3edcec = { 1600.0f, -1700.0f, -70.0f };
-static Vec3f mmvr_local_d99eeb2d88033d87 = { 1800.0f, -300.0f, 0.0f };
-static Vec3f mmvr_local_2a7d6832bf04d1bf = { 1300.0f, -400.0f, 0.0f };
-static Vec3f mmvr_local_3e1ab9be92927eff = { 630.0f, 100.0f, -30.0f };
-static Vec3s mmvr_local_2bcb314e522e79e2 = { 0, 0, 0x7FFF };
+static Vec3f mmvr_local_e166951fdd19dfc8 = { 1100.0f, -700.0f, 0.0f };
+static Vec3f mmvr_local_a3fa7a4ede81834d = { 1600.0f, -1700.0f, -70.0f };
+static Vec3f mmvr_local_3fb07335c88666e9 = { 1800.0f, -300.0f, 0.0f };
+static Vec3f mmvr_local_7945ab0b347323a5 = { 1300.0f, -400.0f, 0.0f };
+static Vec3f mmvr_local_b83a3cf4d6a484cb = { 630.0f, 100.0f, -30.0f };
+static Vec3s mmvr_local_3c88207aa02c504c = { 0, 0, 0x7FFF };
 void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, Vec3s* rot, Actor* actor) {
     Player* player = (Player*)actor;
 
@@ -3979,10 +3989,10 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
                     /* persistent local storage is declared above */
                     /* persistent local storage is declared above */
                     Vec3s* temp_s1;
-                    Vec3f* var_a0 = &mmvr_local_271a335309f99623;
+                    Vec3f* var_a0 = &mmvr_local_ebd1e3ddf273642a;
 
                     if (player->transformation == PLAYER_FORM_HUMAN) {
-                        var_a0 = &mmvr_local_794e27bf9aa66438;
+                        var_a0 = &mmvr_local_c78ec1eb55f67ec8;
                     }
 
                     Matrix_MultVec3f(var_a0, &heldActor->world.pos);
@@ -4031,7 +4041,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
                 OPEN_DISPS(play->state.gfxCtx);
 
                 Matrix_Push();
-                Matrix_Translate(mmvr_local_e7ecd2799f75d996.x, mmvr_local_e7ecd2799f75d996.y, mmvr_local_e7ecd2799f75d996.z, MTXMODE_APPLY);
+                Matrix_Translate(mmvr_local_2288e28250da2ee3.x, mmvr_local_2288e28250da2ee3.y, mmvr_local_2288e28250da2ee3.z, MTXMODE_APPLY);
                 if ((player->stateFlags3 & PLAYER_STATE3_40) && (player->unk_B28 >= 0) && (player->unk_ACC < 0xB)) {
                     Vec3f sp20C;
                     f32 temp_fv0;
@@ -4057,7 +4067,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
                 // Physical bow rendering owns both relaxed and drawn string poses.
                 if (!MMVR_IndependentBow(player))
 #endif
-                gSPDisplayList(POLY_XLU_DISP++, mmvr_local_40b3102530d61ba0);
+                gSPDisplayList(POLY_XLU_DISP++, mmvr_local_2ef1cf073b8dff31);
 
                 Matrix_Pop();
 
@@ -4077,17 +4087,17 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
                 /* persistent local storage is declared above */
 
                 Matrix_Get(&player->shieldMf);
-                Player_UpdateShieldCollider(play, player, &player->shieldQuad, mmvr_local_8c136009e9e90484);
+                Player_UpdateShieldCollider(play, player, &player->shieldQuad, mmvr_local_e303b70e58174452);
             } else if (player->rightHandType == PLAYER_MODELTYPE_RH_HOOKSHOT) {
                 /* persistent local storage is declared above */
 
-                Matrix_MultVec3f(&mmvr_local_d811093ca290e44d, &player->rightHandWorld.pos);
+                Matrix_MultVec3f(&mmvr_local_a48d3d3581bfa25f, &player->rightHandWorld.pos);
 
                 if (heldActor != NULL) {
                     /* persistent local storage is declared above */
                     MtxF sp1BC;
 
-                    Matrix_MultVec3f(&mmvr_local_548825be1cb98d0f, &heldActor->world.pos);
+                    Matrix_MultVec3f(&mmvr_local_14d435d0939a5b86, &heldActor->world.pos);
                     Matrix_RotateZYX(0, -0x4000, -0x4000, MTXMODE_APPLY);
                     Matrix_Get(&sp1BC);
                     Matrix_MtxFToYXZRot(&sp1BC, &heldActor->world.rot, false);
@@ -4132,7 +4142,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
 
             if ((temp_a0 || temp_v1_3 || (BEN_ANIM_EQUAL(player->skelAnime.animation, gPlayerAnim_pg_gakkiplay)))) {
                 /* persistent local storage is declared above */
-                Vec3f sp178[ARRAY_COUNT(mmvr_local_048c3998c0ad277a)];
+                Vec3f sp178[ARRAY_COUNT(mmvr_local_366658dc715703b2)];
                 s32 i;
 
                 OPEN_DISPS(play->state.gfxCtx);
@@ -4168,7 +4178,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
 
                     MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
 
-                    gSPDisplayList(POLY_OPA_DISP++, mmvr_local_048c3998c0ad277a[i]);
+                    gSPDisplayList(POLY_OPA_DISP++, mmvr_local_366658dc715703b2[i]);
                     Matrix_Pop();
                 }
 
@@ -4204,7 +4214,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
                     Player_DrawGreatFairysMask(play, player);
                 } else if (player->currentMask >= PLAYER_MASK_FIERCE_DEITY) {
                     /* persistent local storage is declared above */
-                    Vec2f* temp_s0_4 = &mmvr_local_8c2adfce288f6837[player->transformation];
+                    Vec2f* temp_s0_4 = &mmvr_local_c5f2571dd7876c61[player->transformation];
 
                     Matrix_Push();
                     Matrix_Translate(temp_s0_4->x, temp_s0_4->z, 0.0f, MTXMODE_APPLY);
@@ -4250,7 +4260,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
                 if (temp_v1_5 || (BEN_ANIM_EQUAL(player->skelAnime.animation, gPlayerAnim_pn_gakkiplay)) ||
                     (BEN_ANIM_EQUAL(player->skelAnime.animation, gPlayerAnim_dl_kokeru))) {
                     /* persistent local storage is declared above */
-                    Vec3f spF0[ARRAY_COUNT(mmvr_local_20aca60bfa9acb12)];
+                    Vec3f spF0[ARRAY_COUNT(mmvr_local_85713cca34de6a08)];
                     s32 i;
                     f32* temp;
 
@@ -4301,7 +4311,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
                         if (1) {}
                         if (1) {}
                         if (1) {}
-                        gSPDisplayList(POLY_OPA_DISP++, mmvr_local_20aca60bfa9acb12[i]);
+                        gSPDisplayList(POLY_OPA_DISP++, mmvr_local_85713cca34de6a08[i]);
 
                         Matrix_Pop();
                     }
@@ -4317,7 +4327,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
 #endif
         ) {
             /* persistent local storage is declared above */
-            Vec3f* temp_s0_7 = &mmvr_local_23b17371a981f87e[player->transformation];
+            Vec3f* temp_s0_7 = &mmvr_local_58005425399a844f[player->transformation];
 
             OPEN_DISPS(play->state.gfxCtx);
 
@@ -4342,12 +4352,12 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
             Actor* spA8 = NULL;
 
             if (player->transformation != PLAYER_FORM_DEKU) {
-                Matrix_MultVec3f(&mmvr_local_c091232ba49bd1f5, &player->actor.focus.pos);
+                Matrix_MultVec3f(&mmvr_local_e166951fdd19dfc8, &player->actor.focus.pos);
             } else {
                 /* persistent local storage is declared above */
 
-                Matrix_MultVec3f(&mmvr_local_c091232ba49bd1f5, &player->actor.focus.pos);
-                Matrix_MultVec3f(&mmvr_local_d99eeb2d88033d87, sPlayerCurBodyPartPos);
+                Matrix_MultVec3f(&mmvr_local_e166951fdd19dfc8, &player->actor.focus.pos);
+                Matrix_MultVec3f(&mmvr_local_3fb07335c88666e9, sPlayerCurBodyPartPos);
                 if ((BEN_ANIM_EQUAL(player->skelAnime.animation, gPlayerAnim_pn_drinkend)) ||
                     (BEN_ANIM_EQUAL(player->skelAnimeUpper.animation, gPlayerAnim_pn_tamahaki)) ||
                     ((player->stateFlags3 & PLAYER_STATE3_40) && ((spA8 = player->heldActor) != NULL))) {
@@ -4356,7 +4366,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
                         MtxF sp68;
 
                         Matrix_Push();
-                        Matrix_MultVec3f(&mmvr_local_2a7d6832bf04d1bf, &spA8->world.pos);
+                        Matrix_MultVec3f(&mmvr_local_7945ab0b347323a5, &spA8->world.pos);
                         Matrix_RotateZYX(0, 0x4000, 0, MTXMODE_APPLY);
                         Matrix_Get(&sp68);
                         Matrix_MtxFToYXZRot(&sp68, &spA8->world.rot, false);
@@ -4417,7 +4427,7 @@ void Player_PostLimbDrawGameplay(PlayState* play, s32 limbIndex, Gfx** dList1, G
                 /* persistent local storage is declared above */
                 /* persistent local storage is declared above */
 
-                Matrix_TranslateRotateZYX(&mmvr_local_3e1ab9be92927eff, &mmvr_local_2bcb314e522e79e2);
+                Matrix_TranslateRotateZYX(&mmvr_local_b83a3cf4d6a484cb, &mmvr_local_3c88207aa02c504c);
                 Matrix_Get(&player->shieldMf);
             }
         }

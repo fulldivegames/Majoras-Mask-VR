@@ -39,6 +39,8 @@ void MMVR_NativePresentationProbe(struct PlayState*);
 float MMVR_FormEyeHeight(struct Player* player);
 int MMVR_FirstPersonBody(void);
 int MMVR_ControlledKafei(struct Player* player);
+// Visual identity only; PlayAsKafei keeps Link's gameplay and item rules.
+int MMVR_KafeiModel(struct Player* player);
 int MMVR_PlayerPresentation(struct PlayState*);
 int MMVR_TheaterPresentation(struct PlayState*);
 // 0: native theater, 1: world anchor, -1: no live effect source.
@@ -51,6 +53,9 @@ int MMVR_ScriptedInstrumentVisible(void);
 int MMVR_ClearLessonBackground(void);
 int MMVR_InstrumentButtons(unsigned short* buttons);
 unsigned short MMVR_GameButtons(void);
+// Only the three native Goron roll checks use this action. Dialogue and other
+// contextual A actions retain the original interact/confirm binding.
+int MMVR_GoronRollInput(struct PlayState*, struct Player*, int pressed, int nativeA);
 int MMVR_InputYaw(int fallback);
 float MMVR_MovementScale(struct PlayState*,struct Player*);
 int MMVR_HidePlayerLimb(struct Actor*,int limb);

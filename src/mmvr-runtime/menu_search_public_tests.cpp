@@ -47,5 +47,32 @@ int main() {
         }
         require(!menu.FocusSearchRow(mmvr::MenuRows+35));
     }
+    mmvr::Settings speedSettings;
+    require(mmvr::GoronSpeedLineOpacity(speedSettings)==.2f);
+    speedSettings.Set(mmvr::Setting::GoronSpeedStreaks,.1f);
+    speedSettings.Set(mmvr::Setting::GoronSpeedLines,0);
+    require(mmvr::GoronSpeedLineOpacity(speedSettings)==0);
+    require(speedSettings.Get(mmvr::Setting::GoronSpeedStreaks)==.1f);
+    speedSettings.Set(mmvr::Setting::GoronSpeedLines,1);
+    require(mmvr::GoronSpeedLineOpacity(speedSettings)==.1f);
+    require(menu.FocusSearchRow(int(mmvr::Setting::GoronSpeedLines)));
+    require(menu.tab==mmvr::FormsTab);
+    // Search aliases must lead to the existing persisted control, without
+    // changing the masks/ocarina-only option or creating a second setting.
+    bool instantItemsFound=false;
+    for(const auto& entry:mmvr::VrMenuSearchEntries(menu)) {
+        if(entry.row==int(mmvr::Setting::QuickWheelAllItems)) {
+            instantItemsFound=true;
+            for(const char* query:{"instant","immediate","retrieval","ready all items"})
+                require(mmvr::VrMenuSearchMatch(query,entry));
+            require(!mmvr::VrMenuSearchMatch("instant,-retrieval",entry));
+            require(menu.FocusSearchRow(entry.row));
+            require(menu.tab==mmvr::ItemsTab);
+        } else if(entry.row==int(mmvr::Setting::QuickWheelItems)) {
+            require(!mmvr::VrMenuSearchMatch("retrieval",entry));
+        }
+    }
+    require(instantItemsFound);
+    require(mmvr::GetSettings().Get(mmvr::Setting::QuickWheelAllItems)==0);
     std::printf("Public VR menu search: %u checks passed\n", checks);
 }

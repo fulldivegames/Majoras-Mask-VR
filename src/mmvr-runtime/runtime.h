@@ -55,6 +55,19 @@ void SetNativeTestNotebook(const XrPosef& hand, float x, float y) noexcept;
 extern bool nativeTestTracking;
 void SetNativeTestEye(float yaw) noexcept;
 void SetNativeTestCamera(const CameraFrame& frame) noexcept;
+void SetNativeTestPeripheralViews(const std::array<XrView, 2>& eyes, const XrPosef& head) noexcept;
+unsigned BillboardGroupCount() noexcept;
+const void* BillboardGroupAddress(unsigned group) noexcept;
+void SetVisualBillboardGroup(unsigned group, const float* replacement) noexcept;
+// Share the exact replay preparation between the renderer and native fixtures.
+// Lookup returns a frame-owned float matrix, or null for the raw native sample.
+template<class Lookup> void PrepareBillboardGroupRoots(Lookup lookup) {
+    for (unsigned group=0;group<BillboardGroupCount();++group)
+        SetVisualBillboardGroup(group,lookup(BillboardGroupAddress(group)));
+}
+// Reuses the existing form-effect replay bindings. Local dimensions are in
+// physical metres; cue 1..FairyMaskCueCount selects a shared binocular descriptor.
+void SetPeripheralCueMatrix(const void* address, const Matrix& local, int cue) noexcept;
 void SetPauseCommands(const void*) noexcept;
 void SetNotebook(bool active) noexcept;
 bool NotebookActive() noexcept;
@@ -79,6 +92,7 @@ void ToggleStereo() noexcept;
 void ApplyViewMode(int mode) noexcept;
 void SetFirstPersonEligibility(bool allowed) noexcept;
 void SetDialogueChoice(bool active) noexcept;
+void SetGoronRollContext(bool allowed) noexcept;
 // Render-thread binding changes discard queued presses and require neutral release.
 // Tracking origin, camera height and saved non-control settings are unchanged.
 void ControlBindingsChanged() noexcept;

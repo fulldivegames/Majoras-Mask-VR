@@ -3050,7 +3050,13 @@ void func_8012669C(PlayState* play, Player* player, Vec3f* arg2, Vec3f* arg3) {
 
     if (player->meleeWeaponState != PLAYER_MELEE_WEAPON_STATE_0) {
         if (func_80126440(play, NULL, &player->meleeWeaponInfo[0], &sp3C, &sp30) &&
-            (player->transformation != PLAYER_FORM_GORON) && !(player->stateFlags1 & PLAYER_STATE1_400000)) {
+            (player->transformation != PLAYER_FORM_GORON) && !(player->stateFlags1 & PLAYER_STATE1_400000)
+#ifdef MMVR_ENABLE
+            // Native Zora fin meshes are hidden behind the tracked fins. Their
+            // animation-driven ribbons must follow the same render policy.
+            && ((player->transformation != PLAYER_FORM_ZORA) || !MMVR_HideNativeBodyRender())
+#endif
+        ) {
             EffectBlure_AddVertex(Effect_GetByIndex(player->meleeWeaponEffectIndex[0]), &player->meleeWeaponInfo[0].tip,
                                   &player->meleeWeaponInfo[0].base);
         }
@@ -3281,7 +3287,11 @@ void func_80126BD0(PlayState* play, Player* player, s32 arg2) {
         Matrix_MultVec3f(&D_801C0ADC[arg2], &sp4C);
 
         if (func_80126440(play, NULL, &player->meleeWeaponInfo[arg2], &sp58, &sp4C) &&
-            (player->stateFlags1 & PLAYER_STATE1_8000000)) {
+            (player->stateFlags1 & PLAYER_STATE1_8000000)
+#ifdef MMVR_ENABLE
+            && !MMVR_HideNativeBodyRender()
+#endif
+        ) {
             EffectBlure_AddVertex(Effect_GetByIndex(player->meleeWeaponEffectIndex[arg2]),
                                   &player->meleeWeaponInfo[arg2].tip, &player->meleeWeaponInfo[arg2].base);
         }
@@ -3847,7 +3857,7 @@ s32 func_80128640(PlayState* play, Player* player, Gfx* dlist) {
         // Note this does not check for PLAYER_BOTTLE_NONE, which would produce an OoB access on sPlayerBottleColors.
         // Under normal circunstances it should not be a problem because of the previous
         // `player->leftHandType == PLAYER_MODELTYPE_LH_BOTTLE` check
-        if (bottle != PLAYER_BOTTLE_EMPTY) {
+        if ((bottle > PLAYER_BOTTLE_EMPTY) && (bottle < ARRAY_COUNT(sPlayerBottleColors))) {
             Color_RGB8* bottleColor = &sPlayerBottleColors[bottle];
 
             gDPSetEnvColor(POLY_XLU_DISP++, bottleColor->r, bottleColor->g, bottleColor->b, 0);

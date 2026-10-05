@@ -673,7 +673,10 @@ void EnElforg_Draw(Actor* thisx, PlayState* play) {
     Matrix_Mult(&play->billboardMtxF, MTXMODE_APPLY);
 #ifdef MMVR_ENABLE
     MtxF* root = Matrix_GetCurrent();
-    MMVR_BeginBillboardGroup(root->mf[3][0], root->mf[3][1], root->mf[3][2]);
+    // Record the shared actor root in the same interpolation stream as its
+    // animated limbs. It is an anchor only, with no native geometry command.
+    Mtx* rootMatrix = Matrix_Finalize(play->state.gfxCtx);
+    MMVR_BeginBillboardGroup(rootMatrix, &root->mf[0][0]);
 #endif
 
     POLY_XLU_DISP =

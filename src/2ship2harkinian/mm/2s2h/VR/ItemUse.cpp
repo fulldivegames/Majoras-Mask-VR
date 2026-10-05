@@ -21,6 +21,7 @@ int MMVR_ReadyThrowable(PlayState*, Player*, int);
 extern u8 gPlayerFormItemRestrictions[PLAYER_FORM_MAX][114];
 extern u16 sMasksGivenOnMoonBits[];
 void MMVR_PlayerEquipSword(PlayState*, Player*, ItemId);
+int MMVR_PlayerReadyWheelItem(PlayState*, Player*, ItemId);
 void Player_UseItem(PlayState*, Player*, ItemId);
 void Player_Action_63(Player*, PlayState*);
 }
@@ -51,7 +52,7 @@ std::deque<Edge> edges;
 Player* owner = nullptr;
 int scene = -1, selected = ITEM_NONE, inventorySlot = -1, hand = -1, selectedForm = -1;
 bool holding = false, equipPending = false;
-bool quickWheelPending = false, wheelInstrument = false;
+bool quickWheelPending = false, wheelInstrument = false, wheelPreview = false;
 double frameTime = -1;
 mmvrgame::ThrowSample delayedRelease{};
 bool delayedRestoreEquipment=true;
@@ -72,7 +73,7 @@ bool Eligible(PlayState* play, Player* p) {
 bool WheelInstrumentActive(PlayState* play, Player* p) {
     // Only the user's wheel-started free play may be dismissed. Lessons,
     // song recognition/dialogue and actor-owned performances keep native input.
-    return wheelInstrument && mmvr::GetSettings().Get(mmvr::Setting::QuickWheelItems) > .5f &&
+    return wheelInstrument && mmvr::QuickWheelSpecialItems(mmvr::GetSettings()) &&
            p && owner == p && scene == play->sceneId && selected == ITEM_OCARINA_OF_TIME &&
            mmvr::StateResumeInputReady() && !mmvr::GetSelector().open && mmvrgame::InteractionsEligible(play,p) &&
            p->actionFunc == Player_Action_63 && (p->stateFlags2 & PLAYER_STATE2_USING_OCARINA) &&
@@ -193,12 +194,39 @@ void ClearItemTrigger() {
 bool HasItemInHand(PlayState* play) {
     auto* p = play ? GET_PLAYER(play) : nullptr;
     if (!p) return false;
-    if (p->heldActor || BowHeld() || mmvr::HeldMaskItem() >= 0) return true;
+    if (p->heldActor || BowHeld() || mmvr::HeldMaskItem() >= 0 || ReadyWheelDrawId(play) >= 0) return true;
     // Selection is not equipment: a spent nut/bomb leaves its wheel slot selected.
     const int action = p->heldItemAction;
     return action > PLAYER_IA_LAST_USED && action < PLAYER_IA_MASK_MIN &&
            action != PLAYER_IA_ZORA_BOOMERANG &&
            !(action >= PLAYER_IA_EXPLOSIVE_MIN && action <= PLAYER_IA_DEKU_NUT);
+}
+int ReadyWheelDrawId(PlayState* play) {
+    auto* p = play ? GET_PLAYER(play) : nullptr;
+    if (!wheelPreview || !p || owner != p || scene != play->sceneId || !Eligible(play, p) ||
+        mmvr::GetSettings().Get(mmvr::Setting::QuickWheelAllItems) <= .5f ||
+        !ItemAllowed(p, selected) || inventorySlot < 0 || inventorySlot >= 48 ||
+        WheelSlotItem(play, inventorySlot) != selected ||
+        Player_GetItemOnButton(play, p, EQUIP_SLOT_C_DOWN) != selected ||
+        MMVR_ItemPresentationActive(p) || NativeViewfinderActive(play) || p->heldActor || mmvr::HeldMaskItem() >= 0)
+        return -1;
+    // These items have no native idle hand mesh. Present their reward models;
+    // the normal trigger still owns lens/photo/plant/trade actions.
+    switch (selected) {
+        case ITEM_LENS_OF_TRUTH: return GID_LENS;
+        case ITEM_PICTOGRAPH_BOX: return GID_PICTOGRAPH_BOX;
+        case ITEM_MAGIC_BEANS: return AMMO(ITEM_MAGIC_BEANS) > 0 ? GID_MAGIC_BEANS : -1;
+        case ITEM_MOONS_TEAR: return GID_MOONS_TEAR;
+        case ITEM_DEED_LAND: return GID_DEED_LAND;
+        case ITEM_DEED_SWAMP: return GID_DEED_SWAMP;
+        case ITEM_DEED_MOUNTAIN: return GID_DEED_MOUNTAIN;
+        case ITEM_DEED_OCEAN: return GID_DEED_OCEAN;
+        case ITEM_ROOM_KEY: return GID_ROOM_KEY;
+        case ITEM_LETTER_MAMA: return GID_LETTER_MAMA;
+        case ITEM_LETTER_TO_KAFEI: return GID_LETTER_TO_KAFEI;
+        case ITEM_PENDANT_OF_MEMORIES: return GID_PENDANT_OF_MEMORIES;
+        default: return -1;
+    }
 }
 void StowItem(PlayState* play) {
     if (GET_PLAYER(play)->stateFlags1 & PLAYER_STATE1_4000000) return;
@@ -209,7 +237,7 @@ void StowItem(PlayState* play) {
     ClearBow();
     ClearCombat();
     mmvr::CancelHeldMask();
-    quickWheelPending = wheelInstrument = false;
+    quickWheelPending = wheelInstrument = wheelPreview = false;
     auto* p = GET_PLAYER(play);
     if (HeldBombchu(p)) {
         if (!PlaceBombchu(play, p))
@@ -247,7 +275,7 @@ int SelectedItem(PlayState* play) {
         ? selected : ITEM_NONE;
 }
 void ClearItemSelection() {
-    quickWheelPending = wheelInstrument = false;
+    quickWheelPending = wheelInstrument = wheelPreview = false;
     exchangeContext = exchangeSent = false;
     exchangeActor = nullptr;
     exchangeText = -1;
@@ -273,14 +301,15 @@ bool SelectItem(PlayState* play, int slot, int item) {
         return true;
     ClearItemTrigger();
     mmvr::CancelHeldMask();
-    quickWheelPending = wheelInstrument = false;
+    quickWheelPending = wheelInstrument = wheelPreview = false;
     owner = p;
     scene = play->sceneId;
     selectedForm = p->transformation;
     selected = item;
     inventorySlot = slot;
-    quickWheelPending = !exchange && mmvr::GetSettings().Get(mmvr::Setting::QuickWheelItems) > .5f &&
-        (item == ITEM_OCARINA_OF_TIME || (item >= ITEM_MASK_DEKU && item <= ITEM_MASK_GIANT));
+    quickWheelPending = !exchange && (mmvr::GetSettings().Get(mmvr::Setting::QuickWheelAllItems) > .5f ||
+        (mmvr::QuickWheelSpecialItems(mmvr::GetSettings()) &&
+         (item == ITEM_OCARINA_OF_TIME || (item >= ITEM_MASK_DEKU && item <= ITEM_MASK_GIANT))));
     // Selecting an offer must not replace the NPC's talk action or draw/use it.
     if (exchange) {
         Log("offer-selected", item);
@@ -307,7 +336,7 @@ void UpdateItemTrigger(const mmvr::TrackingFrame& frame) {
         scene = play ? play->sceneId : -1;
     }
     if (p && selectedForm != p->transformation) {
-        quickWheelPending = wheelInstrument = false;
+        quickWheelPending = wheelInstrument = wheelPreview = false;
         ClearItemTrigger();
         mmvr::CancelHeldMask();
         selectedForm = p->transformation;
@@ -420,10 +449,13 @@ void ProcessItemTrigger(PlayState* play) {
         equipPending = false;
     }
     if (quickWheelPending) {
-        if (mmvr::GetSettings().Get(mmvr::Setting::QuickWheelItems) <= .5f ||
+        const bool special = selected == ITEM_OCARINA_OF_TIME || (selected >= ITEM_MASK_DEKU && selected <= ITEM_MASK_GIANT);
+        if (!(special ? mmvr::QuickWheelSpecialItems(mmvr::GetSettings()) :
+              mmvr::GetSettings().Get(mmvr::Setting::QuickWheelAllItems) > .5f) ||
             owner != p || scene != play->sceneId || inventorySlot < 0 || inventorySlot >= 48 ||
             WheelSlotItem(play,inventorySlot) != selected ||
-            GET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_C_DOWN) != selected) {
+            GET_CUR_FORM_BTN_ITEM(EQUIP_SLOT_C_DOWN) != selected ||
+            (!special && Player_GetItemOnButton(play, p, EQUIP_SLOT_C_DOWN) != selected)) {
             quickWheelPending = false;
         } else if (!equipPending && !p->heldActor && p->itemAction == p->heldItemAction) {
             // Native availability still decides whether an instrument can be
@@ -435,8 +467,19 @@ void ProcessItemTrigger(PlayState* play) {
                 ClearItemTrigger();
                 return;
             }
-            UpdateMaskContext(play);
-            mmvr::HoldSelectedMask();
+            if (selected >= ITEM_MASK_DEKU && selected <= ITEM_MASK_GIANT) {
+                UpdateMaskContext(play);
+                mmvr::HoldSelectedMask();
+            } else if (selected == ITEM_BOMB || selected == ITEM_BOMBCHU || selected == ITEM_POWDER_KEG ||
+                       selected == ITEM_DEKU_NUT) {
+                // Creating the held actor uses the existing quantity/minigame
+                // restrictions. A fresh trigger press and release still throws it.
+                MMVR_ReadyThrowable(play, p, selected);
+                MMVR_UpdateHeldItem(play, p);
+            } else if (!BowHeld() && !MMVR_IndependentHookshot(p) && !MMVR_IndependentSword(p)) {
+                MMVR_PlayerReadyWheelItem(play, p, static_cast<ItemId>(selected));
+            }
+            wheelPreview = mmvr::GetSettings().Get(mmvr::Setting::QuickWheelAllItems) > .5f;
             ClearItemTrigger();
             return;
         }
@@ -531,13 +574,14 @@ void ProcessItemTrigger(PlayState* play) {
         // Player_UseItem still owns grounded/underwater/dialogue eligibility and the song action.
         if (selected == ITEM_OCARINA_OF_TIME) {
             Player_UseItem(play, p, ITEM_OCARINA_OF_TIME);
-            wheelInstrument = mmvr::GetSettings().Get(mmvr::Setting::QuickWheelItems) > .5f &&
+            wheelInstrument = mmvr::QuickWheelSpecialItems(mmvr::GetSettings()) &&
                               p->itemAction == PLAYER_IA_OCARINA;
             Log("instrument", selected);
             continue;
         }
         if (Player_GetItemOnButton(play, p, EQUIP_SLOT_C_DOWN) != selected)
             continue;
+        wheelPreview = false;
         if (selected == ITEM_BOMB || selected == ITEM_BOMBCHU || selected == ITEM_POWDER_KEG ||
             selected == ITEM_DEKU_NUT) {
             holding = MMVR_ReadyThrowable(play, p, selected) != 0;
@@ -590,6 +634,7 @@ extern "C" void MMVR_VisitVrItemUseState(MMVR_StateSink* sink) {
     mmvrgame::NativeStateField(sink,"vr/item-use/equipPending",equipPending);
     mmvrgame::NativeStateField(sink,"vr/item-use/quickWheelPending",quickWheelPending);
     mmvrgame::NativeStateField(sink,"vr/item-use/wheelInstrument",wheelInstrument);
+    mmvrgame::NativeStateField(sink,"vr/item-use/wheelPreview",wheelPreview);
     mmvrgame::NativeStateField(sink,"vr/item-use/delayedRelease",delayedRelease);
     mmvrgame::NativeStateField(sink,"vr/item-use/delayedRestoreEquipment",delayedRestoreEquipment);
     mmvrgame::NativeStateField(sink,"vr/item-use/delayedActor",delayedActor);

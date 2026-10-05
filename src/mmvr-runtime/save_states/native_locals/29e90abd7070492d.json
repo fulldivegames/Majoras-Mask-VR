@@ -17,159 +17,159 @@
       "at": 117987
     },
     {
-      "name": "mmvr_local_2ff09e49265aedd4",
+      "name": "mmvr_local_039539ea97c61873",
       "original": "sBubbleVelocity",
       "function": "Player_DrawCircusLeadersMask",
-      "line": 3377,
-      "at": 132264
+      "line": 3387,
+      "at": 132638
     },
     {
-      "name": "mmvr_local_911e2be8239ccdb2",
+      "name": "mmvr_local_a1737c11842ce326",
       "original": "sBubbleAccel",
       "function": "Player_DrawCircusLeadersMask",
-      "line": 3378,
-      "at": 132322
+      "line": 3388,
+      "at": 132696
     },
     {
-      "name": "mmvr_local_c7a3f96d89dd3a2c",
+      "name": "mmvr_local_bd9512cb0cad4581",
       "original": "D_801C0BC0",
       "function": "Player_DrawBlastMask",
-      "line": 3443,
-      "at": 134466
+      "line": 3453,
+      "at": 134840
     },
     {
-      "name": "mmvr_local_f6421f7cf9c96b9e",
+      "name": "mmvr_local_7a1ad2d54ce24069",
       "original": "D_801C0BD0",
       "function": "Player_DrawBlastMask",
-      "line": 3447,
-      "at": 134578
+      "line": 3457,
+      "at": 134952
     },
     {
-      "name": "mmvr_local_271a335309f99623",
+      "name": "mmvr_local_ebd1e3ddf273642a",
       "original": "D_801C0D60",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 3932,
-      "at": 151495
+      "line": 3942,
+      "at": 151917
     },
     {
-      "name": "mmvr_local_794e27bf9aa66438",
+      "name": "mmvr_local_c78ec1eb55f67ec8",
       "original": "D_801C0D6C",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 3933,
-      "at": 151571
+      "line": 3943,
+      "at": 151993
     },
     {
-      "name": "mmvr_local_40b3102530d61ba0",
+      "name": "mmvr_local_2ef1cf073b8dff31",
       "original": "D_801C0D94",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 3979,
-      "at": 153759
+      "line": 3989,
+      "at": 154181
     },
     {
-      "name": "mmvr_local_e7ecd2799f75d996",
+      "name": "mmvr_local_2288e28250da2ee3",
       "original": "D_801C0D98",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 3980,
-      "at": 153831
+      "line": 3990,
+      "at": 154253
     },
     {
-      "name": "mmvr_local_e41aed5e47b1e149",
+      "name": "mmvr_local_ece8661d243238ce",
       "original": "D_801C0DA4",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 3982,
-      "at": 153926
+      "line": 3992,
+      "at": 154348
     },
     {
-      "name": "mmvr_local_8c136009e9e90484",
+      "name": "mmvr_local_e303b70e58174452",
       "original": "sRightHandLimbModelShieldQuadVertices",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4030,
-      "at": 156055
+      "line": 4040,
+      "at": 156477
     },
     {
-      "name": "mmvr_local_d811093ca290e44d",
+      "name": "mmvr_local_a48d3d3581bfa25f",
       "original": "D_801C0DD8",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4040,
-      "at": 156613
+      "line": 4050,
+      "at": 157035
     },
     {
-      "name": "mmvr_local_548825be1cb98d0f",
+      "name": "mmvr_local_14d435d0939a5b86",
       "original": "D_801C0DE4",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4045,
-      "at": 156808
+      "line": 4055,
+      "at": 157230
     },
     {
-      "name": "mmvr_local_048c3998c0ad277a",
+      "name": "mmvr_local_366658dc715703b2",
       "original": "D_801C0DF0",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4092,
-      "at": 159529
+      "line": 4102,
+      "at": 159951
     },
     {
-      "name": "mmvr_local_8c2adfce288f6837",
+      "name": "mmvr_local_c5f2571dd7876c61",
       "original": "D_801C0E04",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4167,
-      "at": 163037
+      "line": 4177,
+      "at": 163459
     },
     {
-      "name": "mmvr_local_20aca60bfa9acb12",
+      "name": "mmvr_local_85713cca34de6a08",
       "original": "D_801C0E2C",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4219,
-      "at": 165616
+      "line": 4229,
+      "at": 166038
     },
     {
-      "name": "mmvr_local_23b17371a981f87e",
+      "name": "mmvr_local_58005425399a844f",
       "original": "D_801C0E40",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4289,
-      "at": 168481
+      "line": 4299,
+      "at": 168903
     },
     {
-      "name": "mmvr_local_c091232ba49bd1f5",
+      "name": "mmvr_local_e166951fdd19dfc8",
       "original": "sPlayerFocusHeadLimbModelPos",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4316,
-      "at": 169731
+      "line": 4326,
+      "at": 170153
     },
     {
-      "name": "mmvr_local_5504c8081c3edcec",
+      "name": "mmvr_local_a3fa7a4ede81834d",
       "original": "D_801C0E88",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4317,
-      "at": 169816
+      "line": 4327,
+      "at": 170238
     },
     {
-      "name": "mmvr_local_d99eeb2d88033d87",
+      "name": "mmvr_local_3fb07335c88666e9",
       "original": "D_801C0E94",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4323,
-      "at": 170112
+      "line": 4333,
+      "at": 170534
     },
     {
-      "name": "mmvr_local_2a7d6832bf04d1bf",
+      "name": "mmvr_local_7945ab0b347323a5",
       "original": "D_801C0EA0",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4331,
-      "at": 170699
+      "line": 4341,
+      "at": 171121
     },
     {
-      "name": "mmvr_local_3e1ab9be92927eff",
+      "name": "mmvr_local_b83a3cf4d6a484cb",
       "original": "sSheathLimbModelShieldOnBackPos",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4393,
-      "at": 173578
+      "line": 4403,
+      "at": 174000
     },
     {
-      "name": "mmvr_local_2bcb314e522e79e2",
+      "name": "mmvr_local_3c88207aa02c504c",
       "original": "sSheathLimbModelShieldOnBackZyxRot",
       "function": "Player_PostLimbDrawGameplay",
-      "line": 4394,
-      "at": 173670
+      "line": 4404,
+      "at": 174092
     }
   ],
-  "sourceSha256": "0bd7eaefa9e8e9cfb04f665993ec6907a11ed79b83b0e2df85836b2716202a0f"
+  "sourceSha256": "4128bf9a38cc3ba4e84202cb0ff49bacb98577a7ba594d692658cc3e0e4949f5"
 }

@@ -6374,6 +6374,10 @@ void Interpreter::Run(Gfx* commands, const std::unordered_map<Mtx*, MtxF>& mtx_r
             mmvr::SetVisualAnchor(anchor==mtx_replacements.end()?nullptr:&anchor->second.mf[0][0]);
             auto headAnchor=mtx_replacements.find((Mtx*)mmvr::HeadAnchor());
             mmvr::SetVisualHeadAnchor(headAnchor==mtx_replacements.end()?nullptr:&headAnchor->second.mf[0][0]);
+            mmvr::PrepareBillboardGroupRoots([&](const void* address)->const float* {
+                auto root=mtx_replacements.find((Mtx*)address);
+                return root==mtx_replacements.end()?nullptr:&root->second.mf[0][0];
+            });
             for(int bone=0;bone<mmvr::BodyBoneCount;++bone) {
                 auto pose=mtx_replacements.find((Mtx*)mmvr::BodyBoneAddress(bone));
                 mmvr::SetVisualBodyBone(bone,pose==mtx_replacements.end()?nullptr:&pose->second.mf[0][0]);

@@ -16,6 +16,8 @@ void CollisionCheck_AC_CylVsQuad(PlayState*,CollisionCheckContext*,Collider*,Col
 #include "MoonMaskTest.h"
 #include "NotebookTest.h"
 #include "FullBodyTest.h"
+#include "FairyMaskCueTest.h"
+#include "StrayFairyInterpolationTest.h"
 #include "WeaponReachTest.h"
 #include "SwordChargeTest.h"
 #include "HeadAimTest.h"
@@ -149,6 +151,9 @@ static mmvr::Pad NativeTestInput(){
   if(std::getenv("MMVR_QUICK_WHEEL_TEST")){if(playTicks==60)NativeQuickWheelTest(gPlayState);return pad;}
   if(std::getenv("MMVR_MOON_MASK_TEST")){if(playTicks==60)NativeMoonMaskTest(gPlayState);return pad;}
   if(std::getenv("MMVR_FULL_BODY_TEST")){NativeFullBodyTest(gPlayState,playTicks);return pad;}
+  if(std::getenv("MMVR_FAIRY_MASK_CUE_TEST")){if(playTicks==60)NativeFairyMaskCueTest(gPlayState);return pad;}
+  if(std::getenv("MMVR_FAIRY_MASK_CUE_LAUNDRY_TEST"))return NativeLaundryFairyMaskCueTest(gPlayState,playTicks);
+  if(std::getenv("MMVR_STRAY_FAIRY_INTERPOLATION_TEST")){if(playTicks==60)NativeStrayFairyInterpolationTest(gPlayState);return pad;}
   if(std::getenv("MMVR_SAVE_CONTINUE_TEST")){if(playTicks==60)NativeSaveContinueTest(gPlayState);return pad;}
   if(std::getenv("MMVR_NOTEBOOK_BOOK_TEST")){NativeNotebookTest(gPlayState,playTicks);return pad;}
   if(std::getenv("MMVR_WEAPON_REACH_TEST")){if(playTicks==60)NativeWeaponReachTest(gPlayState);return pad;}

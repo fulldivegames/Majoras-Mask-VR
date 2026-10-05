@@ -12,7 +12,8 @@ struct MenuSearchEntry {
     std::string Terms() const {
         const auto& group = MenuSections[section];
         return std::string("VR menu ") + TabNames[group.tab] + " " + group.label + " " + label +
-            (section == 34 ? " mods texture packs enable disable" : "");
+            (section == 34 ? " mods texture packs enable disable" : "") +
+            (row == int(Setting::QuickWheelAllItems) ? " instant immediate retrieval" : "");
     }
 };
 

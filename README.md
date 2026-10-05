@@ -7,7 +7,9 @@ Disclaimer: I don't want to hide the fact that I made this mod using Vibe coding
 
 One project for **Windows PCVR** and **standalone Meta Quest**. Choose the download for your platform.
 
-**Version 0.33 beta downloads:** [Windows PCVR ZIP](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.33/MMVR-Windows-0.33.zip) | [Quest standalone APK](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.33/MMVR-Quest-0.33.apk) | [Release Notes](https://github.com/fulldivegames/Majoras-Mask-VR/releases/tag/v0.33)
+**Version 0.34 beta downloads:** [Windows PCVR ZIP](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.34/MMVR-Windows-0.34.zip) | [Quest standalone APK](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.34/MMVR-Quest-0.34.apk) | [Release Notes](https://github.com/fulldivegames/Majoras-Mask-VR/releases/tag/v0.34)
+
+**v0.34:** Kafei body, fairy-mask sparkles, smoother fairies and Zora swimming, plus optional roll controls and instant wheel items.
 
 **Save states are temporarily disabled. Use menu and owl saving.**
 

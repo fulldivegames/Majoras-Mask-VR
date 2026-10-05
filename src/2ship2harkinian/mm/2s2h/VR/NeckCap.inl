@@ -8,6 +8,34 @@ static Vtx humanNeckCap[] = {
     {{{831,  97,   0},0,{48,-7},{100,66,0,255}}},
     {{{921, -91,-187},0,{-1,40},{102,39,208,255}}},
 };
+// Kafei's five-edge opening is skinned in the torso palette, like the
+// upper Zora torso. These coordinates match his own seam, not Link's.
+// Sample the existing skin texture's light edge; lighting supplies the
+// neck shading without introducing a borrowed texture or extra head.
+static Vtx kafeiNeckCap[] = {
+    {{{985,-255,-116},0,{0,0},{100,199,225,255}}},
+    {{{985,-255, 116},0,{0,0},{104,211,38,255}}},
+    {{{920, -92, 185},0,{0,0},{108,42,26,255}}},
+    {{{831,  94,   0},0,{0,0},{100,66,0,255}}},
+    {{{920, -92,-185},0,{0,0},{108,42,230,255}}},
+};
+static Gfx kafeiNeckCapDL[] = {
+    gsDPPipeSync(),
+    gsDPSetTextureLUT(G_TT_RGBA16),
+    gsDPLoadTLUT_pal256(gKafeiBody1TLUT),
+    gsDPLoadTextureBlock(gKafeiSkinTex,G_IM_FMT_CI,G_IM_SIZ_8b,8,8,0,
+                        G_TX_CLAMP,G_TX_CLAMP,3,3,G_TX_NOLOD,G_TX_NOLOD),
+    gsDPSetPrimColor(0,0,255,255,255,255),
+    gsDPSetCombineMode(G_CC_MODULATERGB,G_CC_PASS2),
+    gsSPClearGeometryMode(G_CULL_FRONT|G_CULL_BACK),
+    gsSPVertex(kafeiNeckCap,5,0),
+    gsSP2Triangles(0,1,2,0,0,2,3,0),
+    gsSP1Triangle(0,3,4,0),
+    gsDPPipeSync(),
+    gsDPSetTextureLUT(G_TT_NONE),
+    gsSPSetGeometryMode(G_CULL_BACK),
+    gsSPEndDisplayList(),
+};
 static Gfx humanNeckCapDL[] = {
     gsDPPipeSync(),
     gsDPSetTextureLUT(G_TT_RGBA16),
@@ -111,9 +139,10 @@ static Gfx dekuTorsoCapsDL[] = {
 #undef MMVR_CAP_END
 extern "C" const void* MMVR_PlayerNeckCap(Actor* actor,int limb) {
     if(!gPlayState || actor!=(Actor*)GET_PLAYER(gPlayState) || limb!=PLAYER_LIMB_TORSO ||
-       MMVR_ControlledKafei((Player*)actor) || mmvr::BodyRollPoseWaiting() || !HideCurrentPlayer(gPlayState)) return nullptr;
+       mmvr::BodyRollPoseWaiting() || !HideCurrentPlayer(gPlayState)) return nullptr;
     const int form=((Player*)actor)->transformation;
-    if(!mmvr::FullBodyForForm(mmvr::GetSettings(),form)) return nullptr;
+    if(!FullBodyForPlayer((Player*)actor)) return nullptr;
+    if(MMVR_KafeiModel((Player*)actor)) return kafeiNeckCapDL;
     switch(form) {
         case PLAYER_FORM_HUMAN: return humanNeckCapDL;
         case PLAYER_FORM_GORON: return goronNeckCapDL;

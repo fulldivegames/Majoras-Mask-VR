@@ -237,7 +237,8 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
                     { "Save and mod improvements", "Import/export ordinary saves between PCVR and Quest.", "Improved nested mod and texture-pack discovery." },
                     { "Save-state restoration", "New compatible states restore settings and recorded pack selection.", "Keep required packs installed; incompatible old states need their old build." },
                     { "Menu and shield options", "VR settings search; 2Ship results come first in 2Ship search.", "Editable cutscene options and optional sword-drawn shield for human Link." },
-                    { "v0.33 - Save states disabled", "Save states are temporarily disabled.", "Use menu and owl saving to keep your progress." }
+                    { "v0.33 - Save states disabled", "Save states are temporarily disabled.", "Use menu and owl saving to keep your progress." },
+                    { "v0.34 - Bodies, controls and item wheel", "Tracked Kafei body, fairy-mask cues and Zora swim visuals.", "Goron roll binding, instant items and rolling speed-line toggle." }
                 };
                 static_assert(std::size(notes) == ReleaseNotesCount);
                 const auto& note = notes[i - ReleaseNotesFirstRow];
@@ -263,6 +264,11 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
                 list.AddRect({x, y+4}, {x+30, y+34}, IM_COL32(233,205,141,255), 3);
                 if (pack.enabled) Text(list, x+5, y+2, "X", 26);
                 Text(list, x+48, y+4, ModPackLabel(packIndex).substr(0,55).c_str(), 22);
+            } else if (i == int(Setting::GoronRollBinding)) {
+                Text(list, 64, y, SettingDefinitions[i].label, 24);
+                Text(list, 590, y, ControlName(GoronRollSource(settings),
+                    compat::Find(deviceInfo.profiles[0].c_str()), compat::Find(deviceInfo.profiles[1].c_str())), 21);
+                Text(list, 64, y + 31, "Left/right changes; confirm binds a control", 17);
             } else if (BindingSetting(i)) {
                 const int action = i - int(Setting::BindA);
                 Text(list, 64, y, SettingDefinitions[i].label, 24);
@@ -384,7 +390,7 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
         std::snprintf(footer, sizeof(footer), "%s: %s   %s: collapse   %s: back",
                       ControlName(0, leftProfile, rightProfile),
                       (TutorialRow(menu.Selected()) || ReleaseNotesRow(menu.Selected())) ? "read only"
-                      : BindingSetting(menu.Selected()) ? "rebind"
+                      : BindingSetting(menu.Selected()) || menu.Selected() == int(Setting::GoronRollBinding) ? "rebind"
                       : ModFolderRow(menu.Selected()) ? (menu.expandedModFolders.contains(modFolders[FolderIndex(menu.Selected())].key) ? "collapse" : "expand")
                       : MenuHeader(menu.Selected())   ? (menu.expanded[menu.Selected()-MenuRows] ? "collapse" : "expand")
                       : menu.Selected() >= 0 && menu.Selected() < AssignmentFirst
@@ -400,7 +406,8 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
             list.AddRectFilled({ 45, 190 }, { 982, 680 }, IM_COL32(8, 23, 36, 255), 10);
             list.AddRect({ 45, 190 }, { 982, 680 }, IM_COL32(187, 150, 79, 255), 10, 0, 3);
             Text(list, 75, 220, "CHANGE CONTROL", 30);
-            Text(list, 75, 272, SettingDefinitions[int(ControlSetting(binding.action))].label, 26);
+            Text(list, 75, 272, SettingDefinitions[int(binding.action == ControlCount ?
+                Setting::GoronRollBinding : ControlSetting(binding.action))].label, 26);
             if (binding.phase == BindingEditor::Release)
                 Text(list, 75, 335, "Release the sticks, buttons, grips and triggers.", 24);
             else if (binding.phase == BindingEditor::Listen) {
@@ -412,7 +419,7 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
             } else {
                 Text(list, 75, 329, "New input:", 22);
                 Text(list, 275, 329, ControlName(binding.source, leftProfile, rightProfile), 26);
-                int conflict = BindingConflict(settings, binding.action, binding.source);
+                int conflict = binding.action == ControlCount ? -1 : BindingConflict(settings, binding.action, binding.source);
                 if (conflict >= 0) {
                     Text(list, 75, 386, "This also moves:", 21);
                     Text(list, 75, 423, SettingDefinitions[int(ControlSetting(conflict))].label, 23);
@@ -421,7 +428,8 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
                                   ControlName(ControlSource(settings, binding.action), leftProfile, rightProfile));
                     Text(list, 75, 460, destination, 23);
                 } else
-                    Text(list, 75, 397, "No other action changes.", 23);
+                    Text(list, 75, 397, binding.action == ControlCount ?
+                        "Separate Goron roll control in first person." : "No other action changes.", 23);
                 if (binding.phase == BindingEditor::ReviewRelease)
                     Text(list, 75, 536, "Release the input to continue.", 22);
                 else {

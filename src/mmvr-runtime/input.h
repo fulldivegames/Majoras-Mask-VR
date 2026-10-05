@@ -8,11 +8,13 @@ struct Pad {
     int8_t x = 0, y = 0;
     bool active = false;
     int8_t rightX = 0, rightY = 0;
+    bool goronRoll = false, goronRollOverride = false;
 };
 inline Pad ItemWheelInput(Pad pad, bool selecting) {
     if (selecting) {
         pad.buttons = 0;
         pad.rightX = pad.rightY = 0;
+        pad.goronRoll = pad.goronRollOverride = false;
     }
     return pad;
 }
@@ -38,6 +40,28 @@ struct TriggerHold {
         else if (value > .65f)
             held = true;
         return held;
+    }
+};
+// A binding/context change must observe release before rolling. This prevents
+// a trigger held across menus, dialogue or a transformation from starting a roll.
+struct GoronRollHold {
+    TriggerHold button;
+    int source = -1;
+    bool active = false, armed = false;
+    bool Update(float value, int selectedSource, bool enabled) {
+        if (!enabled) {
+            active = armed = false;
+            source = -1;
+            return button.Update(0, false);
+        }
+        if (!active || source != selectedSource) {
+            button.Update(0, false);
+            armed = value < .25f;
+            active = true;
+            source = selectedSource;
+        }
+        armed |= value < .25f;
+        return button.Update(value, armed);
     }
 };
 // Page left is native Z (not L, which opens the developer inventory editor).
@@ -85,19 +109,25 @@ inline uint16_t ThirdPersonButtons(float leftTrigger, float leftGrip, float righ
 struct PadLatch {
     Pad held{};
     uint16_t pending = 0, delivered = 0;
+    bool pendingRoll = false, deliveredRoll = false;
     void Update(Pad next) {
         if (!next.active) {
             held = {};
             pending = 0;
             delivered = 0;
+            pendingRoll = deliveredRoll = false;
             return;
         }
+        if (!next.goronRollOverride) pendingRoll = deliveredRoll = false;
+        else pendingRoll |= next.goronRoll && !held.goronRoll;
         pending |= next.buttons & ~held.buttons;
         held = next;
     }
     void ClearButtons() {
         held.buttons = 0;
         pending = delivered = 0;
+        held.goronRoll = held.goronRollOverride = false;
+        pendingRoll = deliveredRoll = false;
     }
     Pad Consume() {
         auto result = held;
@@ -106,6 +136,10 @@ struct PadLatch {
         result.buttons = (result.buttons | pending) & ~releaseFirst;
         pending &= releaseFirst;
         delivered = result.buttons;
+        const bool releaseRollFirst = pendingRoll && deliveredRoll;
+        result.goronRoll = (result.goronRoll || pendingRoll) && !releaseRollFirst;
+        pendingRoll &= releaseRollFirst;
+        deliveredRoll = result.goronRoll;
         return result;
     }
 };

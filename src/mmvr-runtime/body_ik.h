@@ -44,8 +44,10 @@ inline Vec NeckOffset(int form, float trackingScale, float modelScale) {
 // Render-only attachment from the authored neck/torso to a level HMD neck.
 // Shoulder origins and waist identify torso lean without using either hand.
 // This preserves limb size and leg animation, but removes root bob/aim twist.
+enum class TorsoBasis { NativeForward, AnatomicalShoulders };
 inline bool AnchorTorso(const Matrix (&bones)[BodyBoneCount], float nativeYaw,
-                        const Matrix& targetNeck, Matrix& correction) {
+                        const Matrix& targetNeck, Matrix& correction,
+                        TorsoBasis basis = TorsoBasis::NativeForward) {
     for (int i : {0, 3, 6, 7}) if (!Finite(bones[i])) return false;
     if (!Finite(targetNeck) || !std::isfinite(nativeYaw)) return false;
     const Vec neck = Position(bones[6]);
@@ -59,7 +61,11 @@ inline bool AnchorTorso(const Matrix (&bones)[BodyBoneCount], float nativeYaw,
     const Vec nativeForward{std::sin(nativeYaw), 0, std::cos(nativeYaw)};
     // Native left/right coordinates can be mirrored by a form/asset. Keep the
     // torso basis in the player's forward hemisphere, not a controller's yaw.
-    if (Dot(forward, nativeForward) < 0) { right = right * -1; forward = forward * -1; }
+    // Free swimming can tip the torso past vertical: choosing a hemisphere
+    // there swaps both shoulders abruptly. The tracked neck's X axis points
+    // toward anatomical left, so use the named shoulders directly in that mode.
+    const bool reverse = basis == TorsoBasis::AnatomicalShoulders || Dot(forward, nativeForward) < 0;
+    if (reverse) { right = right * -1; forward = forward * -1; }
     Matrix source = YawPose(0, neck.x, neck.y, neck.z);
     const Vec axes[]{right, up, forward};
     for (int i=0;i<3;++i) {

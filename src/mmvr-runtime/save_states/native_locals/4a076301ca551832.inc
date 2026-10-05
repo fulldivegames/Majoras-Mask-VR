@@ -700,7 +700,7 @@ void func_80A3F5A4(EnTest3* this, PlayState* play) {
     this->csId = this->player.actor.csId;
 }
 
-static EnTest3_struct_D78* mmvr_local_4cdc93225823c9cc[] = {
+static EnTest3_struct_D78* mmvr_local_0579074ad5569083[] = {
         &D_80A41854[0], &D_80A41854[1], &D_80A41854[11], &D_80A41854[12], &D_80A41854[19],
     };
 s32 func_80A3F62C(EnTest3* this, PlayState* play, struct_80A41828* arg2, ScheduleOutput* scheduleOutput) {
@@ -717,7 +717,7 @@ s32 func_80A3F62C(EnTest3* this, PlayState* play, struct_80A41828* arg2, Schedul
         this->player.stateFlags2 |= PLAYER_STATE2_40000;
         play->tryPlayerCsAction(play, &this->player, PLAYER_CSACTION_NEG1);
     }
-    this->unk_D78 = mmvr_local_4cdc93225823c9cc[arg2->unk_1_4];
+    this->unk_D78 = mmvr_local_0579074ad5569083[arg2->unk_1_4];
     return true;
 }
 
@@ -891,14 +891,14 @@ s32 func_80A3FE20(EnTest3* this, PlayState* play) {
     return false;
 }
 
-static Vec3f mmvr_local_211851052b74dfa7 = { -420.0f, 210.0f, -162.0f };
+static Vec3f mmvr_local_e313739e29c23cac = { -420.0f, 210.0f, -162.0f };
 s32 func_80A3FF10(EnTest3* this, PlayState* play, struct_80A41828* arg2, ScheduleOutput* scheduleOutput) {
     /* persistent local storage is declared above */
 
     if (CHECK_WEEKEVENTREG(WEEKEVENTREG_COUPLES_MASK_CUTSCENE_FINISHED)) {
         D_80A41D68 = 2;
-        Math_Vec3f_Copy(&this->player.actor.world.pos, &mmvr_local_211851052b74dfa7);
-        Math_Vec3f_Copy(&this->player.actor.home.pos, &mmvr_local_211851052b74dfa7);
+        Math_Vec3f_Copy(&this->player.actor.world.pos, &mmvr_local_e313739e29c23cac);
+        Math_Vec3f_Copy(&this->player.actor.home.pos, &mmvr_local_e313739e29c23cac);
 
         this->player.actor.home.rot.y = -0x2AAB;
         this->player.actor.shape.rot.y = -0x2AAB;
@@ -1226,7 +1226,7 @@ s32 EnTest3_OverrideLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList, Vec3f*
     return false;
 }
 
-static Vec3f mmvr_local_463bbcd318d88656 = { 1100.0f, -700.0f, 0.0f };
+static Vec3f mmvr_local_56107214b438c1e2 = { 1100.0f, -700.0f, 0.0f };
 void EnTest3_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dList2, Vec3s* rot, Actor* thisx) {
     s32 pad;
     EnTest3* this = (EnTest3*)thisx;
@@ -1304,7 +1304,7 @@ void EnTest3_PostLimbDraw(PlayState* play, s32 limbIndex, Gfx** dList1, Gfx** dL
         } else {
             /* persistent local storage is declared above */
 
-            Matrix_MultVec3f(&mmvr_local_463bbcd318d88656, &this->player.actor.focus.pos);
+            Matrix_MultVec3f(&mmvr_local_56107214b438c1e2, &this->player.actor.focus.pos);
         }
     } else if (limbIndex == KAFEI_LIMB_TORSO) {
         if (D_80A41D60 || CHECK_WEEKEVENTREG(WEEKEVENTREG_RECEIVED_PENDANT_OF_MEMORIES) ||
@@ -1396,11 +1396,12 @@ void EnTest3_Draw(Actor* thisx, PlayState* play2) {
         }
     }
 #ifdef MMVR_ENABLE
-    // EnTest3 has its own skeleton renderer rather than Player_Draw's limb
-    // hooks. Hide only the active Kafei player body in the first-person world
-    // view; preserve the native visibility of Kafei NPCs when Link is playing.
+    // Keep the controlled body for the same tracked-arm replay as Link.
+    // The common limb hook removes the head; body-off or
+    // an unavailable upright roll pose retains the established hands-only path.
+    // Native camera projection must not hide a body anchored to the headset.
     if (GET_PLAYER(play) == &this->player && MMVR_HideNativeBodyRender()) {
-        D_80A418C8 = true;
+        D_80A418C8 = MMVR_HidePlayerLimb(&this->player.actor, KAFEI_LIMB_TORSO);
     }
 #endif
 

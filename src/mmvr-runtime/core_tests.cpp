@@ -3,6 +3,7 @@
 #include "body_ik.h"
 #include "body_roll.h"
 #include "interaction_view.h"
+#include "fairy_mask_cue_tests.h"
 #include "grab_shake.h"
 #include "arm_run_tests.h"
 #include "solid_hull.h"
@@ -28,6 +29,7 @@
 #include "swim_direction.h"
 #include "projection.h"
 #include "first_person.h"
+#include "billboard_group.h"
 #include "input.h"
 #include "control_bindings.h"
 #include "ui.h"
@@ -74,6 +76,10 @@ int main(){
         check(close(mmvr::SwordChargeEffect(1.f,true,frame).pulse,1+chargeWave[frame&7]*6));
     }
     check(mmvr::Settings{}.Get(mmvr::Setting::QuickWheelItems)==0);
+    check(mmvr::Settings{}.Get(mmvr::Setting::QuickWheelAllItems)==0);
+    check(mmvr::SettingTab(int(mmvr::Setting::QuickWheelAllItems))==mmvr::ItemsTab);
+    check(mmvr::Settings{}.Get(mmvr::Setting::GreatFairyMaskCue)==1);
+    check(mmvr::SettingTab(int(mmvr::Setting::GreatFairyMaskCue))==mmvr::ViewTab);
     check(mmvr::SettingTab(int(mmvr::Setting::QuickWheelItems))==mmvr::ItemsTab);
     for(float scale : {.5f,1.f,2.f}) for(float blade : {13.77f,15.52f,29.98f,51.48f,47.f}) {
         float length=blade*scale;
@@ -571,6 +577,45 @@ int main(){
       check(close(turned.m[3][1],23));
       check(close(turned.m[3][2],-50+10*facing.m[0][2]));
     }
+    // The moving fairy's shared root includes its native model scale. Keep
+    // interpolated world motion and animated limb offsets in their own spaces.
+    for(float alpha:{0.f,.25f,.5f,.75f,1.f}) for(float eyeYaw:{-.8f,0.f,1.2f}) {
+      auto root=mmvr::YawPose(.3f+.2f*alpha,100+5*alpha,20+2*alpha,-50-3*alpha);
+      for(int row=0;row<3;++row) for(int col=0;col<3;++col) root.m[row][col]*=.01f;
+      const auto local=mmvr::YawPose(.1f+.4f*alpha,10+4*alpha,3-2*alpha,-2);
+      const auto native=mmvr::Multiply(local,root),facing=mmvr::YawPose(eyeYaw);
+      const auto actual=mmvr::FaceBillboardGroup(native,root,facing);
+      const auto expected=mmvr::Multiply(local,mmvr::HeldPreviewBillboard(root,facing));
+      for(int row=0;row<4;++row) for(int col=0;col<4;++col)
+        check(close(actual.m[row][col],expected.m[row][col]));
+      const auto rootActual=mmvr::FaceBillboardGroup(root,root,facing);
+      for(int col=0;col<3;++col) check(close(rootActual.m[3][col],root.m[3][col]));
+    }
+    {
+      mmvr::BillboardGroupRoot group;
+      group.native=mmvr::YawPose(.3f,105,22,-53);
+      auto sampled=mmvr::YawPose(.4f,102.5f,21,-51.5f);
+      group.Sample(sampled.m[0]);
+      check(group.interpolated && close(group.visual.m[3][0],102.5f));
+      // The previous raw-pivot policy visibly rotates actor travel. Keep this
+      // negative control so a stationary-only test cannot conceal that error.
+      const auto wrong=mmvr::FaceBillboardGroup(sampled,group.native,mmvr::YawPose(1.2f));
+      check(std::abs(wrong.m[3][0]-sampled.m[3][0])>.5f ||
+            std::abs(wrong.m[3][2]-sampled.m[3][2])>.5f);
+      group.Sample(nullptr);
+      check(!group.interpolated && close(group.visual.m[3][0],105));
+      mmvr::Matrix singular{};
+      group.Sample(singular.m[0]);
+      check(!group.interpolated && close(group.visual.m[3][0],105));
+      sampled.m[3][0]=std::numeric_limits<float>::quiet_NaN();
+      group.Sample(sampled.m[0]);
+      check(!group.interpolated && close(group.visual.m[3][0],105));
+      const auto native=mmvr::YawPose(.2f,8,9,10);
+      const auto uncorrected=mmvr::FaceBillboardGroup(native,singular,mmvr::YawPose(1.2f));
+      for(int row=0;row<4;++row) for(int col=0;col<4;++col)
+        check(close(uncorrected.m[row][col],native.m[row][col]));
+    }
+    std::puts("Moving billboard root, animated limb, sample fallback and sprite boundary checks passed");
     // Bounded timing statistics retain a rare hitch even when P95 cannot show it.
     {
      mmvr::FrameTimingWindow timing;for(int i=1;i<=100;++i)timing.Add(i,90);
@@ -1210,6 +1255,101 @@ int main(){
         raw.sticks[0]={.4f,-.8f};raw.sticks[1]={-.2f,.9f};
         auto identity=mmvr::RemapControls(defaults,raw);
         check(identity.value[0]==raw.value[0] && identity.sticks[0].y==raw.sticks[0].y);
+        check(mmvr::GoronRollSource(defaults)==mmvr::ControlCount);
+        check(mmvr::GoronRollControls(defaults,raw,true).value==identity.value);
+        for (int source=0;source<=mmvr::ControlCount;++source) {
+            auto rollSettings=defaults;
+            rollSettings.Set(mmvr::Setting::GoronRollBinding,float(source));
+            if (!mmvr::ValidGoronRollBinding(source)) {
+                check(mmvr::GoronRollSource(rollSettings)==mmvr::ControlCount);
+                continue;
+            }
+            check(mmvr::GoronRollSource(rollSettings)==source);
+            auto routed=mmvr::GoronRollControls(rollSettings,raw,true);
+            check(routed.value[0]==raw.value[0]); // Interact A never moves.
+            check(routed.sticks[0].x==raw.sticks[0].x&&routed.sticks[1].y==raw.sticks[1].y);
+            for (int action : {1,2,3,6,7,11,12})
+                check(routed.value[action]==(source==action ? 0.f : raw.value[action]));
+            check(mmvr::GoronRollControls(rollSettings,raw,false).value==identity.value);
+        }
+        int rollBinding=13;
+        for (int index=0;index<9;++index) {
+            const int next=mmvr::NextGoronRollBinding(rollBinding,1);
+            check(mmvr::ValidGoronRollBinding(next));
+            check(mmvr::NextGoronRollBinding(next,-1)==rollBinding);
+            rollBinding=next;
+        }
+        check(rollBinding==13);
+        for (int hz : {72,80,90,120}) for (int source : {0,1,2,3,6,7,11,12}) {
+            auto rollSettings=defaults;
+            // Use the real item trigger on each possible physical roll input.
+            mmvr::AssignControl(rollSettings,12,source,[&](auto id,float value){rollSettings.Set(id,value);});
+            rollSettings.Set(mmvr::Setting::GoronRollBinding,float(source));
+            mmvr::ControlSample sample;
+            sample.sticks[0]={.3f,.6f};sample.sticks[1]={-.8f,.2f};
+            mmvr::GoronRollRouting routing;
+            mmvr::ItemTrigger itemTrigger;
+            double time=1;
+            auto routed=[&](bool owns) {
+                auto output=routing.Update(rollSettings,sample,owns);
+                check(output.sticks[0].x==sample.sticks[0].x&&output.sticks[1].y==sample.sticks[1].y);
+                return output;
+            };
+            auto tick=[&](bool owns) {
+                time+=1./hz;
+                return itemTrigger.Update(time,1,true,routed(owns).value[12]);
+            };
+            check(tick(true)==0);
+            sample.value[source]=1;
+            check(tick(true)==0&&routing.Claims(source));
+            // Face-slot/context entry cannot turn a held roll into item use.
+            for(int frame=0;frame<hz;++frame)check(tick(false)==0&&routing.Claims(source));
+            check(sample.value[source]==1); // Physical menu inputs remain available.
+            // Focus loss and selecting another binding retain the old claim.
+            routing.EndOwnership();
+            rollSettings.Set(mmvr::Setting::GoronRollBinding,source==11 ? 12.f : 11.f);
+            check(tick(true)==0&&routing.Claims(source));
+            rollSettings.Set(mmvr::Setting::GoronRollBinding,13);
+            check(tick(false)==0&&routing.Claims(source));
+            sample.value[source]=.4f;check(tick(false)==0&&routing.Claims(source));
+            sample.value[source]=0;check(tick(false)==0&&!routing.Claims(source));
+            sample.value[source]=1;check(tick(false)==1); // Only a real new press uses the item.
+            // A genuine press that starts at the face was never roll-owned.
+            mmvr::GoronRollRouting faceRouting;
+            check(faceRouting.Update(rollSettings,sample,false).value[12]==1&&!faceRouting.Claims(source));
+        }
+        mmvr::GoronRollHold rollHold;
+        check(!rollHold.Update(1,11,true)); // Held across menu entry cannot roll.
+        check(!rollHold.Update(0,11,true));
+        check(rollHold.Update(.8f,11,true));
+        check(rollHold.Update(.4f,11,true));
+        check(!rollHold.Update(.1f,11,true));
+        check(rollHold.Update(1,11,true));
+        check(!rollHold.Update(1,12,true)); // Changing sources requires release.
+        check(!rollHold.Update(0,12,true));
+        check(rollHold.Update(1,12,true));
+        check(!rollHold.Update(1,12,false));
+        check(!rollHold.Update(1,12,true)); // Dialogue/focus loss also rearms.
+        mmvr::PadLatch rollLatch;
+        mmvr::Pad rollPad{0,31,42,true,27,-19,false,true};
+        rollLatch.Update(rollPad);
+        rollPad.goronRoll=true;rollLatch.Update(rollPad);
+        rollPad.goronRoll=false;rollLatch.Update(rollPad);
+        auto shortRoll=rollLatch.Consume();
+        check(shortRoll.goronRoll&&shortRoll.goronRollOverride&&shortRoll.buttons==0);
+        check(shortRoll.x==31&&shortRoll.rightX==27);
+        rollPad.goronRoll=true;rollLatch.Update(rollPad);
+        rollPad.goronRoll=false;rollLatch.Update(rollPad);
+        check(!rollLatch.Consume().goronRoll); // Delivered release before a new tap.
+        check(rollLatch.Consume().goronRoll);
+        check(!rollLatch.Consume().goronRoll);
+        rollPad.goronRoll=true;rollLatch.Update(rollPad);
+        rollPad.goronRoll=rollPad.goronRollOverride=false;rollLatch.Update(rollPad);
+        check(!rollLatch.Consume().goronRoll); // Context loss discards pending rolls.
+        rollPad.goronRoll=rollPad.goronRollOverride=true;rollLatch.Update(rollPad);
+        rollLatch.Update({});check(!rollLatch.Consume().goronRoll);
+        rollLatch.Update(rollPad);rollLatch.ClearButtons();check(!rollLatch.Consume().goronRoll);
+        check(!mmvr::ItemWheelInput(rollPad,true).goronRollOverride);
         for(int action=0;action<mmvr::ControlCount;++action)for(int source=0;source<mmvr::ControlCount;++source){
             auto settings=defaults;
             mmvr::AssignControl(settings,action,source,[&](auto id,float value){settings.Set(id,value);});
@@ -1253,6 +1393,12 @@ int main(){
         check(editor.source==10);editor.Cancel();editor.Begin(9);input={};editor.Update(input,.01f);
         input.value[1]=1;check(editor.Update(input,.01f)==-1);
         editor.Begin(0);input={};for(int i=0;i<220;++i)editor.Update(input,.1f);check(!editor.Active());
+        editor.Begin(mmvr::ControlCount);input={};editor.Update(input,.01f);
+        input.value[8]=1;editor.Update(input,.01f);check(editor.phase==mmvr::BindingEditor::Listen);
+        input={};input.value[11]=1;editor.Update(input,.01f);
+        check(editor.source==11&&editor.phase==mmvr::BindingEditor::ReviewRelease);
+        input={};editor.Update(input,.01f);input.value[0]=1;
+        check(editor.Update(input,.01f)==1);editor.Cancel();
     }
     {
         for(int hz : {72,80,90,120}) {
@@ -1567,12 +1713,50 @@ int main(){
             bones[7]=mmvr::Multiply(mmvr::YawPose(0,0,15*scale),animation);
             auto target=mmvr::YawPose(-.11f*i,20,40*scale,30),correction=mmvr::Matrix{};
             check(AnchorTorso(bones,yaw,target,correction));
+            mmvr::Matrix explicitDefault{};
+            check(AnchorTorso(bones,yaw,target,explicitDefault,TorsoBasis::NativeForward));
+            check(std::memcmp(&correction,&explicitDefault,sizeof(correction))==0);
             check(Length(Transform(Position(bones[6]),correction)-Position(target))<.001f);
             const auto waist=Transform(Position(bones[7]),correction);
             check(std::abs(waist.x-20)<.001f && std::abs(waist.z-30)<.001f);
             check(std::abs(Length(waist-Position(target))-19*scale)<.001f);
             const auto shoulder=Transform(Position(bones[3]),correction)-Transform(Position(bones[0]),correction);
             check(Length(shoulder-Vec{target.m[0][0],target.m[0][1],target.m[0][2]}*(16*scale))<.001f);
+        }
+        // Zora's free-swim torso crosses the forward hemisphere boundary. A
+        // stateless anatomical basis keeps the left/right shoulder on its own
+        // side of the HMD through pitch and roll, including a cold swim start.
+        for(float scale:{.5f,1.f,2.f}) for(float yaw:{-.7f,0.f,.9f})
+            for(float degrees:{-179.f,-100.f,-91.f,-90.f,-89.f,-30.f,0.f,30.f,89.f,90.f,91.f,100.f,179.f})
+                for(float rollDegrees:{-120.f,-90.f,-1.f,0.f,1.f,90.f,120.f}) {
+            constexpr float pi=3.14159265358979323846f;
+            const float pitch=degrees*pi/180,roll=rollDegrees*pi/180;
+            const auto animation=mmvr::Multiply(mmvr::Multiply(
+                mmvr::PoseMatrix({{std::sin(pitch/2),0,0,std::cos(pitch/2)},{0,0,0}}),
+                mmvr::PoseMatrix({{0,0,std::sin(roll/2),std::cos(roll/2)},{0,0,0}})),
+                mmvr::YawPose(yaw,13,17,-21));
+            mmvr::Matrix bones[mmvr::BodyBoneCount]{};
+            bones[0]=mmvr::Multiply(mmvr::YawPose(0,6.3f*scale,30*scale),animation);
+            bones[3]=mmvr::Multiply(mmvr::YawPose(0,-6.3f*scale,30*scale),animation);
+            bones[6]=mmvr::Multiply(mmvr::YawPose(0,0,34*scale),animation);
+            bones[7]=mmvr::Multiply(mmvr::YawPose(0,0,15*scale),animation);
+            const auto head=mmvr::YawPose(yaw+.3f,25,50,40);
+            const auto target=mmvr::YawPose(mmvr::PoseYaw(head)-pi,25,50,40);
+            mmvr::Matrix correction{};
+            check(AnchorTorso(bones,yaw,target,correction,TorsoBasis::AnatomicalShoulders));
+            const auto local=mmvr::Multiply(correction,mmvr::InversePose(head));
+            const auto left=Transform(Position(bones[0]),local),right=Transform(Position(bones[3]),local);
+            check(std::abs(left.x+6.3f*scale)<.001f && std::abs(right.x-6.3f*scale)<.001f);
+            check(Length(Transform(Position(bones[6]),correction)-Position(target))<.001f);
+            check(std::abs(Length(Transform(Position(bones[7]),correction)-Position(target))-19*scale)<.001f);
+            // Returning to the ordinary upright native basis has no yaw/side
+            // snap; the other forms and their callers keep the legacy policy.
+            if(degrees==0 && rollDegrees==0) {
+                mmvr::Matrix standing{};
+                check(AnchorTorso(bones,yaw,target,standing));
+                for(int row=0;row<4;++row) for(int col=0;col<4;++col)
+                    check(std::abs(standing.m[row][col]-correction.m[row][col])<.001f);
+            }
         }
         auto a=mmvr::YawPose(0),b=mmvr::YawPose(0,10),c=mmvr::YawPose(0,20);
         check(!Solve(a,b,c,mmvr::YawPose(0,10000),{0,-1,0}).valid);
@@ -1619,6 +1803,7 @@ int main(){
         roll.Begin(false,true,&actor,2,2,root,1);
         check(!roll.Waiting() && !roll.Find(&address[0])); // Theater/disabled.
         check(mmvr::Settings{}.Get(mmvr::Setting::FullBody)==1);
+        check(mmvr::Settings{}.Get(mmvr::Setting::KafeiBody)==1);
         check(mmvr::Settings{}.Get(mmvr::Setting::MotionBlur)==0);
         for (int alpha=0;alpha<256;++alpha) for (bool stereo:{false,true})
             for (bool hud:{false,true}) for (bool enabled:{false,true}) {
@@ -1629,6 +1814,17 @@ int main(){
                 check(flat.eyeAlpha==alpha && !flat.consumeNative);
             }
     }
+    for (float scale : {.05f, .16f, .4f}) for (float yaw : {-2.f, 0.f, 2.f}) {
+        auto held = mmvr::YawPose(yaw, 25, 40, -10);
+        for (int row = 0; row < 3; ++row) for (int col = 0; col < 3; ++col) held.m[row][col] *= scale;
+        const auto facing = mmvr::YawPose(-yaw, 8, 9, 10);
+        const auto glow = mmvr::HeldPreviewBillboard(held, facing);
+        for (int row = 0; row < 3; ++row) {
+            check(glow.m[3][row] == held.m[3][row]);
+            for (int col = 0; col < 3; ++col) check(std::abs(glow.m[row][col] - facing.m[row][col] * scale) < .0001f);
+        }
+    }
+    mmvr::FairyMaskCueGeometryChecks([](bool condition){check(condition);});
     StateTrackingChecks();
     std::puts("Shared VR core checks passed");
 }

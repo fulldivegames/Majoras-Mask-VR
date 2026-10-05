@@ -69,17 +69,25 @@ inline Matrix FaceBillboard(Matrix native, Matrix basis, Matrix facing) {
         result.m[3][i] = position[i];
     return result;
 }
-// A billboard skeleton must rotate its joint origins around one shared root.
-// Rotating each limb in place separates the wings/head when the viewer turns.
-inline Matrix FaceBillboardGroup(Matrix native, Matrix basis, Matrix facing) {
-    float pivot[3] = {basis.m[3][0], basis.m[3][1], basis.m[3][2]};
-    for (int i=0;i<3;++i) {
-        native.m[3][i] -= pivot[i];
-        basis.m[3][i] = facing.m[3][i] = 0;
+// Held item previews replace the hidden native matrix. Their glow must keep
+// the hand position and size while facing each eye rather than the controller.
+inline Matrix HeldPreviewBillboard(const Matrix& held, Matrix facing) {
+    for (int row = 0; row < 3; ++row) {
+        float size = 0;
+        for (int col = 0; col < 3; ++col) size += held.m[row][col] * held.m[row][col];
+        size = std::sqrt(size);
+        for (int col = 0; col < 3; ++col) facing.m[row][col] *= size;
+        facing.m[3][row] = held.m[3][row];
     }
-    auto result = Multiply(Multiply(native, InversePose(basis)), facing);
-    for (int i=0;i<3;++i) result.m[3][i] += pivot[i];
-    return result;
+    return facing;
+}
+// The root and limbs must come from the same interpolation sample. Factor out
+// that full root (including model scale), then change only its facing. Using
+// the latest native pivot would rotate interpolated actor travel as an offset.
+inline Matrix FaceBillboardGroup(Matrix native, const Matrix& root, Matrix facing) {
+    Matrix inverse;
+    if (!InverseAffine(root, inverse)) return native;
+    return Multiply(Multiply(native, inverse), HeldPreviewBillboard(root, facing));
 }
 struct PoseResetPolicy {
     bool anchor, history;
@@ -191,7 +199,7 @@ void SetNotebookModelMatrix(const void* address) noexcept;
 void SetBowStringMatrix(const void* address) noexcept;
 void SetBowArrowMatrix(const void* arrow) noexcept;
 void SetItemReticleMatrix(const void* reticle) noexcept;
-void SetHeldMaskRange(int layer, const void* low, const void* high) noexcept;
+void SetHeldMaskRange(int layer, const void* low, const void* high, bool itemPreview = false) noexcept;
 void SetRewardRange(int layer, const void* low, const void* high) noexcept;
 void ToggleFirstPerson() noexcept;
 bool FirstPersonRequested() noexcept;

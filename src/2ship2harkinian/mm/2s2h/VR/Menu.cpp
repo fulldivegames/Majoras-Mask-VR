@@ -49,6 +49,7 @@ extern void SetBombArrowButton(s32 slot, bool state, bool isDpad);
 namespace {
 std::atomic<unsigned> instrumentPad{ 0 };
 std::atomic<unsigned> gamePadButtons{ 0 };
+std::atomic<unsigned> goronRollButtons{ 0 }; // override=4, held=1, pressed=2.
 constexpr const char* FrameName = "MMVR/ClockTowerFrame";
 const char* SlotKeys[] = { "gVR.Slot.Up", "gVR.Slot.Right", "gVR.Slot.Down", "gVR.Slot.Left", "gVR.Slot.TopLeft", "gVR.Slot.TopRight", "gVR.Slot.BottomLeft", "gVR.Slot.BottomRight" };
 const char* SlotNames[] = { "Top item", "Right item", "Bottom item", "Left item", "Top left", "Top right", "Bottom left", "Bottom right" };
@@ -151,6 +152,7 @@ bool SetVRControlBinding(int action, int source) {
 }
 bool ResetVRControlBindings() {
     for (int i = 0; i < mmvr::ControlCount; ++i) Change(mmvr::ControlSetting(i), float(i));
+    Change(mmvr::Setting::GoronRollBinding, float(mmvr::ControlCount));
     mmvr::ControlBindingsChanged();
     return CommitSettings();
 }
@@ -170,6 +172,23 @@ void DrawVRControllerBindings() {
         if (ImGui::Button("Retry saving bindings")) CommitSettings();
     }
     ImGui::Separator();
+    const int rollSource = mmvr::GoronRollSource(mmvr::GetSettings());
+    if (ImGui::BeginCombo("Goron roll button", mmvr::ControlName(rollSource, left, right))) {
+        for (int source = 0; source <= mmvr::ControlCount; ++source) {
+            if (!mmvr::ValidGoronRollBinding(source)) continue;
+            const bool available = source == mmvr::ControlCount || mmvr::ControlAvailable(source, left, right);
+            ImGui::BeginDisabled(!available);
+            if (ImGui::Selectable(mmvr::ControlName(source, left, right), rollSource == source)) {
+                Change(mmvr::Setting::GoronRollBinding, float(source));
+                mmvr::ControlBindingsChanged();
+                CommitSettings();
+            }
+            if (rollSource == source) ImGui::SetItemDefaultFocus();
+            ImGui::EndDisabled();
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::TextWrapped("Goron rolling in first person only. Other interact and menu controls stay the same.");
     for (int action = 0; action < mmvr::ControlCount; ++action) {
         ImGui::PushID(action);
         const int current = mmvr::ControlSource(mmvr::GetSettings(), action);
@@ -264,6 +283,16 @@ extern "C" int MMVR_TextBoxAlpha(int alpha) {
 extern "C" unsigned short MMVR_GameButtons(void) {
     return static_cast<unsigned short>(gamePadButtons.load());
 }
+extern "C" int MMVR_GoronRollInput(PlayState* play, Player* player, int pressed, int nativeA) {
+    const unsigned buttons = goronRollButtons.load();
+    if (!(buttons & 4) || !play || !player || player != GET_PLAYER(play) ||
+        player->transformation != PLAYER_FORM_GORON || !mmvr::FirstPersonRequested() ||
+        !mmvr::PhysicalActionsAllowed() || play->pauseCtx.state != PAUSE_STATE_OFF ||
+        play->msgCtx.msgMode != MSGMODE_NONE || play->csCtx.state != CS_STATE_IDLE ||
+        play->transitionTrigger != TRANS_TRIGGER_OFF || player->csAction != PLAYER_CSACTION_NONE)
+        return nativeA;
+    return (buttons & (pressed ? 2 : 1)) != 0;
+}
 extern "C" int MMVR_InstrumentButtons(unsigned short* buttons) {
     auto value = instrumentPad.load();
     if (!(value & 0x10000) || (gPlayState && Message_GetState(&gPlayState->msgCtx) == TEXT_STATE_CHOICE))
@@ -298,9 +327,10 @@ extern "C" int MMVR_InstrumentOverlay(void) {
 extern "C" void MMVR_ApplyGameInput(void* data) {
     auto* input = static_cast<Input*>(data);
     static uint16_t previous = 0;
+    static bool previousRoll = false;
 #if defined(MMVR_STATE_NATIVE_BACKEND)
     if(MMVR_StateResumeBootstrapActive()) {
-        *input={};previous=0;return;
+        *input={};previous=0;previousRoll=false;goronRollButtons.store(0);return;
     }
 #endif
     const bool controlledKafei = gPlayState && MMVR_ControlledKafei(GET_PLAYER(gPlayState));
@@ -326,11 +356,16 @@ extern "C" void MMVR_ApplyGameInput(void* data) {
     if (!pad.active ||
         ((!nativeTest || interactive) && Ship::Context::GetRawInstance()->GetWindow()->GetGui()->GetMenuOrMenubarVisible())) {
         previous = 0;
+        previousRoll = false;
+        goronRollButtons.store(0);
         instrumentPad.store(0);
         gamePadButtons.store(0);
         return;
     }
     gamePadButtons.store(pad.buttons);
+    goronRollButtons.store(pad.goronRollOverride ? 4u | (pad.goronRoll ? 1u : 0u) |
+                          (pad.goronRoll && !previousRoll ? 2u : 0u) : 0u);
+    previousRoll = pad.goronRollOverride && pad.goronRoll;
     instrumentPad.store(MMVR_InstrumentOverlay() ? 0x10000 | pad.buttons : 0);
     input->prev.button |= previous;
     input->cur.button |= pad.buttons;
@@ -418,6 +453,9 @@ extern "C" void MMVR_RegisterMenu(void) {
                    !(play->actorCtx.flags & ACTORCTX_FLAG_TELESCOPE_ON) && play->pauseCtx.state == PAUSE_STATE_OFF &&
                    play->csCtx.state == CS_STATE_IDLE && play->transitionTrigger == TRANS_TRIGGER_OFF &&
                    player->csAction == PLAYER_CSACTION_NONE && gSaveContext.save.saveInfo.playerData.health > 0;
+    mmvr::SetGoronRollContext(allowed && player->transformation == PLAYER_FORM_GORON &&
+        play->msgCtx.msgMode == MSGMODE_NONE && !player->heldActor &&
+        !(player->stateFlags1 & (PLAYER_STATE1_CARRYING_ACTOR | PLAYER_STATE1_TALKING)));
     int assignSlot = -1;
     if (play && play->pauseCtx.state == PAUSE_STATE_MAIN && play->pauseCtx.mainState == PAUSE_MAIN_STATE_IDLE &&
         play->pauseCtx.cursorSpecialPos == 0) {
@@ -525,7 +563,7 @@ extern "C" void MMVR_NativePresentationProbe(PlayState* play) {
         return;
     for (const char* flag : { "MMVR_SCRIPT_TEST", "MMVR_DAMAGE_MATRIX_TEST", "MMVR_POTION_SHOP_TEST", "MMVR_EXCHANGE_TEST", "MMVR_LIFECYCLE_TEST", "MMVR_TOWN_TEST",
                               "MMVR_ARENA_EXPANSION_TEST", "MMVR_FLOWER_TEST", "MMVR_PERFORMANCE_TEST", "MMVR_PERFORMANCE_INTERACTIVE", "MMVR_SCENE_SWEEP",
-                              "MMVR_NATIVE_STATE_TEST", "MMVR_RENDER_CADENCE_TEST", "MMVR_KAFEI_DRAW_TEST", "MMVR_FULL_BODY_TEST", "MMVR_NOTEBOOK_BOOK_TEST" }) {
+                              "MMVR_NATIVE_STATE_TEST", "MMVR_RENDER_CADENCE_TEST", "MMVR_KAFEI_DRAW_TEST", "MMVR_FULL_BODY_TEST", "MMVR_NOTEBOOK_BOOK_TEST", "MMVR_FAIRY_MASK_CUE_TEST" }) {
         const char* value = std::getenv(flag);
         if (value && std::strcmp(value, "1") == 0)
             return;

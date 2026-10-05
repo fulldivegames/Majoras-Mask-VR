@@ -208,6 +208,11 @@ enum class Setting {
     DekuBody,
     FierceDeityBody,
     AlwaysShield,
+    GoronSpeedLines,
+    GoronRollBinding,
+    QuickWheelAllItems,
+    KafeiBody,
+    GreatFairyMaskCue,
     Count
 };
 struct SettingDefinition {
@@ -419,6 +424,11 @@ inline constexpr SettingDefinition SettingDefinitions[] = {
     { "gVR.DekuBody", "Deku body", 1, 0, 1, 1, "off/on" },
     { "gVR.FierceDeityBody", "Fierce Deity body", 0, 0, 1, 1, "off/on" },
     { "gVR.AlwaysShield", "Always hold shield when sword is drawn", 0, 0, 1, 1, "off/on" },
+    { "gVR.GoronSpeedLines", "Goron rolling speed lines", 1, 0, 1, 1, "off/on" },
+    { "gVR.Controls.GoronRoll", "Goron roll button", 13, 0, 13, 1, "binding" },
+    { "gVR.QuickWheelAllItems", "Ready all items on selection", 0, 0, 1, 1, "off/on" },
+    { "gVR.KafeiBody", "Kafei body with tracked arms", 1, 0, 1, 1, "off/on" },
+    { "gVR.GreatFairyMaskCue", "Great Fairy Mask proximity sparkles", 1, 0, 1, 1, "off/on" },
 };
 static_assert(sizeof(SettingDefinitions) / sizeof(SettingDefinitions[0]) == size_t(Setting::Count));
 inline float BoundSetting(Setting id, float value) {
@@ -431,6 +441,10 @@ inline float BoundSetting(Setting id, float value) {
         id==Setting::DebugHitboxes || id==Setting::SwordDiagnostics))return 0;
     const auto& d = SettingDefinitions[size_t(id)];
     const float bounded = std::isfinite(value) ? std::clamp(value, d.minimum, d.maximum) : d.initial;
+    if (id == Setting::GoronRollBinding) {
+        const int source = int(std::round(bounded));
+        return source <= 3 || source == 6 || source == 7 || source >= 11 ? float(source) : d.initial;
+    }
     if (id >= Setting::BindA && id <= Setting::BindRightTrigger) {
         const int value = int(std::round(bounded));
         const bool stick = id == Setting::BindMove || id == Setting::BindTurn;
@@ -451,6 +465,14 @@ struct Settings {
         values[size_t(id)] = BoundSetting(id, value);
     }
 };
+inline bool QuickWheelSpecialItems(const Settings& settings) {
+    return settings.Get(Setting::QuickWheelItems) > .5f || settings.Get(Setting::QuickWheelAllItems) > .5f;
+}
+
+inline float GoronSpeedLineOpacity(const Settings& settings) {
+    return settings.Get(Setting::GoronSpeedLines) > .5f ? settings.Get(Setting::GoronSpeedStreaks) : 0.f;
+}
+
 // Native PLAYER_FORM order: Fierce Deity, Goron, Zora, Deku, Human.
 inline bool FullBodyForForm(const Settings& settings, int form) {
     constexpr Setting options[]{Setting::FierceDeityBody, Setting::GoronBody,

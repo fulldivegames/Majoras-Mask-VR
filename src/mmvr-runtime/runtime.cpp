@@ -32,6 +32,8 @@
 #include "combat.h"
 #include "masks.h"
 #include "eye_facing_cache.h"
+#include "billboard_group.h"
+#include "fairy_mask_cue.h"
 #ifdef __ANDROID__
 #include "gles_bridge.h"
 #include "native_bounds_gles_test.h"
@@ -49,6 +51,10 @@
 #include "desktop_mirror_dx11.h"
 #include "native_render_test.h"
 #include "native_bounds_dx11_test.h"
+#ifdef MMVR_LOCAL_TEST_TOOLS
+#include "native_fairy_cue_dx11_test.h"
+#include "world_scale.h"
+#endif
 #endif
 #include <openxr/openxr.h>
 #ifdef __ANDROID__
@@ -79,6 +85,9 @@
 
 namespace mmvr {
 namespace {
+XrPosef peripheralCueHead{};
+std::array<FairyMaskCuePoint, FairyMaskCueCount> peripheralCuePoints{};
+void PreparePeripheralCuePoints(const std::array<XrView, 2>& eyes, const XrPosef& head);
 LightingBenchVariant lightingBenchVariant=LightingBenchVariant::Off;
 int lightingBenchReplayIndex=0;
 LightingBenchStats lightingBenchStats{};
@@ -235,6 +244,7 @@ const void* screenScaleOverlay = nullptr;
 const void* screenScaleWorld = nullptr;
 const void* sceneWork = nullptr;
 bool firstPersonRequested = false, nativeFirstPersonEligible = true;
+bool goronRollContext = false;
 CameraCallback cameraCallback = nullptr;
 bool (*stateTrackingCallback)(const TrackingFrame&) = nullptr;
 CameraFrame cameraFrame{};
@@ -244,6 +254,7 @@ bool HeldActorAddress(uintptr_t p) {
 }
 uintptr_t handExtraLow[2][2]{}, handExtraHigh[2][2]{};
 uintptr_t maskLow[2]{}, maskHigh[2]{};
+bool maskItemPreview[2]{};
 uintptr_t playerMatrixLow = 0, playerMatrixHigh = 0;
 const void* handMatrixAddresses[2]{};
 struct BodyBoneBinding { const void* address=nullptr; Matrix native{}, visual{}; };
@@ -255,10 +266,10 @@ EyeFacingCache eyeFacingCache;
 struct BillboardBinding {
     Matrix basis;
     bool yawOnly = false;
-    bool grouped = false;
+    int group = -1;
 };
-bool billboardGroupActive = false;
-float billboardGroupPivot[3]{};
+int billboardGroupActive = -1;
+std::vector<BillboardGroupRoot> billboardGroups;
 CachePool billboardPool;
 std::pmr::unordered_map<const void*, BillboardBinding> billboards{ billboardPool.Resource() };
 struct ReticleBinding {
@@ -366,6 +377,19 @@ class TheaterRuntime {
     bool menuPositionPending = false, inputRelease = false, sceneRelease = false;
     XrTime nextMenuStep = 0;
     float gripValue = 0, leftGripValue = 0, useValue = 0;
+    GoronRollHold goronRoll;
+    bool goronRollFaceSlot[2]{};
+    GoronRollRouting goronRollRouting;
+    bool OwnsGoronRoll() const {
+        const int source = GoronRollSource(settings);
+        if (MaskTriggerClaimed()) return false;
+        for (int hand = 0; hand < 2; ++hand)
+            if (goronRollFaceSlot[hand] && maskWornItem >= 0 &&
+                ControlSource(settings, 11 + hand) == source) return false;
+        return goronRollContext && firstPersonRequested && nativeFirstPersonEligible && sceneGameplay &&
+               !menu.open && !inputRelease && !nativePause && !ocarina && !climbing && !dialogueChoice &&
+               !selector.open && source < ControlCount;
+    }
     XrPosef menuPose{ { 0, 0, 0, 1 }, { 0, 0, -2 } };
     XrSwapchain uiChain = XR_NULL_HANDLE;
     unsigned uiHeight = 768;
@@ -887,6 +911,8 @@ class TheaterRuntime {
         auto result = xrSyncActions(session, &sync);
         Check(result, "Sync OpenXR controls");
         if (result == XR_SESSION_NOT_FOCUSED || sessionState != XR_SESSION_STATE_FOCUSED) {
+            goronRoll.Update(0, -1, false);
+            goronRollRouting.EndOwnership();
             sceneRelease = false;
             ClearPad();
             if (inputFocused)
@@ -911,6 +937,7 @@ class TheaterRuntime {
             return;
         }
         RefreshProfiles();
+        if (!OwnsGoronRoll()) goronRoll.Update(0, -1, false);
         CacheInput();
         inputFocused = true;
         if (inputController != DominantController(settings)) {
@@ -1016,7 +1043,9 @@ class TheaterRuntime {
             if (binding.Active()) {
                 const int result = binding.Update(physicalControls, turnDelta);
                 if (result == 1 && changeSetting) {
-                    AssignControl(settings, binding.action, binding.source, changeSetting);
+                    if (binding.action == ControlCount)
+                        changeSetting(Setting::GoronRollBinding, float(binding.source));
+                    else AssignControl(settings, binding.action, binding.source, changeSetting);
                     ControlBindingsChanged();
                     nextMenuStep = displayTime + 250000000;
                 }
@@ -1065,6 +1094,10 @@ class TheaterRuntime {
                     int direction = (std::abs(adjust.x) > .65f ? adjust.x : navigate.x) > 0 ? 1 : -1;
                     if (MenuHeader(selected) || ModFolderRow(selected)) {
                         menu.SetSection(direction > 0);
+                    } else if (selected == int(Setting::GoronRollBinding) && changeSetting) {
+                        changeSetting(Setting::GoronRollBinding,
+                                      float(NextGoronRollBinding(GoronRollSource(settings), direction)));
+                        ControlBindingsChanged();
                     } else if (BindingSetting(selected)) {
                         // Input capture is explicit; stick browsing cannot silently rebind.
                     } else if (selected >= 0 && selected < AssignmentFirst && changeSetting) {
@@ -1091,11 +1124,14 @@ class TheaterRuntime {
                 } else if (confirmed == RefreshModsRow) {
                     if (refreshMods) refreshMods();
                     menu.Normalize();
+                } else if (confirmed == int(Setting::GoronRollBinding)) {
+                    GetBindingEditor().Begin(ControlCount);
                 } else if (BindingSetting(confirmed)) {
                     GetBindingEditor().Begin(confirmed - int(Setting::BindA));
                 } else if (confirmed == ResetControlsRow) {
                     for (int i = 0; i < ControlCount; ++i)
                         changeSetting(ControlSetting(i), float(i));
+                    changeSetting(Setting::GoronRollBinding, float(ControlCount));
                     ControlBindingsChanged();
                 } else if (confirmed >= 0 && confirmed < AssignmentFirst) {
                     const auto& d = SettingDefinitions[confirmed];
@@ -1268,6 +1304,10 @@ class TheaterRuntime {
                       (Bool(buttons[4]) ? 0x1000 : 0) | CButtons(item.x, item.y) | pageButtons;
         pad.buttons |= ThirdPersonButtons(Float(target), leftGripValue, useValue,
             sceneGameplay && !nativePause && !ocarina && !firstPersonRequested && !climbing && !dialogueChoice);
+        const int rollSource = GoronRollSource(settings);
+        pad.goronRollOverride = OwnsGoronRoll();
+        pad.goronRoll = goronRoll.Update(rollSource < ControlCount ? physicalControls.value[rollSource] : 0,
+                                       rollSource, pad.goronRollOverride);
         if (ocarina && !nativePause) {
             pad.buttons = InstrumentButtons(stick.x, stick.y, item.x, item.y, Bool(buttons[0]), Bool(buttons[2]),
                                             Bool(buttons[1]), Bool(buttons[3]));
@@ -1730,6 +1770,12 @@ class TheaterRuntime {
 #include "runtime_android_session.inc"
 #endif
   public:
+    void SetGoronRollFaceSlot(int hand, bool atFace) {
+        if (hand >= 0 && hand < 2) goronRollFaceSlot[hand] = atFace;
+    }
+    bool GoronRollClaimsTrigger(int hand) const {
+        return hand >= 0 && hand < 2 && goronRollRouting.Claims(ControlSource(settings, 11 + hand));
+    }
     bool InteractionVisible(float x,float y,float z) const noexcept {
         if (!inputFocused || !views[0].fov.angleLeft || !views[1].fov.angleRight) return true;
         const auto head=PoseMatrix(StereoHeadPose(views[0].pose,views[1].pose));
@@ -1949,6 +1995,8 @@ class TheaterRuntime {
         xrApplyHapticFeedback(session, &info, reinterpret_cast<const XrHapticBaseHeader*>(&vibration));
     }
     void ResetPhysicalInput() {
+        goronRoll.Update(0, -1, false);
+        goronRollRouting.EndOwnership();
         sceneRelease = false;
         inputRelease = true;
         ClearPad();
@@ -2386,6 +2434,7 @@ class TheaterRuntime {
                     const auto pixelCheck = std::exchange(cullingPixelRequest, {});
                     if(OrderingPixelsEnabled()){orderingLabel.clear();orderingEyes={};}
 #endif
+                    PreparePeripheralCuePoints(views, renderHead);
                     cullingTurnMargin = turnCullingGuard.Update(renderHead.orientation, double(displayTime) * 1e-9);
                     auto selectEye = [&](int i) {
                         renderPass = i + 1;
@@ -2931,6 +2980,9 @@ void SubmitGameGLES(GlImage& image, const std::function<void(bool)>& draw) noexc
 }
 #else
 static std::string nativeCapture;
+#ifdef MMVR_LOCAL_TEST_TOOLS
+static std::array<unsigned, 2> NativeFairyCueBindingsForFrame() noexcept;
+#endif
 void RequestNativeCapture(const char* name) {
     if (NativeRenderTest())
         nativeCapture = name;
@@ -3128,6 +3180,99 @@ static void BenchmarkLightingScenePC(ID3D11Device* device,ID3D11DeviceContext* c
     out<<"]}\n"<<std::flush;
     if(differingBytes||!nonUniform)throw std::runtime_error("Lighting A/B scene image mismatch or blank frame");
 }
+#ifdef MMVR_LOCAL_TEST_TOOLS
+static void CaptureLaundryFairyCuePC(ID3D11Device* device, ID3D11DeviceContext* context,
+                                    ID3D11Texture2D* texture, const std::function<void(bool)>& draw,
+                                    const std::string& label) {
+    struct Restore {
+        int pass = renderPass, preparedEye = preparationEye;
+        bool tracking = nativeTestTracking, projection = perspective, dialogue = separateDialogue;
+        bool paired = multiviewActive, reference = cullingReplayReference;
+        unsigned framebuffer = multiviewFramebuffer;
+        XrPosef eye = currentEye, origin = currentOrigin, cueHead = peripheralCueHead;
+        XrFovf fov = currentFov;
+        CameraFrame camera = cameraFrame;
+        Matrix view = worldView;
+        EyeFacingCache facing = eyeFacingCache;
+        PreparationEyeState prepared[2]{preparationEyes[0], preparationEyes[1]};
+        CombatDiagnostics combat = combatDiagnostics;
+        std::array<FairyMaskCuePoint, FairyMaskCueCount> points = peripheralCuePoints;
+        CullingGuard guard = currentCullingGuard;
+        TurnCullingGuard turn = turnCullingGuard;
+        float a = fogA, b = fogB, scale = fogScale, margin = cullingTurnMargin;
+        float floorHeight = calibratedFloorEyeHeight.load(std::memory_order_relaxed);
+        const void* pushAnchor = physicalPushAnchor;
+        const void* pushOwner = physicalPushAnchorOwner;
+        const void* visualPushOwner = visualPhysicalPushOwner;
+        Matrix visualPush = visualPhysicalPushPose;
+        bool visualPushValid = visualPhysicalPushPoseValid;
+        void Apply() const {
+            renderPass = pass; nativeTestTracking = tracking; perspective = projection;
+            separateDialogue = dialogue; multiviewActive = paired; multiviewFramebuffer = framebuffer;
+            cullingReplayReference = reference; combatDiagnostics = combat;
+            currentEye = eye; currentOrigin = origin; currentFov = fov; cameraFrame = camera;
+            worldView = view; eyeFacingCache = facing; preparationEye = preparedEye;
+            preparationEyes[0] = prepared[0]; preparationEyes[1] = prepared[1];
+            peripheralCueHead = cueHead; peripheralCuePoints = points;
+            currentCullingGuard = guard; turnCullingGuard = turn; cullingTurnMargin = margin;
+            fogA = a; fogB = b; fogScale = scale;
+            calibratedFloorEyeHeight.store(floorHeight, std::memory_order_relaxed);
+            physicalPushAnchor = pushAnchor; physicalPushAnchorOwner = pushOwner;
+            visualPhysicalPushOwner = visualPushOwner; visualPhysicalPushPose = visualPush;
+            visualPhysicalPushPoseValid = visualPushValid;
+        }
+        ~Restore() { Apply(); }
+    } restore;
+    TextureBackup color;
+    color.Save(context, texture);
+    struct RestoreColor {
+        TextureBackup& color; ID3D11DeviceContext* context; ID3D11Texture2D* texture;
+        ~RestoreColor() { color.Restore(context, texture); }
+    } restoreColor{color, context, texture};
+    // Acquire the current submitted native view address once, after normal
+    // Player_Draw has populated this frame's camera/root/binding data. Both
+    // image replays use exactly this camera sample and the original DL/map.
+    nativeTestTracking = true;
+    if (!cameraCallback || !FirstPersonRequested())
+        throw std::runtime_error("Laundry cue capture has no first-person camera callback");
+    TrackingFrame tracking{};
+    tracking.head.orientation.w = tracking.origin.orientation.w = 1;
+    tracking.timeSeconds = 51000; tracking.epoch = 51000;
+    tracking.calibratedFloorEyeHeight = restore.floorHeight;
+    const auto camera = cameraCallback(tracking);
+    if (!camera.active || !camera.viewAddress || !std::isfinite(camera.trackingScale) || camera.trackingScale <= 0)
+        throw std::runtime_error("Laundry cue capture camera is not draw-ready");
+    const XrPosef head{{0, 0, 0, 1}, {0, 0, 0}};
+    std::array<XrView, 2> eyes{};
+    for (int eye = 0; eye < 2; ++eye) {
+        eyes[eye].pose = head;
+        eyes[eye].pose.position.x = eye ? .032f : -.032f;
+        eyes[eye].fov = {-.85f, .85f, .85f, -.85f};
+    }
+    PreparePeripheralCuePoints(eyes, head);
+    const auto points = peripheralCuePoints;
+    const auto bindings = NativeFairyCueBindingsForFrame();
+    const auto prepare = [&](int eye, bool candidate) {
+        restore.Apply(); color.Restore(context, texture);
+        nativeTestTracking = true; renderPass = eye+1; perspective = false; separateDialogue = false;
+        multiviewActive = false; multiviewFramebuffer = 0;
+        cameraFrame = camera; currentEye = eyes[eye].pose; currentOrigin = head; currentFov = eyes[eye].fov;
+        worldView = camera.view; eyeFacingCache = restore.facing;
+        currentCullingGuard = {}; turnCullingGuard = {}; cullingTurnMargin = 0;
+        fogA = fogB = 0; fogScale = 1;
+        preparationEye = eye;
+        preparationEyes[0] = {}; preparationEyes[1] = {};
+        peripheralCueHead = head;
+        peripheralCuePoints = candidate ? points : std::array<FairyMaskCuePoint, FairyMaskCueCount>{};
+    };
+    auto projectedEyes = eyes;
+    for (auto& eye : projectedEyes) eye.fov = MagnifiedFov(eye.fov, camera.projectionZoom);
+    // The D3D backend replay wrapper separately preserves native depth. This
+    // helper restores the native color and every runtime pose/preparation state.
+    CaptureNativeFairyCuePixelsDX11(device, context, texture, draw, prepare, projectedEyes, head, points,
+                                  label, bindings[0], bindings[1]);
+}
+#endif
 void SubmitGame(ID3D11Device* device, ID3D11DeviceContext* context, ID3D11Texture2D* texture,
                 const std::function<void(bool)>& draw) noexcept {
     if (!rendererBridgeObserved) {
@@ -3147,6 +3292,27 @@ void SubmitGame(ID3D11Device* device, ID3D11DeviceContext* context, ID3D11Textur
     }
     if (NativeRenderTest() && texture && !nativeCapture.empty()) {
         const auto capture = std::exchange(nativeCapture, {});
+#ifdef MMVR_LOCAL_TEST_TOOLS
+        if (capture == "native-fairy-mask-cue-laundry-pixels") {
+            static bool attempted = false;
+            const auto enabled = [](const char* name) {
+                const auto* value = std::getenv(name);
+                return value && !std::strcmp(value, "1");
+            };
+            if (!attempted && PrivateDebugTools && enabled("MMVR_PROTECT_SAVES") &&
+                enabled("MMVR_FAIRY_MASK_CUE_LAUNDRY_TEST") && enabled("MMVR_FAIRY_MASK_CUE_PIXELS_TEST") && draw) {
+                attempted = true;
+                try {
+                    CaptureLaundryFairyCuePC(device, context, texture, draw, capture);
+                } catch (const std::exception& error) {
+                    std::ofstream(capture+"-error.txt") << error.what() << '\n';
+                    std::ofstream(capture+".json") << "{\"passed\":false,\"reason\":\"capture-preparation-error\"}";
+                }
+            } else {
+                std::ofstream(capture+".json") << "{\"passed\":false,\"reason\":\"protected-one-shot-capture-required\"}";
+            }
+        } else
+#endif
         CaptureNativeLayer(device, context, texture, capture);
         // Protected lesson fixture: inspect the actual separated alpha layers,
         // not merely the native textbox command predicate.
@@ -3347,7 +3513,7 @@ bool MaskTriggerClaimed() noexcept {
 }
 bool HoldSelectedMask() noexcept {
     if (!FirstPersonRequested() || !maskAllowed || maskSelected < 0 || maskSelected == maskWornItem ||
-        settings.Get(Setting::QuickWheelItems) <= .5f || !PhysicalActionsAllowed()) return false;
+        !QuickWheelSpecialItems(settings) || !PhysicalActionsAllowed()) return false;
     CancelHeldMask();
     maskHand = SwordController(settings);
     maskItem = maskSelected;
@@ -3369,6 +3535,12 @@ bool UpdateMaskTracking(const TrackingFrame& frame, bool allowed) noexcept {
     for (int order = 0; order < 2; ++order) {
         const int hand = order == 0 ? dominant : 1 - dominant;
         auto& gesture = maskGestures[hand];
+        if (runtime) runtime->SetGoronRollFaceSlot(hand, frame.handTracked[hand] &&
+            InMaskFaceSlot(frame.hands[hand], frame.head, settings.Get(Setting::MaskFaceDistance)));
+        // The roll press cannot also become a fresh mask grab when a held
+        // trigger moves to the face. The masked input stays unarmed until release.
+        const bool rollClaimsTrigger = !MaskTriggerClaimed() && runtime && runtime->GoronRollClaimsTrigger(hand);
+        const bool handEnabled = enabled && !rollClaimsTrigger;
         if ((active >= 0 && hand != active) || (active < 0 && MaskCarrying())) {
             gesture.Cancel();
             continue;
@@ -3383,14 +3555,14 @@ bool UpdateMaskTracking(const TrackingFrame& frame, bool allowed) noexcept {
             worn = candidate >= 0 && candidate == maskWornItem;
         }
         const bool wasCarrying = gesture.carrying;
-        const bool blocked = enabled && candidate >= 0 && !gesture.carrying && gesture.armed &&
+        const bool blocked = handEnabled && candidate >= 0 && !gesture.carrying && gesture.armed &&
                              frame.triggers[hand] > .7f && maskGrabBlocker && maskGrabBlocker(hand);
         bool use = gesture.wheelHeld
             ? gesture.UpdateWheel(frame.timeSeconds, frame.epoch,
-                                  enabled && firstPersonRequested && candidate >= 0 && settings.Get(Setting::QuickWheelItems) > .5f,
+                                  handEnabled && firstPersonRequested && candidate >= 0 && QuickWheelSpecialItems(settings),
                                   frame.handTracked[hand] && frame.aimValid[hand], frame.triggers[hand],
                                   frame.hands[hand], frame.head, settings.Get(Setting::MaskFaceDistance))
-            : gesture.Update(frame.timeSeconds, frame.epoch, enabled && candidate >= 0 && !blocked,
+            : gesture.Update(frame.timeSeconds, frame.epoch, handEnabled && candidate >= 0 && !blocked,
                                   frame.handTracked[hand] && frame.aimValid[hand], frame.triggers[hand], worn,
                                   frame.hands[hand], frame.head, settings.Get(Setting::MaskFaceDistance),
                                   settings.Get(Setting::MaskRemoveDistance));
@@ -3635,6 +3807,9 @@ void SetNativeTestCamera(const CameraFrame& frame) noexcept {
     if (nativeTestTracking)
         cameraFrame = frame;
 }
+void SetNativeTestPeripheralViews(const std::array<XrView, 2>& eyes, const XrPosef& head) noexcept {
+    if (nativeTestTracking) PreparePeripheralCuePoints(eyes, head);
+}
 void SetNativeTestEye(float yaw) noexcept {
     if (nativeTestTracking) {
         renderPass = 1;
@@ -3718,6 +3893,9 @@ void SetFirstPersonEligibility(bool allowed) noexcept {
     pendingSlot = -1;
     if (runtime)
         runtime->ResetPhysicalInput();
+}
+void SetGoronRollContext(bool allowed) noexcept {
+    goronRollContext = allowed;
 }
 void ApplyViewMode(int mode) noexcept {
     mode = std::clamp(mode, 0, 2);
@@ -4017,11 +4195,26 @@ bool OverrideBillboardMatrix(const void* address, float matrix[4][4], const floa
                 cameraFrame.active && FirstPersonRequested() && cameraFrame.heldActorActive && HeldActorAddress(p);
             Matrix native;
             std::memcpy(&native, held && nativeMatrix ? nativeMatrix : matrix, sizeof(native));
+            const auto* group = it->second.group >= 0 && size_t(it->second.group) < billboardGroups.size()
+                ? &billboardGroups[it->second.group] : nullptr;
+            // A missing or rejected root replacement must not mix an
+            // interpolated limb with a raw root. Keep the native pair together.
+            if (group && !group->interpolated) {
+                if (!nativeMatrix) return false;
+                std::memcpy(&native, nativeMatrix, sizeof(native));
+            }
             auto facing = eyeFacingCache.Get(worldView, currentEye, currentOrigin);
+            if (cameraFrame.active && FirstPersonRequested())
+                for (int layer = 0; layer < 2; ++layer)
+                    if (maskItemPreview[layer] && p >= maskLow[layer] && p < maskHigh[layer]) {
+                        const auto corrected = HeldPreviewBillboard(cameraFrame.heldMask, facing);
+                        std::memcpy(matrix, &corrected, sizeof(corrected));
+                        return true;
+                    }
             if (it->second.yawOnly)
                 facing = YawPose(PoseYaw(facing));
-            auto corrected = it->second.grouped ? FaceBillboardGroup(native, it->second.basis, facing)
-                                                : FaceBillboard(native, it->second.basis, facing);
+            auto corrected = group ? FaceBillboardGroup(native, group->visual, facing)
+                                   : FaceBillboard(native, it->second.basis, facing);
             if (held)
                 corrected = Multiply(corrected, cameraFrame.heldActorCorrection);
             std::memcpy(matrix, &corrected, sizeof(corrected));
@@ -4044,14 +4237,26 @@ struct FormEffectBinding {
     Matrix local;
     float spin = 0;
     double sampledTime = 0;
+    int peripheralCue = 0;
 };
 std::array<FormEffectBinding, 64> formEffects{};
 size_t formEffectCount = 0;
+#if defined(MMVR_LOCAL_TEST_TOOLS) && !defined(__ANDROID__)
+static std::array<unsigned, 2> NativeFairyCueBindingsForFrame() noexcept {
+    unsigned count = 0, mask = 0;
+    for (size_t i = 0; i < formEffectCount; ++i) {
+        const int cue = formEffects[i].peripheralCue;
+        if (formEffects[i].address && cue >= 1 && cue <= FairyMaskCueCount) { ++count; mask |= 1u << (cue-1); }
+    }
+    return {count, mask};
+}
+#endif
 std::array<FormEffectBinding, 16> shieldEffects{};
 size_t shieldEffectCount = 0;
 void ResetFormEffectMatrices() noexcept {
     dekuGuardAddress = dekuBubbleAddress = nullptr;
     formEffectCount = shieldEffectCount = 0;
+    peripheralCuePoints = {};
     formFinAddresses[0] = formFinAddresses[1] = nullptr;
 }
 void SetFormFinMatrix(int hand, const void* address) noexcept {
@@ -4061,6 +4266,21 @@ void SetFormFinMatrix(int hand, const void* address) noexcept {
 void SetFormEffectMatrix(const void* address, const Matrix& local, float spin, double sampledTime) noexcept {
     if (address && formEffectCount < formEffects.size())
         formEffects[formEffectCount++] = { address, local, spin, sampledTime };
+}
+void SetPeripheralCueMatrix(const void* address, const Matrix& local, int cue) noexcept {
+    if (address && cue>=1 && cue<=FairyMaskCueCount && formEffectCount<formEffects.size())
+        formEffects[formEffectCount++]={address,local,0,0,cue};
+}
+namespace {
+void PreparePeripheralCuePoints(const std::array<XrView, 2>& eyes, const XrPosef& head) {
+    peripheralCuePoints={};
+    bool needed=false;
+    for (size_t i=0;i<formEffectCount;++i) needed |= formEffects[i].peripheralCue!=0;
+    if (!needed) return; // No geometric/FOV work without an active native cue.
+    peripheralCueHead=head;
+    for (int i=0;i<FairyMaskCueCount;++i)
+        peripheralCuePoints[i]=FairyMaskCuePointForIndex(eyes,head,i);
+}
 }
 void SetShieldEffectMatrix(const void* address, const Matrix& local) noexcept {
     if (address && shieldEffectCount < shieldEffects.size())
@@ -4078,10 +4298,11 @@ void SetRewardRange(int layer, const void* low, const void* high) noexcept {
         rewardHigh[layer] = reinterpret_cast<uintptr_t>(high);
     }
 }
-void SetHeldMaskRange(int layer, const void* low, const void* high) noexcept {
+void SetHeldMaskRange(int layer, const void* low, const void* high, bool itemPreview) noexcept {
     if (layer >= 0 && layer < 2) {
         maskLow[layer] = reinterpret_cast<uintptr_t>(low);
         maskHigh[layer] = reinterpret_cast<uintptr_t>(high);
+        maskItemPreview[layer] = itemPreview && low && high;
     }
 }
 void SetBowArrowMatrix(const void* arrow) noexcept {
@@ -4180,6 +4401,23 @@ bool OverrideModelMatrix(const void* address, float matrix[4][4], const float na
         if (address == formEffects[i].address) {
             auto local = formEffects[i].local;
             const auto& effect = formEffects[i];
+            if (effect.peripheralCue) {
+                const auto& point=peripheralCuePoints[effect.peripheralCue-1];
+                Matrix pose{};
+                if (point.valid && !menu.open && !nativePause && InputFocused() &&
+                    settings.Get(Setting::GreatFairyMaskCue)>.5f) {
+                    const auto offset=YawPose(0,point.position.x,point.position.y,point.position.z);
+                    pose=Multiply(Multiply(local,offset),
+                        Multiply(PoseMatrix(peripheralCueHead),InversePose(PoseMatrix(currentOrigin))));
+                    const float units=40.f*cameraFrame.trackingScale;
+                    for (int row=0;row<4;++row) for (int col=0;col<3;++col) pose.m[row][col]*=units;
+                    pose=Multiply(pose,InversePose(worldView));
+                }
+                // Invalid FOV/tracking/menu never replays a stale head-space
+                // cue. The native placeholder is invisible on non-XR draws.
+                std::memcpy(matrix,&pose,sizeof(pose));
+                return true;
+            }
             if (effect.spin && std::isfinite(cameraFrame.trackingTime)) {
                 float angle = float(std::clamp(cameraFrame.trackingTime - effect.sampledTime, 0., .15)) * effect.spin,
                       c = std::cos(angle), s = std::sin(angle);
@@ -4264,7 +4502,8 @@ void SetSkyboxMatrix(const void* p) noexcept {
 }
 void ResetReticles() noexcept {
     billboards.clear();
-    billboardGroupActive = false;
+    billboardGroups.clear();
+    billboardGroupActive = -1;
     for (auto& binding : reticles)
         binding = {};
 }
@@ -4346,19 +4585,32 @@ extern "C" void MMVR_SetSkyboxMatrix(const void* p) {
     mmvr::SetSkyboxMatrix(p);
 }
 
-extern "C" void MMVR_BeginBillboardGroup(float x, float y, float z) {
-    mmvr::billboardGroupActive = true;
-    mmvr::billboardGroupPivot[0]=x; mmvr::billboardGroupPivot[1]=y; mmvr::billboardGroupPivot[2]=z;
+namespace mmvr {
+unsigned BillboardGroupCount() noexcept { return unsigned(billboardGroups.size()); }
+const void* BillboardGroupAddress(unsigned group) noexcept {
+    return group < billboardGroups.size() ? billboardGroups[group].address : nullptr;
 }
-extern "C" void MMVR_EndBillboardGroup(void) { mmvr::billboardGroupActive = false; }
+void SetVisualBillboardGroup(unsigned group, const float* replacement) noexcept {
+    if (group < billboardGroups.size()) billboardGroups[group].Sample(replacement);
+}
+}
+extern "C" void MMVR_BeginBillboardGroup(const void* address, const float* root) {
+    mmvr::billboardGroupActive = -1;
+    if (!address || !root) return;
+    mmvr::BillboardGroupRoot group;
+    group.address = address;
+    std::memcpy(&group.native, root, sizeof(group.native));
+    group.Sample(nullptr);
+    mmvr::billboardGroupActive = int(mmvr::billboardGroups.size());
+    mmvr::billboardGroups.push_back(group);
+}
+extern "C" void MMVR_EndBillboardGroup(void) { mmvr::billboardGroupActive = -1; }
 extern "C" void MMVR_SetBillboardMatrix(const void* address, const float* rotation, float x, float y, float z) {
     mmvr::Matrix basis;
     std::memcpy(&basis, rotation, sizeof(basis));
     basis.m[3][0] = x;
     basis.m[3][1] = y;
     basis.m[3][2] = z;
-    if (mmvr::billboardGroupActive)
-        for (int i=0;i<3;++i) basis.m[3][i]=mmvr::billboardGroupPivot[i];
     mmvr::billboards[address] = { basis, false, mmvr::billboardGroupActive };
 }
 extern "C" void MMVR_SetYawBillboardMatrix(const void* address, float yaw, float x, float y, float z) {

@@ -4833,6 +4833,29 @@ void MMVR_PlayerEquipEmptyBottle(PlayState* play,Player* this) {
     Player_InitItemActionWithAnim(play,this,PLAYER_IA_BOTTLE_EMPTY);this->unk_AA5=PLAYER_UNKAA5_0;
     sPlayerUseHeldItem=false;sPlayerHeldItemButtonIsHeldDown=false;
 }
+int MMVR_PlayerReadyWheelItem(PlayState* play, Player* this, ItemId item) {
+    // Ready the native held model without requesting its one-shot use. In
+    // particular, filled bottles must not drink, empty, or start an exchange.
+    if (MMVR_ItemPresentationActive(this) || this->heldActor || this->itemAction != this->heldItemAction ||
+        (this->stateFlags1 & (PLAYER_STATE1_4000000 | PLAYER_STATE1_8000000 | PLAYER_STATE1_CARRYING_ACTOR)) ||
+        this->transformation >= PLAYER_FORM_MAX || item < 0 || item >= 114 ||
+        !gPlayerFormItemRestrictions[this->transformation][item] ||
+        Player_GetItemOnButton(play, this, EQUIP_SLOT_C_DOWN) != item) return false;
+    PlayerItemAction action = Player_ItemToItemAction(this, item);
+    if (action != PLAYER_IA_DEKU_STICK && Player_BottleFromIA(this, action) <= PLAYER_BOTTLE_NONE) return false;
+    if (item == ITEM_DEKU_STICK && AMMO(ITEM_DEKU_STICK) <= 0) return false;
+    Player_DestroyHookshot(this);
+    this->heldItemId = item;
+    this->heldItemButton = EQUIP_SLOT_C_DOWN;
+    this->nextModelGroup = Player_ActionToModelGroup(this, action);
+    this->stateFlags3 &= ~PLAYER_STATE3_START_CHANGING_HELD_ITEM;
+    Player_InitItemActionWithAnim(play, this, action);
+    Player_SetUpperAction(play, this, Player_UpperAction_0);
+    this->unk_AA5 = PLAYER_UNKAA5_0;
+    sPlayerUseHeldItem = false;
+    sPlayerHeldItemButtonIsHeldDown = false;
+    return true;
+}
 void MMVR_PlayerEquipHookshot(PlayState* play,Player* this) {
     // Damage owns the upper-body action until native recovery completes.
     if (this->stateFlags1 & PLAYER_STATE1_4000000) return;
@@ -8844,7 +8867,15 @@ s32 Player_ActionHandler_6(Player* this, PlayState* play) {
     if (!sUpperBodyIsBusy && !(this->stateFlags1 & PLAYER_STATE1_800000) && !Player_UpdateHostileLockOn(this)) {
         if ((this->transformation == PLAYER_FORM_ZORA) && (this->stateFlags1 & PLAYER_STATE1_8000000)) {
             func_8083A04C(this);
-        } else if (CHECK_BTN_ALL(sPlayerControlInput->press.button, BTN_A) && !Player_UpdateHostileLockOn(this)) {
+        } else if (
+#ifdef MMVR_ENABLE
+                   ((this->transformation == PLAYER_FORM_GORON)
+                        ? MMVR_GoronRollInput(play, this, true, CHECK_BTN_ALL(sPlayerControlInput->press.button, BTN_A))
+                        : CHECK_BTN_ALL(sPlayerControlInput->press.button, BTN_A)) &&
+#else
+                   CHECK_BTN_ALL(sPlayerControlInput->press.button, BTN_A) &&
+#endif
+                   !Player_UpdateHostileLockOn(this)) {
             if (this->transformation == PLAYER_FORM_GORON) {
                 if (func_80839F98(play, this)) {
                     return true;
@@ -20685,7 +20716,13 @@ void func_808577E0(Player* this) {
 }
 
 s32 func_80857950(PlayState* play, Player* this) {
-    if (((this->unk_B86[1] == 0) && !CHECK_BTN_ALL(sPlayerControlInput->cur.button, BTN_A)) ||
+    const s32 rollHeld =
+#ifdef MMVR_ENABLE
+        MMVR_GoronRollInput(play, this, false, CHECK_BTN_ALL(sPlayerControlInput->cur.button, BTN_A));
+#else
+        CHECK_BTN_ALL(sPlayerControlInput->cur.button, BTN_A);
+#endif
+    if (((this->unk_B86[1] == 0) && !rollHeld) ||
         ((this->av1.actionVar1 == 3) && (this->actor.velocity.y < 0.0f))) {
         Player_SetAction(play, this, Player_Action_Idle, 1);
         Math_Vec3f_Copy(&this->actor.world.pos, &this->actor.prevPos);
@@ -20805,7 +20842,12 @@ void Player_Action_96(Player* this, PlayState* play) {
             Math_StepToC(&this->av1.actionVar1, 4, 1);
 
             uint8_t vanillaSpikeModeCondition =
-                (this->stateFlags3 & PLAYER_STATE3_80000) && (!CHECK_BTN_ALL(sPlayerControlInput->cur.button, BTN_A) ||
+                (this->stateFlags3 & PLAYER_STATE3_80000) && (
+#ifdef MMVR_ENABLE
+                    !MMVR_GoronRollInput(play, this, false, CHECK_BTN_ALL(sPlayerControlInput->cur.button, BTN_A)) ||
+#else
+                    !CHECK_BTN_ALL(sPlayerControlInput->cur.button, BTN_A) ||
+#endif
                                                               (gSaveContext.save.saveInfo.playerData.magic == 0) ||
                                                               ((this->av1.actionVar1 == 4) && (this->unk_B08 < 12.0f)));
             if (GameInteractor_Should(VB_GORON_ROLL_DISABLE_SPIKE_MODE, vanillaSpikeModeCondition)) {

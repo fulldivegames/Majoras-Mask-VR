@@ -18,6 +18,19 @@ static mmvr::Pad NativeKafeiDrawLifecycle(PlayState* play,unsigned tick) {
     }
     if(tick>800)throw std::runtime_error("Kafei handoff draw fixture timed out");
     if(tick==30) {
+        const char* mode=std::getenv("MMVR_KAFEI_BODY_TEST");
+        if(mode && std::strcmp(mode,"1")==0) {
+            // Apply before the actual EnTest3 draw records its rig. Changing a
+            // temporary setting only would be overwritten by normal CVar sync.
+            CVarSetFloat("gVR.KafeiBody",1);CVarSetFloat("gVR.FullBody",1);
+            mmvr::GetSettings().Set(mmvr::Setting::KafeiBody,1);
+            mmvr::GetSettings().Set(mmvr::Setting::FullBody,1);
+            std::ofstream("native-full-body.log")<<"private Kafei quest skeleton and ownership check\n";
+        } else {
+            // Keep the established hands-only compatibility fixture separate
+            // from the new full-body/cuff-palette path.
+            CVarSetFloat("gVR.KafeiBody",0);mmvr::GetSettings().Set(mmvr::Setting::KafeiBody,0);
+        }
         for(int i=0;i<ARRAY_COUNT(debugLocations);++i)if(debugLocations[i].kafeiPreset==2) {
             entered=MMVR_DebugLocationBegin(play,i)!=0;break;
         }

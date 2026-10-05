@@ -42,6 +42,21 @@ inline bool ControlAvailable(int source, const compat::Profile* left, const comp
 inline int ControlSource(const Settings& settings, int action) {
     return int(settings.Get(ControlSetting(action)));
 }
+// Rolling may share a face button, grip or trigger. Menu/recenter and stick
+// navigation stay available so a roll binding cannot strand the player.
+inline bool ValidGoronRollBinding(int source) {
+    return (source >= 0 && source <= 3) || source == 6 || source == 7 ||
+           source == 11 || source == 12 || source == ControlCount;
+}
+inline int GoronRollSource(const Settings& settings) {
+    const int source = int(settings.Get(Setting::GoronRollBinding));
+    return ValidGoronRollBinding(source) ? source : ControlCount;
+}
+inline int NextGoronRollBinding(int source, int direction) {
+    do { source = (source + (direction > 0 ? 1 : ControlCount)) % (ControlCount + 1); }
+    while (!ValidGoronRollBinding(source));
+    return source;
+}
 struct ControlVector {
     float x = 0, y = 0;
 };
@@ -69,6 +84,43 @@ inline ControlSample RemapControls(const Settings& settings, const ControlSample
     }
     return result;
 }
+inline ControlSample GoronRollControls(const Settings& settings, const ControlSample& physical, bool ownsRoll) {
+    auto result = RemapControls(settings, physical);
+    const int source = GoronRollSource(settings);
+    if (ownsRoll && source < ControlCount) {
+        // Interact/confirm A retains its native context. The roll action is
+        // independent; suppress other actions that share its physical input.
+        for (int action : {1, 2, 3, 6, 7, 11, 12})
+            if (ControlSource(settings, action) == source) result.value[action] = 0;
+    }
+    return result;
+}
+// A roll-owned physical press stays claimed until its real release, including
+// after dialogue, face-slot entry, focus loss or a binding change. Otherwise
+// restoring a masked 0 to a still-held 1 creates a false item/attack press.
+struct GoronRollRouting {
+    std::array<bool, ControlCount> releaseRequired{};
+    int owner = -1;
+    bool Claims(int source) const {
+        return source >= 0 && source < ControlCount &&
+               (owner == source || releaseRequired[source]);
+    }
+    void EndOwnership() { owner = -1; }
+    ControlSample Update(const Settings& settings, const ControlSample& physical, bool ownsRoll) {
+        const int source = GoronRollSource(settings);
+        owner = ownsRoll && source < ControlCount ? source : -1;
+        for (int input = 0; input < ControlCount; ++input)
+            if (std::isfinite(physical.value[input]) && physical.value[input] < .25f)
+                releaseRequired[input] = false;
+        if (owner >= 0 && !(physical.value[owner] < .25f)) releaseRequired[owner] = true;
+        auto result = RemapControls(settings, physical);
+        // A stays native interact/confirm. Menu and recenter remain independent
+        // physical inputs in UI, while unrelated gameplay inputs stay available.
+        for (int action : {1, 2, 3, 6, 7, 11, 12})
+            if (Claims(ControlSource(settings, action))) result.value[action] = 0;
+        return result;
+    }
+};
 inline int BindingConflict(const Settings& settings, int action, int source) {
     for (int i = 0; i < ControlCount; ++i)
         if (i != action && StickControl(i) == StickControl(action) && ControlSource(settings, i) == source)
@@ -91,6 +143,8 @@ inline const char* ControlName(int source, const compat::Profile* left = nullptr
                                       "Left menu",         "Left stick click", "Left grip",   "Right grip",
                                       "Right stick click", "Left stick",       "Right stick", "Left trigger",
                                       "Right trigger" };
+    if (source == ControlCount)
+        return "Same as interact";
     if (source < 0 || source >= ControlCount)
         return "Unavailable";
     const bool isRight = source == 0 || source == 1 || source == 7 || source == 8 || source == 10 || source == 12;
@@ -179,6 +233,7 @@ struct BindingEditor {
             }
             int found = -1;
             for (int i = 0; i < ControlCount; ++i) {
+                if (action == ControlCount && !ValidGoronRollBinding(i)) continue;
                 if (StickControl(i) != StickControl(action))
                     continue;
                 const auto stick = StickControl(i) ? input.sticks[i - 9] : ControlVector{};

@@ -19,6 +19,7 @@ bool MaskGivenOnMoon(int item);
 bool MaskAvailable(int item);
 int WheelSlotItem(PlayState*,int slot);
 bool HasItemInHand(PlayState*);
+int ReadyWheelDrawId(PlayState*);
 void StowItem(PlayState*);
 void UpdateItemTrigger(const mmvr::TrackingFrame&);
 bool ItemAllowed(Player*,int item);

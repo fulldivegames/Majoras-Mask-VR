@@ -298,7 +298,8 @@ void CacheInput() {
     for (int i = 0; i < 9; ++i)
         physicalChanged[i] = (raw.value[i] > .65f) != (physicalControls.value[i] > .65f);
     physicalControls = raw;
-    mappedControls = RemapControls(settings, raw);
+    const bool ownsRoll = OwnsGoronRoll();
+    mappedControls = goronRollRouting.Update(settings, raw, ownsRoll);
     for (int i = 0; i < 9; ++i) {
         const bool down = mappedControls.value[i] > (logicalButtons[i] ? .25f : .65f);
         logicalChanged[i] = down != logicalButtons[i];

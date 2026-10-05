@@ -82,9 +82,9 @@ void UpdateMaskContext(PlayState* play) {
         // Only an empty hand can reach the face; a selected but unheld mask is empty.
         int occupied = BowHeld() ? mmvr::OffhandController(mmvr::GetSettings())
                                  : mmvr::SwordController(mmvr::GetSettings());
-        const bool heldEquipment = p->heldItemAction > PLAYER_IA_LAST_USED &&
+        const bool heldEquipment = ReadyWheelDrawId(play) >= 0 || (p->heldItemAction > PLAYER_IA_LAST_USED &&
                                    p->heldItemAction != PLAYER_IA_ZORA_BOOMERANG &&
-                                   (p->heldItemAction < PLAYER_IA_MASK_MIN || p->heldItemAction > PLAYER_IA_MASK_MAX);
+                                   (p->heldItemAction < PLAYER_IA_MASK_MIN || p->heldItemAction > PLAYER_IA_MASK_MAX));
         const bool blocked = heldEquipment && hand == occupied;
         if (blocked && mmvr::GetSettings().Get(mmvr::Setting::SwordDiagnostics) > .5f)
             std::ofstream("mmvr-combat.log", std::ios::app)
@@ -213,8 +213,9 @@ void ProcessMasks(PlayState* play) {
 
 mmvr::Matrix HeldMaskPose(const mmvr::TrackingFrame& frame, const mmvr::Matrix& view, const mmvr::Matrix& head) {
     const auto* mask = FindMaskModel(mmvr::HeldMaskItem());
-    int hand = mmvr::HeldMaskController();
-    if (!mask || !frame.handTracked[hand] || !frame.aimValid[hand])
+    const bool itemPreview = !mask && ReadyWheelDrawId(gPlayState) >= 0;
+    int hand = itemPreview ? mmvr::SwordController(mmvr::GetSettings()) : mmvr::HeldMaskController();
+    if ((!mask && !itemPreview) || hand < 0 || hand > 1 || !frame.handTracked[hand] || !frame.aimValid[hand])
         return {};
     auto grip = mmvr::Multiply(mmvr::PoseMatrix(frame.hands[hand]), mmvr::InversePose(mmvr::PoseMatrix(frame.origin)));
     auto aim = mmvr::Multiply(mmvr::PoseMatrix(frame.aims[hand]), mmvr::InversePose(mmvr::PoseMatrix(frame.origin)));
@@ -224,6 +225,14 @@ mmvr::Matrix HeldMaskPose(const mmvr::TrackingFrame& frame, const mmvr::Matrix& 
     pose.m[3][1] = grip.m[3][1] * 40;
     pose.m[3][2] = (grip.m[3][2] - head.m[3][2]) * 40;
     pose = mmvr::Multiply(pose, view);
+    if (itemPreview) {
+        // Native reward models are centered around their origin. Keep them in
+        // the palm using the same late hand-pose replay as held masks.
+        for (int col = 0; col < 3; ++col) pose.m[3][col] += pose.m[1][col] * 2 * frame.trackingScale;
+        for (int row = 0; row < 3; ++row)
+            for (int col = 0; col < 3; ++col) pose.m[row][col] *= .16f * frame.trackingScale;
+        return pose;
+    }
     float scale = 40 * frame.trackingScale * mmvr::GetSettings().Get(mmvr::Setting::MaskSize) / mask->height;
     for (int row = 0; row < 3; ++row)
         for (int col = 0; col < 3; ++col)
@@ -238,7 +247,8 @@ void DrawHeldMask(PlayState* play) {
     for (int layer = 0; layer < 2; ++layer)
         mmvr::SetHeldMaskRange(layer, nullptr, nullptr);
     const auto* mask = FindMaskModel(mmvr::HeldMaskItem());
-    if (!mask)
+    const int preview = mask ? -1 : ReadyWheelDrawId(play);
+    if (!mask && preview < 0)
         return;
     const auto* opaHigh = play->state.gfxCtx->polyOpa.d;
     const auto* xluHigh = play->state.gfxCtx->polyXlu.d;
@@ -247,11 +257,12 @@ void DrawHeldMask(PlayState* play) {
     // Invisible on the desktop pass; replace both native matrices with the late tracked pose in each eye.
     MtxF invisible{};
     Matrix_Put(&invisible);
-    DrawMaskModel(play, mask->item);
+    if (mask) DrawMaskModel(play, mask->item);
+    else GetItem_Draw(play, preview);
     Matrix_Pop();
     ::FrameInterpolation_RecordCloseChild();
-    mmvr::SetHeldMaskRange(0, play->state.gfxCtx->polyOpa.d, opaHigh);
-    mmvr::SetHeldMaskRange(1, play->state.gfxCtx->polyXlu.d, xluHigh);
+    mmvr::SetHeldMaskRange(0, play->state.gfxCtx->polyOpa.d, opaHigh, preview >= 0);
+    mmvr::SetHeldMaskRange(1, play->state.gfxCtx->polyXlu.d, xluHigh, preview >= 0);
 }
 } // namespace mmvrgame
 #endif

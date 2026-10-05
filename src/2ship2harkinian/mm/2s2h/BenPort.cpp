@@ -1280,7 +1280,7 @@ void RunCommands(Gfx* Commands, int time, int step, int denom, int count) {
     auto* streakPlayer=gPlayState?GET_PLAYER(gPlayState):nullptr;
     mmvr::SetSpeedStreaks(immersive&&mmvr::FirstPersonRequested()&&streakPlayer&&streakPlayer->transformation==PLAYER_FORM_GORON&&
         (streakPlayer->stateFlags3&PLAYER_STATE3_1000)&&streakPlayer->unk_B86[1]>=7&&std::abs(streakPlayer->speedXZ)>10?
-        mmvr::GetSettings().Get(mmvr::Setting::GoronSpeedStreaks):0);
+        mmvr::GoronSpeedLineOpacity(mmvr::GetSettings()):0);
     mmvr::SetLensVision(gPlayState?float(gPlayState->actorCtx.lensMaskSize)/LENS_MASK_ACTIVE_SIZE:0);
     MMVR_RegisterCamera();
     MMVR_RegisterMenu();

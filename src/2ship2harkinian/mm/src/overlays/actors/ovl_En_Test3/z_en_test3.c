@@ -1393,11 +1393,12 @@ void EnTest3_Draw(Actor* thisx, PlayState* play2) {
         }
     }
 #ifdef MMVR_ENABLE
-    // EnTest3 has its own skeleton renderer rather than Player_Draw's limb
-    // hooks. Hide only the active Kafei player body in the first-person world
-    // view; preserve the native visibility of Kafei NPCs when Link is playing.
+    // Keep the controlled body for the same tracked-arm replay as Link.
+    // The common limb hook removes the head; body-off or
+    // an unavailable upright roll pose retains the established hands-only path.
+    // Native camera projection must not hide a body anchored to the headset.
     if (GET_PLAYER(play) == &this->player && MMVR_HideNativeBodyRender()) {
-        D_80A418C8 = true;
+        D_80A418C8 = MMVR_HidePlayerLimb(&this->player.actor, KAFEI_LIMB_TORSO);
     }
 #endif
 

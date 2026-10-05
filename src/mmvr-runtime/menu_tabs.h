@@ -25,7 +25,7 @@ inline constexpr int AssignmentFirst = int(Setting::Count), ResetSettingsRow = A
                      DiagnosticExportRow = NativeOptionsRow + 1,
                      SetupGuideRow = NativeOptionsRow + 2,
                      ReleaseNotesFirstRow = NativeOptionsRow + 3,
-                     ReleaseNotesCount = 40,
+                     ReleaseNotesCount = 41,
                      SaveGameRow = ReleaseNotesFirstRow + ReleaseNotesCount,
                      SearchSettingsRow = SaveGameRow + 1,
                      MenuRows = SearchSettingsRow + 1;
@@ -91,6 +91,7 @@ struct MenuEntry {
 };
 // Explicit presentation order is independent of persistent setting IDs.
 inline constexpr MenuEntry OrderedMenu[] = {
+    { ReleaseNotesFirstRow + 40, 39 },
     { ReleaseNotesFirstRow + 39, 39 },
     { ReleaseNotesFirstRow + 34, 39 },
     { ReleaseNotesFirstRow + 35, 39 },
@@ -148,6 +149,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { int(Setting::HideFairyArrow), 31 },
     { int(Setting::MuteFairy), 31 },
     { int(Setting::FairyNearComfort), 31 },
+    { int(Setting::GreatFairyMaskCue), 31 },
     { int(Setting::SharedScenePreparation), 32 },
     { int(Setting::QuestMultiview), 32 },
     { int(Setting::ViewMode), 0 },
@@ -174,6 +176,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { int(Setting::WaterWobble), 1 },
     { int(Setting::HideLegs), 2 },
     { int(Setting::FullBody), 2 },
+    { int(Setting::KafeiBody), 2 },
     { int(Setting::GoronBody), 2 },
     { int(Setting::ZoraBody), 2 },
     { int(Setting::DekuBody), 2 },
@@ -286,6 +289,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { int(Setting::BottleCooldown), 16 },
     { int(Setting::MaskSize), 16 },
     { int(Setting::QuickWheelItems), 16 },
+    { int(Setting::QuickWheelAllItems), 16 },
     { int(Setting::MaskFaceDistance), 16 },
     { int(Setting::MaskRemoveDistance), 16 },
     { int(Setting::ClimbGain), 17 },
@@ -316,6 +320,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { int(Setting::DekuSpinRadius), 21 },
     { int(Setting::DekuSpinOpacity), 21 },
     { int(Setting::GoronEffectRadius), 21 },
+    { int(Setting::GoronSpeedLines), 21 },
     { int(Setting::GoronSpeedStreaks), 21 },
     { int(Setting::MaskEffectOpacity), 21 },
     { int(Setting::MaskParticlesOpacity), 21 },
@@ -347,6 +352,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { int(Setting::SwordDiagnostics), 24 },
     { ResetSettingsRow, 24 },
     { int(Setting::BindA), 27 },
+    { int(Setting::GoronRollBinding), 27 },
     { int(Setting::BindB), 27 },
     { int(Setting::DoubleTapSwordEquip), 27 },
     { int(Setting::BindX), 27 },
@@ -415,6 +421,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { TutorialFirstRow + 51, 36 },
     { TutorialFirstRow + 52, 36 },
     { TutorialFirstRow + 53, 36 },
+    { TutorialFirstRow + 54, 36 },
     { NativeOptionsRow, 37 },
 
 };

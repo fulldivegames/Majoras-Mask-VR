@@ -3,7 +3,7 @@ Full Motion Majora's Mask VR mod, made by Full Dive Games.
 
 Disclaimer: This is made using Vibe coding. I make no money from this mod, and I've put a lot of time and testing into making it polished, fun, and fully playable.
 
-**v0.33 - Save states disabled:** Use menu and owl saving. Existing save files are preserved.
+**v0.34:** Tracked Kafei body, fairy-mask proximity sparkles, Zora swim visual fix, optional Goron roll binding, instant wheel retrieval and rolling speed-line toggle. Save states remain disabled. Use menu and owl saving. Existing save files are preserved.
 
 ## First installation
 
@@ -92,6 +92,8 @@ The headset's system button stays reserved for its operating system. **Controls 
 ## Physical items and combat
 
 Optional **Items > Bottle and mask tuning > Ready masks and ocarina on selection**: select to hold a mask or start an instrument. Bring the mask to your face to wear it; trigger dismisses it or cancels free instrument play. Off by default.
+
+Optional **Ready all items on selection** in the same section also puts bottles, Deku sticks and other usable items in hand immediately. It is off by default; filled bottles keep their contents until used, and explosives need a fresh trigger press/release to throw.
 
 - **Sword and Deku stick:** draw/select the weapon and swing deliberately through the target. Stationary contact is not an attack. Speed, travel and recovery thresholds are adjustable under Combat. Native weapon damage and item restrictions still apply. Deku sticks retain their burning/breaking behavior.
 - **Spin attack:** hold the sword-hand trigger to charge, then release with the sword held away from you. Full charge defaults to two seconds. The default trigger-spin option turns your view through 360 degrees; disable **Trigger spin turns view** if unwanted. A deliberate physical turn with the sword extended can also trigger a spin. Magic tiers require acquired, available magic. Keep the blade extended during the attack.
@@ -228,4 +230,6 @@ Bow hand angles and holding-hand smoothing are under **Items → Bow and aiming*
 
 **v0.26:** Save game is under System > Session and files. Persistent owl saves, pause-menu saving and remembered location default on for unconfigured settings. Combat has an optional target-centered lock-on orbit. 2Ship search also finds VR settings.
 
-In first person, the Bombers' Notebook is a held open book: touch entries and arrows, or use the usual stick and B controls. **View > Body visibility** has separate tracked-body options. Human, Zora and Deku default on; Goron and Fierce Deity default off. Motion blur defaults off; restore it under **View > Comfort and cutscenes**. Extra non-VR options are under **FullDiveGames Additions** in 2Ship.
+In first person, the Bombers' Notebook is a held open book: touch entries and arrows, or use the usual stick and B controls. **View > Body visibility** has separate tracked-body options. Human, Kafei, Zora and Deku default on; Goron and Fierce Deity default off. Kafei body works with the Play as Kafei option and quest handoff. Motion blur defaults off; restore it under **View > Comfort and cutscenes**. Extra non-VR options are under **FullDiveGames Additions** in 2Ship.
+
+The Great Fairy Mask shows subtle view-edge sparkles when it detects a stray fairy. This defaults on; change it under **View > Fairy**.

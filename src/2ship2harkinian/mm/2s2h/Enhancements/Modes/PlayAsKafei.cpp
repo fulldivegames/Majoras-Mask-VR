@@ -17,6 +17,10 @@ extern TexturePtr sPlayerMouthTextures[PLAYER_FORM_MAX][PLAYER_MOUTH_MAX];
 
 static SkeletonHeader gLinkHumanSkelBackup;
 static SkeletonHeader gKafeiSkelBackup;
+// The option changes on scene destruction, not when its CVar is edited.
+// Presentation must follow the model that was actually applied.
+static bool playAsKafeiApplied = false;
+extern "C" int MMVR_PlayAsKafeiApplied(void) { return playAsKafeiApplied; }
 
 #define CVAR_NAME "gModes.PlayAsKafei"
 #define CVAR CVarGetInteger(CVAR_NAME, 0)
@@ -27,6 +31,7 @@ void UpdatePlayAsKafei() {
             Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(gLinkHumanSkel);
         SkeletonHeader* gLinkHumanSkelPtr = (SkeletonHeader*)gLinkHumanSkelResource->GetRawPointer();
         memcpy(gLinkHumanSkelPtr, &gKafeiSkelBackup, sizeof(SkeletonHeader));
+        playAsKafeiApplied = true;
 
         ResourceMgr_PatchGfxByName(gLinkHumanWaistDL, "gLinkHumanWaistDL0", 0,
                                    gsSPDisplayListOTRFilePath(gKafeiWaistDL));
@@ -50,6 +55,7 @@ void UpdatePlayAsKafei() {
             Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(gLinkHumanSkel);
         SkeletonHeader* gLinkHumanSkelPtr = (SkeletonHeader*)gLinkHumanSkelResource->GetRawPointer();
         memcpy(gLinkHumanSkelPtr, &gLinkHumanSkelBackup, sizeof(SkeletonHeader));
+        playAsKafeiApplied = false;
 
         ResourceMgr_UnpatchGfxByName(gLinkHumanWaistDL, "gLinkHumanWaistDL0");
         ResourceMgr_UnpatchGfxByName(gLinkHumanWaistDL, "gLinkHumanWaistDL1");

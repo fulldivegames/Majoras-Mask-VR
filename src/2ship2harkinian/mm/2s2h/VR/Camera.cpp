@@ -9,6 +9,7 @@
 #include "FormAim.h"
 #include "FormPresentation.h"
 #include "TransformationEffects.h"
+#include "FairyMaskCue.h"
 #include "Bottle.h"
 #include "Masks.h"
 #include "ScenePresentation.h"
@@ -55,7 +56,27 @@ bool Player_IsZTargeting(Player*);
 #include "objects/object_link_zora/object_link_zora.h"
 #include "objects/object_link_boy/object_link_boy.h"
 #include "objects/object_test3/object_test3.h"
+#include "objects/gameplay_keep/gameplay_keep.h"
 #include "overlays/actors/ovl_En_Fall/z_en_fall.h"
+}
+extern "C" int MMVR_PlayAsKafeiApplied(void);
+#ifdef MMVR_LOCAL_TEST_TOOLS
+namespace mmvrgame { void PrepareNativeZoraSwimDraw(PlayState*,Player*); }
+#endif
+static_assert(int(KAFEI_LIMB_HEAD)==int(PLAYER_LIMB_HEAD) &&
+              int(KAFEI_LIMB_WAIST)==int(PLAYER_LIMB_WAIST) &&
+              int(KAFEI_LIMB_TORSO)==int(PLAYER_LIMB_TORSO) &&
+              int(KAFEI_LIMB_LEFT_SHOULDER)==int(PLAYER_LIMB_LEFT_SHOULDER) &&
+              int(KAFEI_LIMB_LEFT_FOREARM)==int(PLAYER_LIMB_LEFT_FOREARM) &&
+              int(KAFEI_LIMB_LEFT_HAND)==int(PLAYER_LIMB_LEFT_HAND) &&
+              int(KAFEI_LIMB_RIGHT_SHOULDER)==int(PLAYER_LIMB_RIGHT_SHOULDER) &&
+              int(KAFEI_LIMB_RIGHT_FOREARM)==int(PLAYER_LIMB_RIGHT_FOREARM) &&
+              int(KAFEI_LIMB_RIGHT_HAND)==int(PLAYER_LIMB_RIGHT_HAND));
+static bool FullBodyForPlayer(Player* player) {
+    if (!player) return false;
+    const auto& settings=mmvr::GetSettings();
+    return MMVR_KafeiModel(player) ? settings.Get(mmvr::Setting::KafeiBody)>.5f
+                                : mmvr::FullBodyForForm(settings,player->transformation);
 }
 namespace {
 constexpr float Pi = 3.14159265358979323846f;
@@ -78,6 +99,9 @@ int scene = -1, activeForm = -1, drawForm = -1;
 uint64_t epoch = ~uint64_t{}, originGeneration = ~uint64_t{}, systemOriginGeneration = ~uint64_t{};
 uint64_t coordinateGeneration = 0, drawGeneration = ~uint64_t{}, drawBeginGeneration = ~uint64_t{};
 bool drawingPlayer = false;
+#ifdef MMVR_LOCAL_TEST_TOOLS
+unsigned zoraSwimArmDraws[6]{};
+#endif
 PlayState* boundaryPlay = nullptr;
 int boundaryScene = -1;
 unsigned boundaryFrame = 0;
@@ -643,7 +667,7 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
                       -drawPosition.z - tracking.visualOffset[2]),
         mmvr::YawPose(Radians(p->actor.shape.rot.y) - (tracking.visualValid ? tracking.visualYaw : Radians(drawYaw)),
                       visual.x, visual.y, visual.z));
-    if (mmvr::FullBodyForForm(mmvr::GetSettings(), p->transformation) && !MMVR_ControlledKafei(p)) {
+    if (FullBodyForPlayer(p)) {
         // Move the visible skeleton to the HMD, never the camera to an animated
         // skeleton. Remove native torso lean/aim twist before solving the arms.
         const float neckYaw = mmvr::PoseYaw(viewPose) - Pi + mmvr::PoseYaw(relative);
@@ -654,7 +678,12 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
             viewPose.m[3][2] + std::cos(neckYaw) * neckOffset.z);
         mmvr::Matrix correction;
         const float nativeYaw = tracking.visualValid ? tracking.visualYaw : Radians(drawYaw);
-        if (mmvr::body::AnchorTorso(tracking.bodyBones, nativeYaw, neck, correction))
+        // Only native free swimming needs an anatomical basis: its torso rolls
+        // through vertical, which must not exchange the tracked arm shoulders.
+        // Land, underwater walking and authored cutscenes retain their policy.
+        const auto basis = p->transformation == PLAYER_FORM_ZORA && !cinematic && func_801242B4(p)
+            ? mmvr::body::TorsoBasis::AnatomicalShoulders : mmvr::body::TorsoBasis::NativeForward;
+        if (mmvr::body::AnchorTorso(tracking.bodyBones, nativeYaw, neck, correction, basis))
             result.bodyCorrection = correction;
     }
     if (reset) {
@@ -714,7 +743,7 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
         mmvrgame::OverrideTrackedItemHand(result.hands[1]);
     mmvrgame::FillHeldActorFrame(result);
     mmvrgame::ApplyPhysicalPushHandLock(play, p, result.hands);
-    if(mmvr::FullBodyForForm(mmvr::GetSettings(), p->transformation) && !MMVR_ControlledKafei(p)) {
+    if(FullBodyForPlayer(p)) {
         result.fullBodyArms=true;
         mmvr::Matrix bones[6];
         for(int i=0;i<6;++i) bones[i]=mmvr::Multiply(tracking.bodyBones[i],result.bodyCorrection);
@@ -1076,6 +1105,11 @@ extern "C" int MMVR_FirstPersonBody(void) {
 extern "C" int MMVR_ControlledKafei(Player* player) {
     return player && player->actor.id == ACTOR_EN_TEST3 && player->actor.category == ACTORCAT_PLAYER;
 }
+extern "C" int MMVR_KafeiModel(Player* player) {
+    return player && (MMVR_ControlledKafei(player) ||
+        (player->actor.id==ACTOR_PLAYER && player->transformation==PLAYER_FORM_HUMAN &&
+         MMVR_PlayAsKafeiApplied()));
+}
 #ifdef MMVR_LOCAL_TEST_TOOLS
 extern "C" int MMVR_VerifyKafeiHandMapping(void) {
     Player player{};
@@ -1179,19 +1213,21 @@ bool TestBodyRenderWithoutPose() {
 extern "C" int MMVR_HidePlayerLimb(Actor* actor, int limb) {
     if (!gPlayState || actor != (Actor*)GET_PLAYER(gPlayState) || !HideCurrentPlayer(gPlayState))
         return false;
-    // Kafei uses a separate skeleton enum. Suppress the active Kafei player's
-    // native body whenever the view is first-person and remains anchored to him,
-    // including scripted Kafei control. Theater, remote, title, and transition
-    // views retain the full model. His pendant is emitted by the actor post-limb hook.
-    if (MMVR_ControlledKafei((Player*)actor))
+    // Quest Kafei and the model-replacement option share the verified limb
+    // indices below. NPC Kafei and native theater remain outside this policy.
+    if (MMVR_ControlledKafei((Player*)actor) && !FullBodyForPlayer((Player*)actor))
         return true;
     const auto& settings = mmvr::GetSettings();
-    if(mmvr::FullBodyForForm(settings, ((Player*)actor)->transformation)) {
+    if(FullBodyForPlayer((Player*)actor)) {
         if(mmvr::BodyRollPoseWaiting()) return true; // No stale pose when loading mid-roll.
         if(limb==PLAYER_LIMB_SHEATH &&
            (settings.Get(mmvr::Setting::HideSheath)>.5f || settings.Get(mmvr::Setting::HideShield)>.5f)) return true;
+        // Quest Kafei's hands share elbow/wrist palette vertices with his
+        // forearms. Draw them within that same IK palette to keep the cuffs
+        // joined. Link/model-mode item composites retain their tracked path.
         return limb==PLAYER_LIMB_HEAD || limb==PLAYER_LIMB_HAT ||
-               limb==PLAYER_LIMB_LEFT_HAND || limb==PLAYER_LIMB_RIGHT_HAND;
+               (!MMVR_ControlledKafei((Player*)actor) &&
+                (limb==PLAYER_LIMB_LEFT_HAND || limb==PLAYER_LIMB_RIGHT_HAND));
     }
     if (settings.Get(mmvr::Setting::HideLegs) > .5f &&
         (limb == PLAYER_LIMB_WAIST || (limb >= PLAYER_LIMB_RIGHT_THIGH && limb <= PLAYER_LIMB_LEFT_FOOT)))
@@ -1207,14 +1243,17 @@ extern "C" int MMVR_HidePlayerLimb(Actor* actor, int limb) {
 extern "C" void MMVR_RecordBodyBone(Actor* actor, int limb, const void* address) {
 
     if(!gPlayState || actor!=(Actor*)GET_PLAYER(gPlayState) || !drawingPlayer ||
-       drawBeginGeneration!=coordinateGeneration || MMVR_ControlledKafei((Player*)actor) ||
-       !mmvr::FullBodyForForm(mmvr::GetSettings(), ((Player*)actor)->transformation) || !HideCurrentPlayer(gPlayState)) return;
+       drawBeginGeneration!=coordinateGeneration ||
+       !FullBodyForPlayer((Player*)actor) || !HideCurrentPlayer(gPlayState)) return;
     int index=limb>=PLAYER_LIMB_LEFT_SHOULDER && limb<=PLAYER_LIMB_RIGHT_HAND
         ? limb-PLAYER_LIMB_LEFT_SHOULDER : limb==PLAYER_LIMB_HEAD ? 6 : limb==PLAYER_LIMB_WAIST ? 7 : -1;
     MtxF native;Matrix_Get(&native);
     mmvr::Matrix pose;std::memcpy(&pose,&native,sizeof(pose));
     mmvr::RecordBodyRollLimb(limb,address,pose);
     if(index<0 || index>=mmvr::BodyBoneCount) return;
+#ifdef MMVR_LOCAL_TEST_TOOLS
+    if(index<6) ++zoraSwimArmDraws[index];
+#endif
     mmvr::SetBodyBone(index,address,(const float*)&native);
 }
 extern "C" float MMVR_MovementScale(PlayState* play, Player* p) {
@@ -1323,14 +1362,19 @@ extern "C" void MMVR_PlayerDrawBegin(PlayState* play, Actor* actor) {
     }
     handSkeletonPalette = nullptr;
     mmvr::ClearBodyBones();
+#ifdef MMVR_LOCAL_TEST_TOOLS
+    std::fill(std::begin(zoraSwimArmDraws),std::end(zoraSwimArmDraws),0u);
+#endif
     auto* player = (Player*)actor;
-    const bool trackedBody = HideCurrentPlayer(play) && !MMVR_ControlledKafei(player) &&
-        mmvr::FullBodyForForm(mmvr::GetSettings(), player->transformation);
+#ifdef MMVR_LOCAL_TEST_TOOLS
+    mmvrgame::PrepareNativeZoraSwimDraw(play,player);
+#endif
+    const bool trackedBody = HideCurrentPlayer(play) && FullBodyForPlayer(player);
     const uint32_t poseBones = (1u << PLAYER_LIMB_WAIST) | (1u << PLAYER_LIMB_HEAD) |
         (1u << PLAYER_LIMB_LEFT_SHOULDER) | (1u << PLAYER_LIMB_RIGHT_SHOULDER);
     mmvr::BeginBodyRollPose(trackedBody, player->csAction == PLAYER_CSACTION_NONE && !mmvrgame::InWorldCinematic(play) &&
         (player->stateFlags3 & PLAYER_STATE3_8000000) != 0,
-        actor, coordinateGeneration, player->transformation,
+        actor, coordinateGeneration, MMVR_KafeiModel(player) ? PLAYER_FORM_MAX : player->transformation,
         mmvr::YawPose(Radians(actor->shape.rot.y), actor->world.pos.x, actor->world.pos.y, actor->world.pos.z),
         poseBones);
     handSkeletonCount = 0;
@@ -1348,6 +1392,7 @@ extern "C" void MMVR_PlayerDrawBegin(PlayState* play, Actor* actor) {
     drawingPlayer = true;
     drawBeginGeneration = coordinateGeneration;
     mmvr::ResetFormEffectMatrices();
+    MMVR_BeginGreatFairyMaskCue(play);
     // Record a root matrix in the existing interpolation stream without drawing it.
     Mtx* anchor = Matrix_Finalize(play->state.gfxCtx);
     mmvr::SetBodyAnchor(anchor, actor->world.pos.x, actor->world.pos.y + actor->shape.yOffset * actor->scale.y,
@@ -1405,6 +1450,10 @@ extern "C" void MMVR_PlayerDrawEnd(PlayState* play, Actor* actor) {
         gSPSegment(POLY_XLU_DISP++, 0x0C, (uintptr_t)gCullBackDList);
         gSPClearExtraGeometryMode(POLY_OPA_DISP++, G_EX_INVERT_CULLING);
         for (int i = 0; i < 2; ++i) {
+            // The full quest body already draws these skinned hands through
+            // the solved elbow/wrist palette. Avoid drawing duplicate gloves.
+            if (MMVR_ControlledKafei((Player*)actor) && FullBodyForPlayer((Player*)actor) &&
+                !mmvr::BodyRollPoseWaiting()) continue;
             handMatrices[i] = (Mtx*)GRAPH_ALLOC(play->state.gfxCtx, sizeof(Mtx));
             memset(handMatrices[i], 0, sizeof(Mtx)); // Invisible in desktop/theater; late pose in each XR eye.
             gSPMatrix(POLY_OPA_DISP++, handMatrices[i], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
@@ -1438,6 +1487,7 @@ extern "C" void MMVR_PlayerDrawEnd(PlayState* play, Actor* actor) {
         mmvrgame::DrawHeldMask(play);
         mmvrgame::DrawFormFins(play);
         MMVR_DrawTransformationEffects(play);
+        MMVR_DrawGreatFairyMaskCue(play);
         MMVR_DrawPlantingBean(play);
     }
     mmvr::SetPlayerMatrixRange(matrixLow, matrixHigh, handMatrices[0], handMatrices[1]);
