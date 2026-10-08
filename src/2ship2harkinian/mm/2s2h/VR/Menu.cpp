@@ -23,6 +23,8 @@
 #include "ui.h"
 #include "updater.h"
 #include "presentation.h"
+#include "wearable_mask.h"
+#include "ship/window/gui/resource/GuiTexture.h"
 #include "runtime.h"
 #include <libultraship/bridge/consolevariablebridge.h>
 #include "ship/Context.h"
@@ -64,6 +66,51 @@ int SlotItem(PlayState* play, int slot) {
 bool initialized = false, settingsDirty = false;
 auto Gui() {
     return std::dynamic_pointer_cast<Fast::Fast3dGui>(Ship::Context::GetRawInstance()->GetWindow()->GetGui());
+}
+constexpr const char* WearableTextureName = "MMVR/WearableMask";
+static_assert(ITEM_MASK_TRUTH==0x36 && ITEM_MASK_SCENTS==0x48 && ITEM_MASK_GIANT==0x49);
+// Decoded pixels live only during upload. Keep one GPU texture, not nineteen
+// resource-cache entries, and never decode or upload on the eye render path.
+std::shared_ptr<Ship::GuiTexture> LoadWearableMask(const mmvr::WearableMaskAsset& asset) {
+    const std::string path = std::string("mmvr/mask-overlays/") + asset.file + ".png";
+    auto file = Ship::Context::GetRawInstance()->GetResourceManager()->GetArchiveManager()->LoadFile(path);
+    if (!file || !file->Buffer || file->Buffer->empty() || file->Buffer->size() > 8*1024*1024) return nullptr;
+    const auto* bytes = reinterpret_cast<const stbi_uc*>(file->Buffer->data());
+    const int size = int(file->Buffer->size());
+    int width=0,height=0;
+    if (!stbi_info_from_memory(bytes,size,&width,&height,nullptr) || width<=0 || height<=0 ||
+        width>2048 || height>2048) return nullptr;
+    auto texture = std::make_shared<Ship::GuiTexture>();
+    texture->Metadata = {};
+    texture->Data = stbi_load_from_memory(bytes,size,&texture->Metadata.Width,&texture->Metadata.Height,nullptr,4);
+    if (!texture->Data) return nullptr;
+    texture->DataSize = size_t(texture->Metadata.Width)*texture->Metadata.Height*4;
+    return texture;
+}
+void UpdateWearableMask(PlayState* play, Player* player) {
+    static int loaded = -1;
+    static std::weak_ptr<Fast::Fast3dGui> owner;
+    auto gui = Gui();
+    // Actual native wearing only: wheel selection or a mask in the hand cannot
+    // show an overlay. Ordinary conversations retain it; theater owns its view.
+    const bool context = player && !MMVR_ControlledKafei(player) &&
+        player->transformation == PLAYER_FORM_HUMAN && player->maskObjectLoadState == 0 &&
+        !MMVR_LocalTransformation(player) && !MMVR_FormReloadActive(play) &&
+        play->transitionTrigger == TRANS_TRIGGER_OFF &&
+        !(play->actorCtx.flags & ACTORCTX_FLAG_TELESCOPE_ON) &&
+        mmvrgame::SceneView(play) == mmvr::SceneView::Player && mmvr::FirstPersonRequested();
+    const int item = mmvr::WearableMaskItem(mmvr::GetSettings(), mmvr::WornMaskItem(), context);
+    if (owner.lock() != gui) { loaded=-1; owner=gui; mmvr::SetWearableMaskTexture(-1,0); }
+    if (!gui || item == loaded) return;
+    mmvr::SetWearableMaskTexture(-1,0);
+    gui->UnloadTexture(WearableTextureName);
+    loaded = item; // Missing/corrupt art is invisible, with no per-frame retry.
+    if (const auto* asset = mmvr::FindWearableMask(item)) {
+        if (auto texture = LoadWearableMask(*asset)) {
+            gui->LoadTextureFromResource(WearableTextureName, texture);
+            mmvr::SetWearableMaskTexture(item, (uintptr_t)gui->GetTextureByName(WearableTextureName));
+        } else std::fprintf(stderr,"MMVR wearable mask asset unavailable: %s\n",asset->file);
+    }
 }
 void Save() {
     settingsDirty = true;
@@ -110,6 +157,22 @@ void InitFrame() {
                 pixel[c] = color[c];
         }
     Gui()->LoadGuiTexture(FrameName, texture, "", { 1, 1, 1, 1 });
+    if (NativeTestEnabled()) {
+        const char* probe = std::getenv("MMVR_MASK_OVERLAY_ASSET_TEST");
+        if (probe && std::strcmp(probe,"1")==0) {
+            int decoded=0,uploaded=0;
+            for(const auto& asset : mmvr::WearableMaskAssets) {
+                auto image=LoadWearableMask(asset);
+                if(!image) continue;
+                ++decoded;
+                Gui()->LoadTextureFromResource("MMVR/WearableMaskProbe",image);
+                uploaded += Gui()->GetTextureByName("MMVR/WearableMaskProbe") != nullptr;
+                Gui()->UnloadTexture("MMVR/WearableMaskProbe");
+            }
+            std::ofstream("mmvr-wearable-mask-assets.json") << "{\"decoded\":" << decoded
+                << ",\"uploaded\":" << uploaded << ",\"passed\":" << (decoded==19 && uploaded==19 ? "true" : "false") << "}";
+        }
+    }
     initialized = true;
 }
 void Render(const mmvr::UiDrawFrame& frame) {
@@ -295,11 +358,33 @@ extern "C" int MMVR_GoronRollInput(PlayState* play, Player* player, int pressed,
 }
 extern "C" int MMVR_InstrumentButtons(unsigned short* buttons) {
     auto value = instrumentPad.load();
-    if (!(value & 0x10000) || (gPlayState && Message_GetState(&gPlayState->msgCtx) == TEXT_STATE_CHOICE))
+    if (!buttons || !(value & 0x10000))
         return false;
     *buttons = value & 0x800F;
     return true;
 }
+#ifdef MMVR_LOCAL_TEST_TOOLS
+struct MMVR_TestOcarinaStick { s8 x, y; };
+static_assert(sizeof(MMVR_TestOcarinaStick) == 2);
+extern "C" {
+void AudioOcarina_ReadControllerInput(void);
+extern u32 sOcarinaInputButtonCur, sOcarinaInputButtonPrev;
+extern MMVR_TestOcarinaStick sOcarinaInputStickRel;
+}
+extern "C" int MMVR_TestInstrumentAudioSample(unsigned short notes) {
+    if (!NativeTestEnabled()) return false;
+    const auto savedPad = instrumentPad.load();
+    const auto savedCur = sOcarinaInputButtonCur, savedPrev = sOcarinaInputButtonPrev;
+    const auto savedStick = sOcarinaInputStickRel;
+    instrumentPad.store(0x10000 | notes);
+    AudioOcarina_ReadControllerInput();
+    const bool passed = (sOcarinaInputButtonCur & notes) == notes;
+    instrumentPad.store(savedPad);
+    sOcarinaInputButtonCur = savedCur; sOcarinaInputButtonPrev = savedPrev;
+    sOcarinaInputStickRel = savedStick;
+    return passed;
+}
+#endif
 extern "C" int MMVR_ScriptedInstrumentVisible(void) {
     if (!gPlayState) return false;
     auto* player = GET_PLAYER(gPlayState);
@@ -315,8 +400,10 @@ extern "C" int MMVR_ScriptedInstrumentVisible(void) {
 extern "C" int MMVR_ClearLessonBackground(void) {
     return mmvr::FirstPersonRequested() && MMVR_ScriptedInstrumentVisible();
 }
-extern "C" int MMVR_InstrumentOverlay(void) {
-    if (!mmvr::FirstPersonRequested() || !gPlayState || !GET_PLAYER(gPlayState)) return false;
+extern "C" int MMVR_InstrumentInputActive(void) {
+    // Camera presentation never owns note input. VR controllers must also play
+    // during theater/third-person performances; gamepad mapping stays native.
+    if (!gPlayState || !GET_PLAYER(gPlayState) || gPlayState->pauseCtx.state != PAUSE_STATE_OFF) return false;
     if (GET_PLAYER(gPlayState)->stateFlags2 & PLAYER_STATE2_USING_OCARINA) return true;
     const auto mode = gPlayState->msgCtx.msgMode;
     // Scripted song lessons have a playable native prompt without setting the
@@ -324,13 +411,17 @@ extern "C" int MMVR_InstrumentOverlay(void) {
     return MMVR_ScriptedInstrumentVisible() &&
            (mode == MSGMODE_SONG_PROMPT_STARTING || mode == MSGMODE_SONG_PROMPT);
 }
+extern "C" int MMVR_InstrumentOverlay(void) {
+    return mmvr::FirstPersonRequested() && MMVR_InstrumentInputActive();
+}
 extern "C" void MMVR_ApplyGameInput(void* data) {
     auto* input = static_cast<Input*>(data);
     static uint16_t previous = 0;
     static bool previousRoll = false;
 #if defined(MMVR_STATE_NATIVE_BACKEND)
     if(MMVR_StateResumeBootstrapActive()) {
-        *input={};previous=0;previousRoll=false;goronRollButtons.store(0);return;
+        *input={};previous=0;previousRoll=false;goronRollButtons.store(0);
+        instrumentPad.store(0);gamePadButtons.store(0);return;
     }
 #endif
     const bool controlledKafei = gPlayState && MMVR_ControlledKafei(GET_PLAYER(gPlayState));
@@ -366,7 +457,11 @@ extern "C" void MMVR_ApplyGameInput(void* data) {
     goronRollButtons.store(pad.goronRollOverride ? 4u | (pad.goronRoll ? 1u : 0u) |
                           (pad.goronRoll && !previousRoll ? 2u : 0u) : 0u);
     previousRoll = pad.goronRollOverride && pad.goronRoll;
-    instrumentPad.store(MMVR_InstrumentOverlay() ? 0x10000 | pad.buttons : 0);
+    // Publish only the note sample; the audio thread never reads mutable
+    // PlayState/message state. Choices retain their native confirmation input.
+    const bool instrumentInput = MMVR_InstrumentInputActive() &&
+        Message_GetState(&gPlayState->msgCtx) != TEXT_STATE_CHOICE;
+    instrumentPad.store(instrumentInput ? 0x10000 | pad.buttons : 0);
     input->prev.button |= previous;
     input->cur.button |= pad.buttons;
     input->press.button |= pad.buttons & ~previous;
@@ -486,10 +581,12 @@ extern "C" void MMVR_RegisterMenu(void) {
                               !mmvr::MenuPaused());
     mmvr::SetInputContext((allowed && !(player->stateFlags1 & PLAYER_STATE1_CARRYING_ACTOR)) ||
                               mmvrgame::ExchangePromptActive(play),
-                          MMVR_InstrumentOverlay());
+                          MMVR_InstrumentInputActive());
     mmvr::SetDialogueChoice(play && (Message_GetState(&play->msgCtx) == TEXT_STATE_CHOICE ||
-                                   MMVR_SongTimeSelectionActive()));
+                                   MMVR_SongTimeSelectionActive() || IS_PAUSE_STATE_OWL_WARP(&play->pauseCtx)));
+    mmvr::SetOwlMapSelection(play && IS_PAUSE_STATE_OWL_WARP(&play->pauseCtx));
     mmvrgame::UpdateMaskContext(play);
+    UpdateWearableMask(play, player);
     int maskItem = mmvr::WornMaskItem();
     if (maskItem >= 0) {
         auto resource = std::dynamic_pointer_cast<Fast::Texture>(

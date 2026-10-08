@@ -38,6 +38,7 @@ void MMVR_BeforePlayUpdate(struct PlayState*);
 void MMVR_NativePresentationProbe(struct PlayState*);
 float MMVR_FormEyeHeight(struct Player* player);
 int MMVR_FirstPersonBody(void);
+int MMVR_LensAvailableFromWheel(struct PlayState*);
 int MMVR_ControlledKafei(struct Player* player);
 // Visual identity only; PlayAsKafei keeps Link's gameplay and item rules.
 int MMVR_KafeiModel(struct Player* player);
@@ -49,6 +50,7 @@ int MMVR_HideNativeBodyRender(void);
 int MMVR_HideBunnyHood(void);
 int MMVR_SongTimeSelectionActive(void);
 int MMVR_InstrumentOverlay(void);
+int MMVR_InstrumentInputActive(void);
 int MMVR_ScriptedInstrumentVisible(void);
 int MMVR_ClearLessonBackground(void);
 int MMVR_InstrumentButtons(unsigned short* buttons);
@@ -74,5 +76,6 @@ void MMVR_PlayerDrawEnd(struct PlayState*,struct Actor*);
 namespace mmvrgame {mmvr::CameraFrame TestCameraFrame(const mmvr::TrackingFrame&);void ResetTestCamera();bool TestBodyRenderWithoutPose();}
 #ifdef MMVR_LOCAL_TEST_TOOLS
 extern "C" int MMVR_VerifyKafeiHandMapping(void);
+extern "C" int MMVR_TestInstrumentAudioSample(unsigned short notes);
 #endif
 #endif

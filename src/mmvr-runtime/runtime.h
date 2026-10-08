@@ -92,6 +92,7 @@ void ToggleStereo() noexcept;
 void ApplyViewMode(int mode) noexcept;
 void SetFirstPersonEligibility(bool allowed) noexcept;
 void SetDialogueChoice(bool active) noexcept;
+void SetOwlMapSelection(bool active) noexcept;
 void SetGoronRollContext(bool allowed) noexcept;
 // Render-thread binding changes discard queued presses and require neutral release.
 // Tracking origin, camera height and saved non-control settings are unchanged.
@@ -99,6 +100,9 @@ void ControlBindingsChanged() noexcept;
 void SetMaskGrabBlocker(bool (*callback)(int hand)) noexcept;
 // Invalidate native-coordinate history without recentering the headset.
 void ResetCoordinateTracking(bool releaseActions = true) noexcept;
+// Called once when a new native display list starts, before actors draw.
+// Arena addresses expire here even when the player is hidden or culled.
+void ResetPlayerDrawBindings() noexcept;
 // One-shot post-restore callback, called only with a fresh valid headset sample.
 // Returning false retains the barrier while native draw data is rebuilt.
 void SetStateTrackingCallback(bool (*callback)(const TrackingFrame&)) noexcept;

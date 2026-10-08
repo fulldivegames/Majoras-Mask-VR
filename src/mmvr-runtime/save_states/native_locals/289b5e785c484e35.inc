@@ -5566,6 +5566,9 @@ void Magic_Update(PlayState* play) {
                     ((Player_GetEnvironmentalHazard(play) >= PLAYER_ENV_HAZARD_UNDERWATER_FLOOR) &&
                      (Player_GetEnvironmentalHazard(play) <= PLAYER_ENV_HAZARD_UNDERWATER_FREE)) ||
                     ((BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_C_LEFT) != ITEM_LENS_OF_TRUTH) &&
+#ifdef MMVR_ENABLE
+                     !MMVR_LensAvailableFromWheel(play) &&
+#endif
                      (BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_C_DOWN) != ITEM_LENS_OF_TRUTH) &&
                      (BUTTON_ITEM_EQUIP(0, EQUIP_SLOT_C_RIGHT) != ITEM_LENS_OF_TRUTH) &&
                      //  #region 2S2H [Dpad]
@@ -5903,14 +5906,14 @@ void Interface_SetOrthoView(InterfaceContext* interfaceCtx) {
     View_ApplyOrthoToOverlay(&interfaceCtx->view);
 }
 
-static TexturePtr mmvr_local_5d91fae0782f77f1[LANGUAGE_MAX] = {
+static TexturePtr mmvr_local_f42236a788148356[LANGUAGE_MAX] = {
         gTatlCUpENGTex, // LANGUAGE_JPN
         gTatlCUpENGTex, // LANGUAGE_ENG
         gTatlCUpGERTex, // LANGUAGE_GER
         gTatlCUpFRATex, // LANGUAGE_FRE
         gTatlCUpESPTex, // LANGUAGE_SPA
     };
-static s16 mmvr_local_f734b7830e1caa2a[LANGUAGE_MAX] = {
+static s16 mmvr_local_02ee103d2cceee35[LANGUAGE_MAX] = {
         // Remnant of OoT
         130, // LANGUAGE_JPN
         136, // LANGUAGE_ENG
@@ -5918,7 +5921,7 @@ static s16 mmvr_local_f734b7830e1caa2a[LANGUAGE_MAX] = {
         136, // LANGUAGE_FRE
         136, // LANGUAGE_SPA
     };
-static s16 mmvr_local_9ff7f287466b5b78[] = {
+static s16 mmvr_local_ea03cc895564ce1a[] = {
         // Width and height
         29, // EQUIP_SLOT_B
         27, // EQUIP_SLOT_C_LEFT
@@ -5959,7 +5962,7 @@ void Interface_DrawItemButtons(PlayState* play) {
     HudEditor_SetActiveElement(HUD_EDITOR_ELEMENT_B);
     OVERLAY_DISP = Gfx_DrawTexRectIA8_DropShadowOverride(
         OVERLAY_DISP, gButtonBackgroundTex, 32, 32, sBCButtonXPositions[EQUIP_SLOT_B],
-        sBCButtonYPositions[EQUIP_SLOT_B], mmvr_local_9ff7f287466b5b78[EQUIP_SLOT_B], mmvr_local_9ff7f287466b5b78[EQUIP_SLOT_B],
+        sBCButtonYPositions[EQUIP_SLOT_B], mmvr_local_ea03cc895564ce1a[EQUIP_SLOT_B], mmvr_local_ea03cc895564ce1a[EQUIP_SLOT_B],
         sBCButtonScales[EQUIP_SLOT_B] * 2, sBCButtonScales[EQUIP_SLOT_B] * 2, 100, 255, 120, interfaceCtx->bAlpha,
         COSMETIC_ID("Buttons.B"));
     gDPPipeSync(OVERLAY_DISP++);
@@ -5971,19 +5974,19 @@ void Interface_DrawItemButtons(PlayState* play) {
     HudEditor_SetActiveElement(HUD_EDITOR_ELEMENT_C_LEFT);
     OVERLAY_DISP = Gfx_DrawRect_DropShadowOverride(
         OVERLAY_DISP, sBCButtonXPositions[EQUIP_SLOT_C_LEFT], sBCButtonYPositions[EQUIP_SLOT_C_LEFT],
-        mmvr_local_9ff7f287466b5b78[EQUIP_SLOT_C_LEFT], mmvr_local_9ff7f287466b5b78[EQUIP_SLOT_C_LEFT], sBCButtonScales[EQUIP_SLOT_C_LEFT] * 2,
+        mmvr_local_ea03cc895564ce1a[EQUIP_SLOT_C_LEFT], mmvr_local_ea03cc895564ce1a[EQUIP_SLOT_C_LEFT], sBCButtonScales[EQUIP_SLOT_C_LEFT] * 2,
         sBCButtonScales[EQUIP_SLOT_C_LEFT] * 2, 255, 240, 0, interfaceCtx->cLeftAlpha, COSMETIC_ID("Buttons.CLeft"));
     // C-Down Button Color & Texture
     HudEditor_SetActiveElement(HUD_EDITOR_ELEMENT_C_DOWN);
     OVERLAY_DISP = Gfx_DrawRect_DropShadowOverride(
         OVERLAY_DISP, sBCButtonXPositions[EQUIP_SLOT_C_DOWN], sBCButtonYPositions[EQUIP_SLOT_C_DOWN],
-        mmvr_local_9ff7f287466b5b78[EQUIP_SLOT_C_DOWN], mmvr_local_9ff7f287466b5b78[EQUIP_SLOT_C_DOWN], sBCButtonScales[EQUIP_SLOT_C_DOWN] * 2,
+        mmvr_local_ea03cc895564ce1a[EQUIP_SLOT_C_DOWN], mmvr_local_ea03cc895564ce1a[EQUIP_SLOT_C_DOWN], sBCButtonScales[EQUIP_SLOT_C_DOWN] * 2,
         sBCButtonScales[EQUIP_SLOT_C_DOWN] * 2, 255, 240, 0, interfaceCtx->cDownAlpha, COSMETIC_ID("Buttons.CDown"));
     // C-Right Button Color & Texture
     HudEditor_SetActiveElement(HUD_EDITOR_ELEMENT_C_RIGHT);
     OVERLAY_DISP = Gfx_DrawRect_DropShadowOverride(
         OVERLAY_DISP, sBCButtonXPositions[EQUIP_SLOT_C_RIGHT], sBCButtonYPositions[EQUIP_SLOT_C_RIGHT],
-        mmvr_local_9ff7f287466b5b78[EQUIP_SLOT_C_RIGHT], mmvr_local_9ff7f287466b5b78[EQUIP_SLOT_C_RIGHT], sBCButtonScales[EQUIP_SLOT_C_RIGHT] * 2,
+        mmvr_local_ea03cc895564ce1a[EQUIP_SLOT_C_RIGHT], mmvr_local_ea03cc895564ce1a[EQUIP_SLOT_C_RIGHT], sBCButtonScales[EQUIP_SLOT_C_RIGHT] * 2,
         sBCButtonScales[EQUIP_SLOT_C_RIGHT] * 2, 255, 240, 0, interfaceCtx->cRightAlpha, COSMETIC_ID("Buttons.CRight"));
 
 #ifdef MMVR_ENABLE
@@ -6060,7 +6063,7 @@ void Interface_DrawItemButtons(PlayState* play) {
             gDPSetEnvColor(OVERLAY_DISP++, 0, 0, 0, 0);
             gDPSetCombineLERP(OVERLAY_DISP++, PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0,
                               PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0);
-            gDPLoadTextureBlock_4b(OVERLAY_DISP++, mmvr_local_5d91fae0782f77f1[gSaveContext.options.language], G_IM_FMT_IA, 32,
+            gDPLoadTextureBlock_4b(OVERLAY_DISP++, mmvr_local_f42236a788148356[gSaveContext.options.language], G_IM_FMT_IA, 32,
                                    12, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK,
                                    G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
 
@@ -6121,7 +6124,7 @@ void Interface_DrawItemButtons(PlayState* play) {
             HudEditor_SetActiveElement(temp);
             OVERLAY_DISP =
                 Gfx_DrawTexRectIA8(OVERLAY_DISP, emptyCButtonArrows[temp - 1], 0x20, 0x20, sBCButtonXPositions[temp],
-                                   sBCButtonYPositions[temp], mmvr_local_9ff7f287466b5b78[temp], mmvr_local_9ff7f287466b5b78[temp],
+                                   sBCButtonYPositions[temp], mmvr_local_ea03cc895564ce1a[temp], mmvr_local_ea03cc895564ce1a[temp],
                                    sBCButtonScales[temp] * 2, sBCButtonScales[temp] * 2);
         }
     }
@@ -6149,7 +6152,7 @@ s16 sDpadItemIconTop[] = {
     47, // EQUIP_SLOT_D_UP
 };
 
-static s16 mmvr_local_6f10bd92808462d0[] = { 16, 16, 16, 16 };
+static s16 mmvr_local_05c48629b59b8895[] = { 16, 16, 16, 16 };
 void Interface_Dpad_DrawItemIconTexture(PlayState* play, TexturePtr texture, s16 button) {
     /* persistent local storage is declared above */
 
@@ -6166,8 +6169,8 @@ void Interface_Dpad_DrawItemIconTexture(PlayState* play, TexturePtr texture, s16
         } else {
             s16 rectLeft = sDpadItemIconLeft[button];
             s16 rectTop = sDpadItemIconTop[button];
-            s16 rectWidth = mmvr_local_6f10bd92808462d0[button];
-            s16 rectHeight = mmvr_local_6f10bd92808462d0[button];
+            s16 rectWidth = mmvr_local_05c48629b59b8895[button];
+            s16 rectHeight = mmvr_local_05c48629b59b8895[button];
             s16 dsdx = sDpadItemIconDD[button];
             s16 dtdy = sDpadItemIconDD[button];
 
@@ -6180,8 +6183,8 @@ void Interface_Dpad_DrawItemIconTexture(PlayState* play, TexturePtr texture, s16
         }
     } else {
         gSPTextureRectangle(OVERLAY_DISP++, sDpadItemIconLeft[button] << 2, sDpadItemIconTop[button] << 2,
-                            (sDpadItemIconLeft[button] + mmvr_local_6f10bd92808462d0[button]) << 2,
-                            (sDpadItemIconTop[button] + mmvr_local_6f10bd92808462d0[button]) << 2, G_TX_RENDERTILE, 0, 0,
+                            (sDpadItemIconLeft[button] + mmvr_local_05c48629b59b8895[button]) << 2,
+                            (sDpadItemIconTop[button] + mmvr_local_05c48629b59b8895[button]) << 2, G_TX_RENDERTILE, 0, 0,
                             sDpadItemIconDD[button] << 1, sDpadItemIconDD[button] << 1);
     }
 
@@ -6269,7 +6272,7 @@ void Interface_Dpad_DrawAmmoCount(PlayState* play, s16 button, s16 alpha) {
 }
 // #endregion
 
-static s16 mmvr_local_83612b64a8dbcf16[] = {
+static s16 mmvr_local_e274cab3e6471835[] = {
         30, // EQUIP_SLOT_B
         24, // EQUIP_SLOT_C_LEFT
         24, // EQUIP_SLOT_C_DOWN
@@ -6294,8 +6297,8 @@ void Interface_DrawItemIconTexture(PlayState* play, TexturePtr texture, s16 butt
             // All of this information was derived from the original call to gSPTextureRectangle below
             s16 rectLeft = sBCButtonXPositions[button];
             s16 rectTop = sBCButtonYPositions[button];
-            s16 rectWidth = mmvr_local_83612b64a8dbcf16[button];
-            s16 rectHeight = mmvr_local_83612b64a8dbcf16[button];
+            s16 rectWidth = mmvr_local_e274cab3e6471835[button];
+            s16 rectHeight = mmvr_local_e274cab3e6471835[button];
             s16 dsdx = sItemIconTextureScales[button];
             s16 dtdy = sItemIconTextureScales[button];
 
@@ -6309,8 +6312,8 @@ void Interface_DrawItemIconTexture(PlayState* play, TexturePtr texture, s16 butt
         // #endregion
     } else {
         gSPTextureRectangle(OVERLAY_DISP++, sBCButtonXPositions[button] << 2, sBCButtonYPositions[button] << 2,
-                            (sBCButtonXPositions[button] + mmvr_local_83612b64a8dbcf16[button]) << 2,
-                            (sBCButtonYPositions[button] + mmvr_local_83612b64a8dbcf16[button]) << 2, G_TX_RENDERTILE, 0,
+                            (sBCButtonXPositions[button] + mmvr_local_e274cab3e6471835[button]) << 2,
+                            (sBCButtonYPositions[button] + mmvr_local_e274cab3e6471835[button]) << 2, G_TX_RENDERTILE, 0,
                             0, sItemIconTextureScales[button] << 1, sItemIconTextureScales[button] << 1);
     }
 
@@ -6339,8 +6342,8 @@ void Interface_DrawVRMaskIcon(PlayState* play) {
 }
 #endif
 
-static s16 mmvr_local_d8c60d5a0ee7052f[] = { 162, 228, 250, 272 };
-static s16 mmvr_local_9602f984f64ac5de[] = { 35, 35, 51, 35 };
+static s16 mmvr_local_8d01dcf83e92e89d[] = { 162, 228, 250, 272 };
+static s16 mmvr_local_43ce236c1f198e18[] = { 35, 35, 51, 35 };
 void Interface_DrawAmmoCount(PlayState* play, s16 button, s16 alpha) {
     /* persistent local storage is declared above */
     /* persistent local storage is declared above */
@@ -6408,15 +6411,15 @@ void Interface_DrawAmmoCount(PlayState* play, s16 button, s16 alpha) {
             HudEditor_SetActiveElement(button);
             OVERLAY_DISP =
                 Gfx_DrawTexRectIA8(OVERLAY_DISP, gAmmoDigitTextures[i], AMMO_DIGIT_TEX_WIDTH, AMMO_DIGIT_TEX_HEIGHT,
-                                   mmvr_local_d8c60d5a0ee7052f[button], mmvr_local_9602f984f64ac5de[button], AMMO_DIGIT_TEX_WIDTH,
+                                   mmvr_local_8d01dcf83e92e89d[button], mmvr_local_43ce236c1f198e18[button], AMMO_DIGIT_TEX_WIDTH,
                                    AMMO_DIGIT_TEX_HEIGHT, 1 << 10, 1 << 10);
         }
 
         // Draw lower digit (ones)
         HudEditor_SetActiveElement(button);
         OVERLAY_DISP =
-            Gfx_DrawTexRectIA8(OVERLAY_DISP, gAmmoDigitTextures[ammo], 8, 8, mmvr_local_d8c60d5a0ee7052f[button] + 6,
-                               mmvr_local_9602f984f64ac5de[button], 8, 8, 1 << 10, 1 << 10);
+            Gfx_DrawTexRectIA8(OVERLAY_DISP, gAmmoDigitTextures[ammo], 8, 8, mmvr_local_8d01dcf83e92e89d[button] + 6,
+                               mmvr_local_43ce236c1f198e18[button], 8, 8, 1 << 10, 1 << 10);
     }
 
     CLOSE_DISPS(play->state.gfxCtx);
@@ -6751,9 +6754,9 @@ void Interface_DrawAButton(PlayState* play) {
     CLOSE_DISPS(play->state.gfxCtx);
 }
 
-static s16 mmvr_local_5371b43daee91971[] = { 255, 100, 255 };
-static s16 mmvr_local_555461025d4b62c3[] = { 0, 100, 255 };
-static s16 mmvr_local_5580e660bbd3ee14[] = { 0, 255, 100 };
+static s16 mmvr_local_be6daa49bfce7937[] = { 255, 100, 255 };
+static s16 mmvr_local_300ec7ab1de8c8dc[] = { 0, 100, 255 };
+static s16 mmvr_local_88ee512b055255d6[] = { 0, 255, 100 };
 void Interface_DrawPauseMenuEquippingIcons(PlayState* play) {
     /* persistent local storage is declared above */
     /* persistent local storage is declared above */
@@ -6799,8 +6802,8 @@ void Interface_DrawPauseMenuEquippingIcons(PlayState* play) {
             } else {
                 // Magic Arrow Equip Effect
                 temp = pauseCtx->equipTargetItem - 0xB5;
-                gDPSetPrimColor(OVERLAY_DISP++, 0, 0, mmvr_local_5371b43daee91971[temp], mmvr_local_555461025d4b62c3[temp],
-                                mmvr_local_5580e660bbd3ee14[temp], pauseCtx->equipAnimAlpha);
+                gDPSetPrimColor(OVERLAY_DISP++, 0, 0, mmvr_local_be6daa49bfce7937[temp], mmvr_local_300ec7ab1de8c8dc[temp],
+                                mmvr_local_88ee512b055255d6[temp], pauseCtx->equipAnimAlpha);
 
                 if ((pauseCtx->equipAnimAlpha > 0) && (pauseCtx->equipAnimAlpha < 255)) {
                     temp = (pauseCtx->equipAnimAlpha / 8) / 2;
@@ -6830,10 +6833,10 @@ void Interface_DrawPauseMenuEquippingIcons(PlayState* play) {
 /**
  * Draws either the analog three-day clock or the digital final-hours clock
  */
-static s16 mmvr_local_c5c562cc6d11f914 = 255;
-static s16 mmvr_local_d354b1966d7eea44 = 0;
-static s16 mmvr_local_903fc04222c788fb = 0;
-static u16 mmvr_local_43405b0461d1e1b7[] = {
+static s16 mmvr_local_e5550e62cd4e2536 = 255;
+static s16 mmvr_local_b65d73c969c0cbcd = 0;
+static s16 mmvr_local_792b24c4779b081f = 0;
+static u16 mmvr_local_28cbe229860af7ed[] = {
         CLOCK_TIME(0, 0),  CLOCK_TIME(1, 0),  CLOCK_TIME(2, 0),  CLOCK_TIME(3, 0),  CLOCK_TIME(4, 0),
         CLOCK_TIME(5, 0),  CLOCK_TIME(6, 0),  CLOCK_TIME(7, 0),  CLOCK_TIME(8, 0),  CLOCK_TIME(9, 0),
         CLOCK_TIME(10, 0), CLOCK_TIME(11, 0), CLOCK_TIME(12, 0), CLOCK_TIME(13, 0), CLOCK_TIME(14, 0),
@@ -6841,7 +6844,7 @@ static u16 mmvr_local_43405b0461d1e1b7[] = {
         CLOCK_TIME(20, 0), CLOCK_TIME(21, 0), CLOCK_TIME(22, 0), CLOCK_TIME(23, 0), CLOCK_TIME(24, 0) - 1,
         CLOCK_TIME(0, 0),
     };
-static TexturePtr mmvr_local_2c620d7747be0a90[] = {
+static TexturePtr mmvr_local_db6ea80496b2e6a8[] = {
         gThreeDayClockHour12Tex, gThreeDayClockHour1Tex, gThreeDayClockHour2Tex,  gThreeDayClockHour3Tex,
         gThreeDayClockHour4Tex,  gThreeDayClockHour5Tex, gThreeDayClockHour6Tex,  gThreeDayClockHour7Tex,
         gThreeDayClockHour8Tex,  gThreeDayClockHour9Tex, gThreeDayClockHour10Tex, gThreeDayClockHour11Tex,
@@ -6851,7 +6854,7 @@ static TexturePtr mmvr_local_2c620d7747be0a90[] = {
         gEmptyTexture,           gEmptyTexture, // 2S2H [Port] To account for the vanilla bug detailed later on in this
                                                 // function
     };
-static TexturePtr mmvr_local_e0ed1079eced22dd[] = {
+static TexturePtr mmvr_local_19bf86f38ff8c366[] = {
         gThreeDayClockHour24Tex, gThreeDayClockHour1Tex,  gThreeDayClockHour2Tex,  gThreeDayClockHour3Tex,
         gThreeDayClockHour4Tex,  gThreeDayClockHour5Tex,  gThreeDayClockHour6Tex,  gThreeDayClockHour7Tex,
         gThreeDayClockHour8Tex,  gThreeDayClockHour9Tex,  gThreeDayClockHour10Tex, gThreeDayClockHour11Tex,
@@ -6862,30 +6865,30 @@ static TexturePtr mmvr_local_e0ed1079eced22dd[] = {
                                                 // function
         // #endregison
     };
-static s16 mmvr_local_2d990b69c61607d5 = 0;
-static s16 mmvr_local_66a7e4252ce44771 = 155;
-static s16 mmvr_local_da860621ef54c1a6 = 255;
-static s16 mmvr_local_ef10e330816e03cc = 0;
-static s16 mmvr_local_f419d105079d3b34 = 0;
-static s16 mmvr_local_22f85e4f92905882 = 0;
-static s16 mmvr_local_8517986903174556 = 15;
-static s16 mmvr_local_e92473cfd76dd363 = 0;
-static s16 mmvr_local_a2087cc52db112c4[] = { 100, 0 };
-static s16 mmvr_local_bd1560d667f15a22[] = { 205, 155 };
-static s16 mmvr_local_31745cd7dc9bee80[] = { 255, 255 };
-static s16 mmvr_local_fe446010bc0f56da[] = { 30, 0 };
-static s16 mmvr_local_8c43be1c55a44fa2[] = { 30, 0 };
-static s16 mmvr_local_b7d4dc1453267157[] = { 100, 0 };
-static s16 mmvr_local_8251b472e7538bd7[] = { 255, 0 };
-static s16 mmvr_local_25add4391b52dce9[] = { 100, 0 };
-static s16 mmvr_local_7a90f8cc46fe885a[] = { 30, 0 };
-static s16 mmvr_local_7b771415f122a93a[] = { 100, 0 };
-static TexturePtr mmvr_local_e75b5f09883c94a3[] = {
+static s16 mmvr_local_4fda3c23ad8ee841 = 0;
+static s16 mmvr_local_b24c0c2e824e61d2 = 155;
+static s16 mmvr_local_c7c70aa8b4ec6d5e = 255;
+static s16 mmvr_local_95ff211f501b00bb = 0;
+static s16 mmvr_local_dd06fba20ccef3f1 = 0;
+static s16 mmvr_local_0e001c3ee146e108 = 0;
+static s16 mmvr_local_3831d3071a16ae19 = 15;
+static s16 mmvr_local_967ad68e02edb9dc = 0;
+static s16 mmvr_local_4095a068c7fd502f[] = { 100, 0 };
+static s16 mmvr_local_335d2fc6ec38f3fd[] = { 205, 155 };
+static s16 mmvr_local_784d05d05343482e[] = { 255, 255 };
+static s16 mmvr_local_04da8a2496f3edff[] = { 30, 0 };
+static s16 mmvr_local_d3f601d6265fd5ec[] = { 30, 0 };
+static s16 mmvr_local_9e5fbd7a505ce667[] = { 100, 0 };
+static s16 mmvr_local_b08c586d34c74503[] = { 255, 0 };
+static s16 mmvr_local_71048874c053aeea[] = { 100, 0 };
+static s16 mmvr_local_d25e5f3cfb4ac274[] = { 30, 0 };
+static s16 mmvr_local_1c46deaaec0829e8[] = { 100, 0 };
+static TexturePtr mmvr_local_d75e3c5813442b7a[] = {
         gFinalHoursClockDigit0Tex, gFinalHoursClockDigit1Tex, gFinalHoursClockDigit2Tex, gFinalHoursClockDigit3Tex,
         gFinalHoursClockDigit4Tex, gFinalHoursClockDigit5Tex, gFinalHoursClockDigit6Tex, gFinalHoursClockDigit7Tex,
         gFinalHoursClockDigit8Tex, gFinalHoursClockDigit9Tex, gFinalHoursClockColonTex,
     };
-static s16 mmvr_local_32dfb37f0916cd8f[] = {
+static s16 mmvr_local_bd837720da19e738[] = {
         127, 136, 144, 151, 160, 168, 175, 184,
     };
 void Interface_DrawClock(PlayState* play) {
@@ -6956,36 +6959,36 @@ void Interface_DrawClock(PlayState* play) {
          */
         if (gSaveContext.hudVisibility == HUD_VISIBILITY_ALL) {
             if (func_801234D4(play)) {
-                mmvr_local_c5c562cc6d11f914 = 80;
-                mmvr_local_d354b1966d7eea44 = 5;
-                mmvr_local_903fc04222c788fb = 20;
-            } else if (mmvr_local_903fc04222c788fb != 0) {
-                mmvr_local_903fc04222c788fb--;
-            } else if (mmvr_local_d354b1966d7eea44 != 0) {
-                colorStep = ABS_ALT(mmvr_local_c5c562cc6d11f914 - 255) / mmvr_local_d354b1966d7eea44;
-                mmvr_local_c5c562cc6d11f914 += colorStep;
+                mmvr_local_e5550e62cd4e2536 = 80;
+                mmvr_local_b65d73c969c0cbcd = 5;
+                mmvr_local_792b24c4779b081f = 20;
+            } else if (mmvr_local_792b24c4779b081f != 0) {
+                mmvr_local_792b24c4779b081f--;
+            } else if (mmvr_local_b65d73c969c0cbcd != 0) {
+                colorStep = ABS_ALT(mmvr_local_e5550e62cd4e2536 - 255) / mmvr_local_b65d73c969c0cbcd;
+                mmvr_local_e5550e62cd4e2536 += colorStep;
 
-                if (mmvr_local_c5c562cc6d11f914 >= 255) {
-                    mmvr_local_c5c562cc6d11f914 = 255;
-                    mmvr_local_d354b1966d7eea44 = 0;
+                if (mmvr_local_e5550e62cd4e2536 >= 255) {
+                    mmvr_local_e5550e62cd4e2536 = 255;
+                    mmvr_local_b65d73c969c0cbcd = 0;
                 }
             } else {
                 if (play->actorCtx.flags & ACTORCTX_FLAG_TELESCOPE_ON) {
-                    mmvr_local_c5c562cc6d11f914 = 255;
+                    mmvr_local_e5550e62cd4e2536 = 255;
                 } else {
-                    mmvr_local_c5c562cc6d11f914 = interfaceCtx->bAlpha;
+                    mmvr_local_e5550e62cd4e2536 = interfaceCtx->bAlpha;
                 }
-                mmvr_local_903fc04222c788fb = 0;
-                mmvr_local_d354b1966d7eea44 = 0;
+                mmvr_local_792b24c4779b081f = 0;
+                mmvr_local_b65d73c969c0cbcd = 0;
             }
         } else {
             if (play->actorCtx.flags & ACTORCTX_FLAG_TELESCOPE_ON) {
-                mmvr_local_c5c562cc6d11f914 = 255;
+                mmvr_local_e5550e62cd4e2536 = 255;
             } else {
-                mmvr_local_c5c562cc6d11f914 = interfaceCtx->bAlpha;
+                mmvr_local_e5550e62cd4e2536 = interfaceCtx->bAlpha;
             }
-            mmvr_local_903fc04222c788fb = 0;
-            mmvr_local_d354b1966d7eea44 = 0;
+            mmvr_local_792b24c4779b081f = 0;
+            mmvr_local_b65d73c969c0cbcd = 0;
         }
 
         if (!IS_PAUSED(&play->pauseCtx)) {
@@ -6996,7 +6999,7 @@ void Interface_DrawClock(PlayState* play) {
              */
             gDPSetAlphaCompare(OVERLAY_DISP++, G_AC_THRESHOLD);
             gDPSetRenderMode(OVERLAY_DISP++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
-            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 130, 130, 130, mmvr_local_c5c562cc6d11f914);
+            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 130, 130, 130, mmvr_local_e5550e62cd4e2536);
             gDPSetCombineLERP(OVERLAY_DISP++, 0, 0, 0, PRIMITIVE, TEXEL0, 0, PRIMITIVE, 0, 0, 0, 0, PRIMITIVE, TEXEL0,
                               0, PRIMITIVE, 0);
 
@@ -7008,7 +7011,7 @@ void Interface_DrawClock(PlayState* play) {
              * Section: Draw Clock's Border
              */
             gDPPipeSync(OVERLAY_DISP++);
-            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 255, mmvr_local_c5c562cc6d11f914);
+            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 255, mmvr_local_e5550e62cd4e2536);
             gDPSetCombineLERP(OVERLAY_DISP++, 0, 0, 0, PRIMITIVE, TEXEL0, 0, PRIMITIVE, 0, 0, 0, 0, PRIMITIVE, TEXEL0,
                               0, PRIMITIVE, 0);
 
@@ -7036,82 +7039,82 @@ void Interface_DrawClock(PlayState* play) {
                 if (gSaveContext.save.timeSpeedOffset == -2) {
                     // Clock diamond is blue and flashes white
                     colorStep =
-                        ABS_ALT(mmvr_local_2d990b69c61607d5 - mmvr_local_a2087cc52db112c4[mmvr_local_e92473cfd76dd363]) /
-                        mmvr_local_8517986903174556;
-                    if (mmvr_local_2d990b69c61607d5 >= mmvr_local_a2087cc52db112c4[mmvr_local_e92473cfd76dd363]) {
-                        mmvr_local_2d990b69c61607d5 -= colorStep;
+                        ABS_ALT(mmvr_local_4fda3c23ad8ee841 - mmvr_local_4095a068c7fd502f[mmvr_local_967ad68e02edb9dc]) /
+                        mmvr_local_3831d3071a16ae19;
+                    if (mmvr_local_4fda3c23ad8ee841 >= mmvr_local_4095a068c7fd502f[mmvr_local_967ad68e02edb9dc]) {
+                        mmvr_local_4fda3c23ad8ee841 -= colorStep;
                     } else {
-                        mmvr_local_2d990b69c61607d5 += colorStep;
+                        mmvr_local_4fda3c23ad8ee841 += colorStep;
                     }
 
-                    colorStep = ABS_ALT(mmvr_local_66a7e4252ce44771 -
-                                        mmvr_local_bd1560d667f15a22[mmvr_local_e92473cfd76dd363]) /
-                                mmvr_local_8517986903174556;
-                    if (mmvr_local_66a7e4252ce44771 >= mmvr_local_bd1560d667f15a22[mmvr_local_e92473cfd76dd363]) {
-                        mmvr_local_66a7e4252ce44771 -= colorStep;
+                    colorStep = ABS_ALT(mmvr_local_b24c0c2e824e61d2 -
+                                        mmvr_local_335d2fc6ec38f3fd[mmvr_local_967ad68e02edb9dc]) /
+                                mmvr_local_3831d3071a16ae19;
+                    if (mmvr_local_b24c0c2e824e61d2 >= mmvr_local_335d2fc6ec38f3fd[mmvr_local_967ad68e02edb9dc]) {
+                        mmvr_local_b24c0c2e824e61d2 -= colorStep;
                     } else {
-                        mmvr_local_66a7e4252ce44771 += colorStep;
+                        mmvr_local_b24c0c2e824e61d2 += colorStep;
                     }
 
-                    colorStep = ABS_ALT(mmvr_local_da860621ef54c1a6 -
-                                        mmvr_local_31745cd7dc9bee80[mmvr_local_e92473cfd76dd363]) /
-                                mmvr_local_8517986903174556;
-                    if (mmvr_local_da860621ef54c1a6 >= mmvr_local_31745cd7dc9bee80[mmvr_local_e92473cfd76dd363]) {
-                        mmvr_local_da860621ef54c1a6 -= colorStep;
+                    colorStep = ABS_ALT(mmvr_local_c7c70aa8b4ec6d5e -
+                                        mmvr_local_784d05d05343482e[mmvr_local_967ad68e02edb9dc]) /
+                                mmvr_local_3831d3071a16ae19;
+                    if (mmvr_local_c7c70aa8b4ec6d5e >= mmvr_local_784d05d05343482e[mmvr_local_967ad68e02edb9dc]) {
+                        mmvr_local_c7c70aa8b4ec6d5e -= colorStep;
                     } else {
-                        mmvr_local_da860621ef54c1a6 += colorStep;
-                    }
-
-                    colorStep =
-                        ABS_ALT(mmvr_local_ef10e330816e03cc - mmvr_local_fe446010bc0f56da[mmvr_local_e92473cfd76dd363]) /
-                        mmvr_local_8517986903174556;
-                    if (mmvr_local_ef10e330816e03cc >= mmvr_local_fe446010bc0f56da[mmvr_local_e92473cfd76dd363]) {
-                        mmvr_local_ef10e330816e03cc -= colorStep;
-                    } else {
-                        mmvr_local_ef10e330816e03cc += colorStep;
-                    }
-
-                    colorStep = ABS_ALT(mmvr_local_f419d105079d3b34 -
-                                        mmvr_local_8c43be1c55a44fa2[mmvr_local_e92473cfd76dd363]) /
-                                mmvr_local_8517986903174556;
-                    if (mmvr_local_f419d105079d3b34 >= mmvr_local_8c43be1c55a44fa2[mmvr_local_e92473cfd76dd363]) {
-                        mmvr_local_f419d105079d3b34 -= colorStep;
-                    } else {
-                        mmvr_local_f419d105079d3b34 += colorStep;
+                        mmvr_local_c7c70aa8b4ec6d5e += colorStep;
                     }
 
                     colorStep =
-                        ABS_ALT(mmvr_local_22f85e4f92905882 - mmvr_local_b7d4dc1453267157[mmvr_local_e92473cfd76dd363]) /
-                        mmvr_local_8517986903174556;
-                    if (mmvr_local_22f85e4f92905882 >= mmvr_local_b7d4dc1453267157[mmvr_local_e92473cfd76dd363]) {
-                        mmvr_local_22f85e4f92905882 -= colorStep;
+                        ABS_ALT(mmvr_local_95ff211f501b00bb - mmvr_local_04da8a2496f3edff[mmvr_local_967ad68e02edb9dc]) /
+                        mmvr_local_3831d3071a16ae19;
+                    if (mmvr_local_95ff211f501b00bb >= mmvr_local_04da8a2496f3edff[mmvr_local_967ad68e02edb9dc]) {
+                        mmvr_local_95ff211f501b00bb -= colorStep;
                     } else {
-                        mmvr_local_22f85e4f92905882 += colorStep;
+                        mmvr_local_95ff211f501b00bb += colorStep;
                     }
 
-                    mmvr_local_8517986903174556--;
+                    colorStep = ABS_ALT(mmvr_local_dd06fba20ccef3f1 -
+                                        mmvr_local_d3f601d6265fd5ec[mmvr_local_967ad68e02edb9dc]) /
+                                mmvr_local_3831d3071a16ae19;
+                    if (mmvr_local_dd06fba20ccef3f1 >= mmvr_local_d3f601d6265fd5ec[mmvr_local_967ad68e02edb9dc]) {
+                        mmvr_local_dd06fba20ccef3f1 -= colorStep;
+                    } else {
+                        mmvr_local_dd06fba20ccef3f1 += colorStep;
+                    }
 
-                    if (mmvr_local_8517986903174556 == 0) {
-                        mmvr_local_2d990b69c61607d5 = mmvr_local_a2087cc52db112c4[mmvr_local_e92473cfd76dd363];
-                        mmvr_local_66a7e4252ce44771 = mmvr_local_bd1560d667f15a22[mmvr_local_e92473cfd76dd363];
-                        mmvr_local_da860621ef54c1a6 = mmvr_local_31745cd7dc9bee80[mmvr_local_e92473cfd76dd363];
-                        mmvr_local_ef10e330816e03cc = mmvr_local_fe446010bc0f56da[mmvr_local_e92473cfd76dd363];
-                        mmvr_local_f419d105079d3b34 = mmvr_local_8c43be1c55a44fa2[mmvr_local_e92473cfd76dd363];
-                        mmvr_local_22f85e4f92905882 = mmvr_local_b7d4dc1453267157[mmvr_local_e92473cfd76dd363];
-                        mmvr_local_8517986903174556 = 15;
-                        mmvr_local_e92473cfd76dd363 ^= 1;
+                    colorStep =
+                        ABS_ALT(mmvr_local_0e001c3ee146e108 - mmvr_local_9e5fbd7a505ce667[mmvr_local_967ad68e02edb9dc]) /
+                        mmvr_local_3831d3071a16ae19;
+                    if (mmvr_local_0e001c3ee146e108 >= mmvr_local_9e5fbd7a505ce667[mmvr_local_967ad68e02edb9dc]) {
+                        mmvr_local_0e001c3ee146e108 -= colorStep;
+                    } else {
+                        mmvr_local_0e001c3ee146e108 += colorStep;
+                    }
+
+                    mmvr_local_3831d3071a16ae19--;
+
+                    if (mmvr_local_3831d3071a16ae19 == 0) {
+                        mmvr_local_4fda3c23ad8ee841 = mmvr_local_4095a068c7fd502f[mmvr_local_967ad68e02edb9dc];
+                        mmvr_local_b24c0c2e824e61d2 = mmvr_local_335d2fc6ec38f3fd[mmvr_local_967ad68e02edb9dc];
+                        mmvr_local_c7c70aa8b4ec6d5e = mmvr_local_784d05d05343482e[mmvr_local_967ad68e02edb9dc];
+                        mmvr_local_95ff211f501b00bb = mmvr_local_04da8a2496f3edff[mmvr_local_967ad68e02edb9dc];
+                        mmvr_local_dd06fba20ccef3f1 = mmvr_local_d3f601d6265fd5ec[mmvr_local_967ad68e02edb9dc];
+                        mmvr_local_0e001c3ee146e108 = mmvr_local_9e5fbd7a505ce667[mmvr_local_967ad68e02edb9dc];
+                        mmvr_local_3831d3071a16ae19 = 15;
+                        mmvr_local_967ad68e02edb9dc ^= 1;
                     }
 
                     gDPSetCombineLERP(OVERLAY_DISP++, PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE,
                                       0, PRIMITIVE, ENVIRONMENT, TEXEL0, ENVIRONMENT, TEXEL0, 0, PRIMITIVE, 0);
-                    gDPSetPrimColor(OVERLAY_DISP++, 0, 0, mmvr_local_2d990b69c61607d5, mmvr_local_66a7e4252ce44771, 255,
-                                    mmvr_local_c5c562cc6d11f914);
-                    gDPSetEnvColor(OVERLAY_DISP++, mmvr_local_ef10e330816e03cc, mmvr_local_f419d105079d3b34,
-                                   mmvr_local_22f85e4f92905882, 0);
+                    gDPSetPrimColor(OVERLAY_DISP++, 0, 0, mmvr_local_4fda3c23ad8ee841, mmvr_local_b24c0c2e824e61d2, 255,
+                                    mmvr_local_e5550e62cd4e2536);
+                    gDPSetEnvColor(OVERLAY_DISP++, mmvr_local_95ff211f501b00bb, mmvr_local_dd06fba20ccef3f1,
+                                   mmvr_local_0e001c3ee146e108, 0);
                 } else {
                     // Clock diamond is green for regular timeSpeedOffset
                     gDPSetCombineMode(OVERLAY_DISP++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-                    gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 0, 170, 100, mmvr_local_c5c562cc6d11f914);
+                    gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 0, 170, 100, mmvr_local_e5550e62cd4e2536);
                 }
 
                 HudEditor_SetActiveElement(HUD_EDITOR_ELEMENT_CLOCK);
@@ -7122,7 +7125,7 @@ void Interface_DrawClock(PlayState* play) {
                  * Section: Draw Three-Day Clock's Day-Number over Diamond
                  */
                 gDPPipeSync(OVERLAY_DISP++);
-                gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 155, mmvr_local_c5c562cc6d11f914);
+                gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 155, mmvr_local_e5550e62cd4e2536);
 
                 HudEditor_SetActiveElement(HUD_EDITOR_ELEMENT_CLOCK);
                 OVERLAY_DISP = Gfx_DrawTexRectIA8(
@@ -7156,8 +7159,8 @@ void Interface_DrawClock(PlayState* play) {
 
                 gSPMatrix(OVERLAY_DISP++, &gIdentityMtx, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
-                if (mmvr_local_c5c562cc6d11f914 != 255) {
-                    gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 110, mmvr_local_c5c562cc6d11f914);
+                if (mmvr_local_e5550e62cd4e2536 != 255) {
+                    gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 110, mmvr_local_e5550e62cd4e2536);
                 } else {
                     gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 110, sThreeDayClockStarMinuteGlowAlpha);
                 }
@@ -7232,14 +7235,14 @@ void Interface_DrawClock(PlayState* play) {
             }
 
             // determines the current hour
-            for (hourIndex = 0; hourIndex < ARRAY_COUNT(mmvr_local_43405b0461d1e1b7) - 1; hourIndex++) {
+            for (hourIndex = 0; hourIndex < ARRAY_COUNT(mmvr_local_28cbe229860af7ed) - 1; hourIndex++) {
                 //! @bug When this loop iterates to the end without a break, this results in `hourIndex` being 25,
                 //! leading to an OOB read for `sThreeDayClockHourTextures` because that array and `sThreeDayClockHours`
                 //! do not have the same length. In practice, this occurs for two frames changing between hours 23
                 //! to 24.
                 // 2S2H [Port] We are opting to fix this by adding two blank textures to the end of
                 // the sThreeDayClockHourTextures array, instead of letting it read OOB
-                if (CURRENT_TIME < mmvr_local_43405b0461d1e1b7[hourIndex + 1]) {
+                if (CURRENT_TIME < mmvr_local_28cbe229860af7ed[hourIndex + 1]) {
                     break;
                 }
             }
@@ -7253,7 +7256,7 @@ void Interface_DrawClock(PlayState* play) {
 
             gDPPipeSync(OVERLAY_DISP++);
             gDPSetCombineMode(OVERLAY_DISP++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 100, 110, mmvr_local_c5c562cc6d11f914);
+            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 100, 110, mmvr_local_e5550e62cd4e2536);
 
             // #region 2S2H [Cosmetic] Hud Editor clock sun
             HudEditor_SetActiveElement(HUD_EDITOR_ELEMENT_CLOCK);
@@ -7281,7 +7284,7 @@ void Interface_DrawClock(PlayState* play) {
 
             gDPPipeSync(OVERLAY_DISP++);
             gDPSetCombineMode(OVERLAY_DISP++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
-            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 55, mmvr_local_c5c562cc6d11f914);
+            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 55, mmvr_local_e5550e62cd4e2536);
 
             // #region 2S2H [Cosmetic] Hud Editor clock moon
             HudEditor_SetActiveElement(HUD_EDITOR_ELEMENT_CLOCK);
@@ -7368,18 +7371,18 @@ void Interface_DrawClock(PlayState* play) {
             gDPPipeSync(OVERLAY_DISP++);
             gDPSetCombineLERP(OVERLAY_DISP++, 0, 0, 0, PRIMITIVE, TEXEL0, 0, PRIMITIVE, 0, 0, 0, 0, PRIMITIVE, TEXEL0,
                               0, PRIMITIVE, 0);
-            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 0, 0, 0, mmvr_local_c5c562cc6d11f914);
+            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 0, 0, 0, mmvr_local_e5550e62cd4e2536);
             gSPVertex(OVERLAY_DISP++, &interfaceCtx->actionVtx[24], 8, 0);
 
             OVERLAY_DISP =
                 CVarGetInteger("gEnhancements.Graphics.24HoursClock", 0)
-                    ? Gfx_DrawTexQuad4b(OVERLAY_DISP, mmvr_local_e0ed1079eced22dd[hourIndex], G_IM_FMT_I,
+                    ? Gfx_DrawTexQuad4b(OVERLAY_DISP, mmvr_local_19bf86f38ff8c366[hourIndex], G_IM_FMT_I,
                                         16, 11, 0)
-                    : Gfx_DrawTexQuad4b(OVERLAY_DISP, mmvr_local_2c620d7747be0a90[hourIndex], G_IM_FMT_I, 16, 11, 0);
+                    : Gfx_DrawTexQuad4b(OVERLAY_DISP, mmvr_local_db6ea80496b2e6a8[hourIndex], G_IM_FMT_I, 16, 11, 0);
 
             // Colours the Three-Day Clocks's Hour Digit Above the Sun
             gDPPipeSync(OVERLAY_DISP++);
-            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 155, mmvr_local_c5c562cc6d11f914);
+            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 155, mmvr_local_e5550e62cd4e2536);
             gSP1Quadrangle(OVERLAY_DISP++, 4, 6, 7, 5, 0);
 
             /**
@@ -7411,18 +7414,18 @@ void Interface_DrawClock(PlayState* play) {
             gDPPipeSync(OVERLAY_DISP++);
             gDPSetCombineLERP(OVERLAY_DISP++, 0, 0, 0, PRIMITIVE, TEXEL0, 0, PRIMITIVE, 0, 0, 0, 0, PRIMITIVE, TEXEL0,
                               0, PRIMITIVE, 0);
-            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 0, 0, 0, mmvr_local_c5c562cc6d11f914);
+            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 0, 0, 0, mmvr_local_e5550e62cd4e2536);
             gSPVertex(OVERLAY_DISP++, &interfaceCtx->actionVtx[32], 8, 0);
 
             OVERLAY_DISP =
                 CVarGetInteger("gEnhancements.Graphics.24HoursClock", 0)
-                    ? Gfx_DrawTexQuad4b(OVERLAY_DISP, mmvr_local_e0ed1079eced22dd[hourIndex], G_IM_FMT_I,
+                    ? Gfx_DrawTexQuad4b(OVERLAY_DISP, mmvr_local_19bf86f38ff8c366[hourIndex], G_IM_FMT_I,
                                         16, 11, 0)
-                    : Gfx_DrawTexQuad4b(OVERLAY_DISP, mmvr_local_2c620d7747be0a90[hourIndex], G_IM_FMT_I, 16, 11, 0);
+                    : Gfx_DrawTexQuad4b(OVERLAY_DISP, mmvr_local_db6ea80496b2e6a8[hourIndex], G_IM_FMT_I, 16, 11, 0);
 
             // Colours the Three-Day Clocks's Hour Digit Above the Moon
             gDPPipeSync(OVERLAY_DISP++);
-            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 155, mmvr_local_c5c562cc6d11f914);
+            gDPSetPrimColor(OVERLAY_DISP++, 0, 0, 255, 255, 155, mmvr_local_e5550e62cd4e2536);
             gSP1Quadrangle(OVERLAY_DISP++, 4, 6, 7, 5, 0);
 
             gSPDisplayList(OVERLAY_DISP++, D_0E000000_TO_SEGMENTED(setScissor));
@@ -7434,40 +7437,40 @@ void Interface_DrawClock(PlayState* play) {
                     // The Final Hours clock will flash red
 
                     colorStep = ABS_ALT(sFinalHoursClockDigitsRed -
-                                        mmvr_local_8251b472e7538bd7[sFinalHoursClockColorTargetIndex]) /
+                                        mmvr_local_b08c586d34c74503[sFinalHoursClockColorTargetIndex]) /
                                 sFinalHoursClockColorTimer;
                     if (sFinalHoursClockDigitsRed >=
-                        mmvr_local_8251b472e7538bd7[sFinalHoursClockColorTargetIndex]) {
+                        mmvr_local_b08c586d34c74503[sFinalHoursClockColorTargetIndex]) {
                         sFinalHoursClockDigitsRed -= colorStep;
                     } else {
                         sFinalHoursClockDigitsRed += colorStep;
                     }
 
                     colorStep = ABS_ALT(sFinalHoursClockFrameEnvRed -
-                                        mmvr_local_25add4391b52dce9[sFinalHoursClockColorTargetIndex]) /
+                                        mmvr_local_71048874c053aeea[sFinalHoursClockColorTargetIndex]) /
                                 sFinalHoursClockColorTimer;
                     if (sFinalHoursClockFrameEnvRed >=
-                        mmvr_local_25add4391b52dce9[sFinalHoursClockColorTargetIndex]) {
+                        mmvr_local_71048874c053aeea[sFinalHoursClockColorTargetIndex]) {
                         sFinalHoursClockFrameEnvRed -= colorStep;
                     } else {
                         sFinalHoursClockFrameEnvRed += colorStep;
                     }
 
                     colorStep = ABS_ALT(sFinalHoursClockFrameEnvGreen -
-                                        mmvr_local_7a90f8cc46fe885a[sFinalHoursClockColorTargetIndex]) /
+                                        mmvr_local_d25e5f3cfb4ac274[sFinalHoursClockColorTargetIndex]) /
                                 sFinalHoursClockColorTimer;
                     if (sFinalHoursClockFrameEnvGreen >=
-                        mmvr_local_7a90f8cc46fe885a[sFinalHoursClockColorTargetIndex]) {
+                        mmvr_local_d25e5f3cfb4ac274[sFinalHoursClockColorTargetIndex]) {
                         sFinalHoursClockFrameEnvGreen -= colorStep;
                     } else {
                         sFinalHoursClockFrameEnvGreen += colorStep;
                     }
 
                     colorStep = ABS_ALT(sFinalHoursClockFrameEnvBlue -
-                                        mmvr_local_7b771415f122a93a[sFinalHoursClockColorTargetIndex]) /
+                                        mmvr_local_1c46deaaec0829e8[sFinalHoursClockColorTargetIndex]) /
                                 sFinalHoursClockColorTimer;
                     if (sFinalHoursClockFrameEnvBlue >=
-                        mmvr_local_7b771415f122a93a[sFinalHoursClockColorTargetIndex]) {
+                        mmvr_local_1c46deaaec0829e8[sFinalHoursClockColorTargetIndex]) {
                         sFinalHoursClockFrameEnvBlue -= colorStep;
                     } else {
                         sFinalHoursClockFrameEnvBlue += colorStep;
@@ -7476,19 +7479,19 @@ void Interface_DrawClock(PlayState* play) {
                     sFinalHoursClockColorTimer--;
 
                     if (sFinalHoursClockColorTimer == 0) {
-                        sFinalHoursClockDigitsRed = mmvr_local_8251b472e7538bd7[sFinalHoursClockColorTargetIndex];
+                        sFinalHoursClockDigitsRed = mmvr_local_b08c586d34c74503[sFinalHoursClockColorTargetIndex];
                         sFinalHoursClockFrameEnvRed =
-                            mmvr_local_25add4391b52dce9[sFinalHoursClockColorTargetIndex];
+                            mmvr_local_71048874c053aeea[sFinalHoursClockColorTargetIndex];
                         sFinalHoursClockFrameEnvGreen =
-                            mmvr_local_7a90f8cc46fe885a[sFinalHoursClockColorTargetIndex];
+                            mmvr_local_d25e5f3cfb4ac274[sFinalHoursClockColorTargetIndex];
                         sFinalHoursClockFrameEnvBlue =
-                            mmvr_local_7b771415f122a93a[sFinalHoursClockColorTargetIndex];
+                            mmvr_local_1c46deaaec0829e8[sFinalHoursClockColorTargetIndex];
                         sFinalHoursClockColorTimer = 6;
                         sFinalHoursClockColorTargetIndex ^= 1;
                     }
                 }
 
-                sp1E6 = mmvr_local_c5c562cc6d11f914;
+                sp1E6 = mmvr_local_e5550e62cd4e2536;
                 if (sp1E6 != 0) {
                     sp1E6 = 255;
                 }
@@ -7555,12 +7558,12 @@ void Interface_DrawClock(PlayState* play) {
                 gDPSetPrimColor(OVERLAY_DISP++, 0, 0, sFinalHoursClockDigitsRed, 0, 0, sp1E6);
                 gDPSetEnvColor(OVERLAY_DISP++, sFinalHoursClockDigitsRed, 0, 0, 0);
 
-                for (hourIndex = 0; hourIndex < ARRAY_COUNT(mmvr_local_32dfb37f0916cd8f); hourIndex++) {
-                    index = mmvr_local_32dfb37f0916cd8f[hourIndex];
+                for (hourIndex = 0; hourIndex < ARRAY_COUNT(mmvr_local_bd837720da19e738); hourIndex++) {
+                    index = mmvr_local_bd837720da19e738[hourIndex];
 
                     HudEditor_SetActiveElement(HUD_EDITOR_ELEMENT_CLOCK);
                     OVERLAY_DISP =
-                        Gfx_DrawTexRectI8(OVERLAY_DISP, mmvr_local_e75b5f09883c94a3[finalHoursClockSlots[hourIndex]], 8, 8,
+                        Gfx_DrawTexRectI8(OVERLAY_DISP, mmvr_local_d75e3c5813442b7a[finalHoursClockSlots[hourIndex]], 8, 8,
                                           index, 205, 8, 8, 1 << 10, 1 << 10);
                 }
             }
@@ -8178,13 +8181,13 @@ void Interface_GetTimerDigits(OSTime time, s16 timerArr[8]) {
 /**
  * Update and draw the timers
  */
-static s16 mmvr_local_4d1836197b4310a6 = 0;
-static s16 mmvr_local_a38183d6730c52bf[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-static s16 mmvr_local_0dfe057c374159e9 = 99;
-static s16 mmvr_local_bf45dcda33d24937[] = {
+static s16 mmvr_local_b20bd4b94b63eea8 = 0;
+static s16 mmvr_local_744a255ff0765ced[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static s16 mmvr_local_5647ad49df8824c2 = 99;
+static s16 mmvr_local_4c6e383d8ec30e3b[] = {
         16, 25, 34, 42, 51, 60, 68, 77,
     };
-static s16 mmvr_local_53db457121d9a755[] = {
+static s16 mmvr_local_0287d5a197c98458[] = {
         9, 9, 8, 9, 9, 8, 9, 9,
     };
 void Interface_DrawTimers(PlayState* play) {
@@ -8302,7 +8305,7 @@ void Interface_DrawTimers(PlayState* play) {
             switch (gSaveContext.timerStates[sTimerId]) {
                 case TIMER_STATE_START:
                 case TIMER_STATE_ALT_START:
-                    mmvr_local_4d1836197b4310a6 = 20;
+                    mmvr_local_b20bd4b94b63eea8 = 20;
                     if (interfaceCtx->minigameState != MINIGAME_STATE_NONE) {
 
                         // Set the timer position
@@ -8347,9 +8350,9 @@ void Interface_DrawTimers(PlayState* play) {
                     break;
 
                 case TIMER_STATE_HOLD_TIMER:
-                    mmvr_local_4d1836197b4310a6--;
-                    if (mmvr_local_4d1836197b4310a6 == 0) {
-                        mmvr_local_4d1836197b4310a6 = 20;
+                    mmvr_local_b20bd4b94b63eea8--;
+                    if (mmvr_local_b20bd4b94b63eea8 == 0) {
+                        mmvr_local_b20bd4b94b63eea8 = 20;
                         gSaveContext.timerStates[sTimerId] = TIMER_STATE_MOVING_TIMER;
                     }
                     break;
@@ -8360,33 +8363,33 @@ void Interface_DrawTimers(PlayState* play) {
                     if (HudEditor_ShouldOverrideDraw()) {
                         HudEditor_ModifyRectPosValues(&newTimerX, &newTimerY);
                         modifiedTimerHudValues = true;
-                        j = ((((void)0, gSaveContext.timerX[sTimerId]) - newTimerX) / mmvr_local_4d1836197b4310a6);
+                        j = ((((void)0, gSaveContext.timerX[sTimerId]) - newTimerX) / mmvr_local_b20bd4b94b63eea8);
                         gSaveContext.timerX[sTimerId] = ((void)0, gSaveContext.timerX[sTimerId]) - j;
 
-                        j = ((((void)0, gSaveContext.timerY[sTimerId]) - newTimerY) / mmvr_local_4d1836197b4310a6);
+                        j = ((((void)0, gSaveContext.timerY[sTimerId]) - newTimerY) / mmvr_local_b20bd4b94b63eea8);
                         gSaveContext.timerY[sTimerId] = ((void)0, gSaveContext.timerY[sTimerId]) - j;
                     } else {
                         // #endregion
                         // Move the timer from the center of the screen to the timer location where it will count.
                         if (sTimerId == TIMER_ID_MOON_CRASH) {
-                            j = ((((void)0, gSaveContext.timerX[sTimerId]) - R_MOON_CRASH_TIMER_X) / mmvr_local_4d1836197b4310a6);
+                            j = ((((void)0, gSaveContext.timerX[sTimerId]) - R_MOON_CRASH_TIMER_X) / mmvr_local_b20bd4b94b63eea8);
                             gSaveContext.timerX[sTimerId] = ((void)0, gSaveContext.timerX[sTimerId]) - j;
-                            j = ((((void)0, gSaveContext.timerY[sTimerId]) - R_MOON_CRASH_TIMER_Y) / mmvr_local_4d1836197b4310a6);
+                            j = ((((void)0, gSaveContext.timerY[sTimerId]) - R_MOON_CRASH_TIMER_Y) / mmvr_local_b20bd4b94b63eea8);
                             gSaveContext.timerY[sTimerId] = ((void)0, gSaveContext.timerY[sTimerId]) - j;
                         } else {
-                            j = ((((void)0, gSaveContext.timerX[sTimerId]) - 26) / mmvr_local_4d1836197b4310a6);
+                            j = ((((void)0, gSaveContext.timerX[sTimerId]) - 26) / mmvr_local_b20bd4b94b63eea8);
                             gSaveContext.timerX[sTimerId] = ((void)0, gSaveContext.timerX[sTimerId]) - j;
 
                             j = (gSaveContext.save.saveInfo.playerData.healthCapacity > 0xA0)
-                                    ? ((((void)0, gSaveContext.timerY[sTimerId]) - 54) / mmvr_local_4d1836197b4310a6)
-                                    : ((((void)0, gSaveContext.timerY[sTimerId]) - 46) / mmvr_local_4d1836197b4310a6);
+                                    ? ((((void)0, gSaveContext.timerY[sTimerId]) - 54) / mmvr_local_b20bd4b94b63eea8)
+                                    : ((((void)0, gSaveContext.timerY[sTimerId]) - 46) / mmvr_local_b20bd4b94b63eea8);
                             gSaveContext.timerY[sTimerId] = ((void)0, gSaveContext.timerY[sTimerId]) - j;
                         }
                     }
 
-                    mmvr_local_4d1836197b4310a6--;
-                    if (mmvr_local_4d1836197b4310a6 == 0) {
-                        mmvr_local_4d1836197b4310a6 = 20;
+                    mmvr_local_b20bd4b94b63eea8--;
+                    if (mmvr_local_b20bd4b94b63eea8 == 0) {
+                        mmvr_local_b20bd4b94b63eea8 = 20;
 
                         // #region 2S2H [Cosmetic] Hud Editor clamp final timer position
                         if (HudEditor_ShouldOverrideDraw()) {
@@ -8458,7 +8461,7 @@ void Interface_DrawTimers(PlayState* play) {
                         SECONDS_TO_TIMER(gSaveContext.save.saveInfo.playerData.health >> 1);
                     gSaveContext.timerDirections[sTimerId] = TIMER_COUNT_DOWN;
                     gSaveContext.timerTimeLimits[sTimerId] = gSaveContext.timerCurTimes[sTimerId];
-                    mmvr_local_4d1836197b4310a6 = 20;
+                    mmvr_local_b20bd4b94b63eea8 = 20;
                     gSaveContext.timerStates[sTimerId] = TIMER_STATE_MOVING_TIMER;
                     break;
 
@@ -8530,10 +8533,10 @@ void Interface_DrawTimers(PlayState* play) {
         // Update timer counting
         if ((sTimerId != TIMER_ID_NONE) && gSaveContext.timerStates[sTimerId]) { // != TIMER_STATE_OFF
             if (gSaveContext.timerDirections[sTimerId] == TIMER_COUNT_DOWN) {
-                mmvr_local_a38183d6730c52bf[0] = mmvr_local_a38183d6730c52bf[1] = mmvr_local_a38183d6730c52bf[3] = mmvr_local_a38183d6730c52bf[4] = mmvr_local_a38183d6730c52bf[6] = 0;
+                mmvr_local_744a255ff0765ced[0] = mmvr_local_744a255ff0765ced[1] = mmvr_local_744a255ff0765ced[3] = mmvr_local_744a255ff0765ced[4] = mmvr_local_744a255ff0765ced[6] = 0;
 
                 // Used to index the counter colon
-                mmvr_local_a38183d6730c52bf[2] = mmvr_local_a38183d6730c52bf[5] = 10;
+                mmvr_local_744a255ff0765ced[2] = mmvr_local_744a255ff0765ced[5] = 10;
 
                 // Get the total amount of unpaused time since the start of the timer, centiseconds (1/100th sec).
                 if ((gSaveContext.timerStates[sTimerId] == TIMER_STATE_COUNTING) ||
@@ -8575,28 +8578,28 @@ void Interface_DrawTimers(PlayState* play) {
                     sEnvTimerActive = false;
                 }
 
-                Interface_GetTimerDigits(((void)0, gSaveContext.timerCurTimes[sTimerId]), mmvr_local_a38183d6730c52bf);
+                Interface_GetTimerDigits(((void)0, gSaveContext.timerCurTimes[sTimerId]), mmvr_local_744a255ff0765ced);
 
                 // Use seconds to determine when to beep
                 if (gSaveContext.timerCurTimes[sTimerId] > SECONDS_TO_TIMER(60)) {
-                    if ((mmvr_local_0dfe057c374159e9 != mmvr_local_a38183d6730c52bf[4]) && (mmvr_local_a38183d6730c52bf[4] == 1)) {
+                    if ((mmvr_local_5647ad49df8824c2 != mmvr_local_744a255ff0765ced[4]) && (mmvr_local_744a255ff0765ced[4] == 1)) {
                         Audio_PlaySfx(NA_SE_SY_MESSAGE_WOMAN);
-                        mmvr_local_0dfe057c374159e9 = mmvr_local_a38183d6730c52bf[4];
+                        mmvr_local_5647ad49df8824c2 = mmvr_local_744a255ff0765ced[4];
                     }
                 } else if (gSaveContext.timerCurTimes[sTimerId] > SECONDS_TO_TIMER(10)) {
-                    if ((mmvr_local_0dfe057c374159e9 != mmvr_local_a38183d6730c52bf[4]) && ((mmvr_local_a38183d6730c52bf[4] % 2) != 0)) {
+                    if ((mmvr_local_5647ad49df8824c2 != mmvr_local_744a255ff0765ced[4]) && ((mmvr_local_744a255ff0765ced[4] % 2) != 0)) {
                         Audio_PlaySfx(NA_SE_SY_WARNING_COUNT_N);
-                        mmvr_local_0dfe057c374159e9 = mmvr_local_a38183d6730c52bf[4];
+                        mmvr_local_5647ad49df8824c2 = mmvr_local_744a255ff0765ced[4];
                     }
-                } else if (mmvr_local_0dfe057c374159e9 != mmvr_local_a38183d6730c52bf[4]) {
+                } else if (mmvr_local_5647ad49df8824c2 != mmvr_local_744a255ff0765ced[4]) {
                     Audio_PlaySfx(NA_SE_SY_WARNING_COUNT_E);
-                    mmvr_local_0dfe057c374159e9 = mmvr_local_a38183d6730c52bf[4];
+                    mmvr_local_5647ad49df8824c2 = mmvr_local_744a255ff0765ced[4];
                 }
             } else { // TIMER_COUNT_UP
-                mmvr_local_a38183d6730c52bf[0] = mmvr_local_a38183d6730c52bf[1] = mmvr_local_a38183d6730c52bf[3] = mmvr_local_a38183d6730c52bf[4] = mmvr_local_a38183d6730c52bf[6] = 0;
+                mmvr_local_744a255ff0765ced[0] = mmvr_local_744a255ff0765ced[1] = mmvr_local_744a255ff0765ced[3] = mmvr_local_744a255ff0765ced[4] = mmvr_local_744a255ff0765ced[6] = 0;
 
                 // Used to index the counter colon
-                mmvr_local_a38183d6730c52bf[2] = mmvr_local_a38183d6730c52bf[5] = 10;
+                mmvr_local_744a255ff0765ced[2] = mmvr_local_744a255ff0765ced[5] = 10;
 
                 // Get the total amount of unpaused time since the start of the timer, centiseconds (1/100th sec).
                 if ((gSaveContext.timerStates[sTimerId] == TIMER_STATE_COUNTING) ||
@@ -8626,23 +8629,23 @@ void Interface_DrawTimers(PlayState* play) {
                 // Update the time remaining with the total amount of time since the start of the timer,
                 gSaveContext.timerCurTimes[sTimerId] = osTime;
 
-                Interface_GetTimerDigits(osTime, mmvr_local_a38183d6730c52bf);
+                Interface_GetTimerDigits(osTime, mmvr_local_744a255ff0765ced);
 
                 // Use seconds to determine when to beep
                 if ((gSaveContext.minigameStatus == MINIGAME_STATUS_ACTIVE) &&
                     (gSaveContext.save.entrance == ENTRANCE(ROMANI_RANCH, 0))) {
                     if ((gSaveContext.timerCurTimes[sTimerId] > SECONDS_TO_TIMER(110)) &&
-                        (mmvr_local_0dfe057c374159e9 != mmvr_local_a38183d6730c52bf[4])) {
+                        (mmvr_local_5647ad49df8824c2 != mmvr_local_744a255ff0765ced[4])) {
                         Audio_PlaySfx(NA_SE_SY_WARNING_COUNT_E);
-                        mmvr_local_0dfe057c374159e9 = mmvr_local_a38183d6730c52bf[4];
+                        mmvr_local_5647ad49df8824c2 = mmvr_local_744a255ff0765ced[4];
                     }
                 } else if (CHECK_EVENTINF(EVENTINF_34) && (play->sceneId == SCENE_DEKUTES)) {
                     if ((((void)0, gSaveContext.timerCurTimes[sTimerId]) >
                          (gSaveContext.save.saveInfo.dekuPlaygroundHighScores[CURRENT_DAY - 1] -
                           SECONDS_TO_TIMER(9))) &&
-                        (mmvr_local_0dfe057c374159e9 != mmvr_local_a38183d6730c52bf[4])) {
+                        (mmvr_local_5647ad49df8824c2 != mmvr_local_744a255ff0765ced[4])) {
                         Audio_PlaySfx(NA_SE_SY_WARNING_COUNT_E);
-                        mmvr_local_0dfe057c374159e9 = mmvr_local_a38183d6730c52bf[4];
+                        mmvr_local_5647ad49df8824c2 = mmvr_local_744a255ff0765ced[4];
                     }
                 }
             }
@@ -8704,18 +8707,18 @@ void Interface_DrawTimers(PlayState* play) {
                         for (j = 0; j < 4; j++) {
                             HudEditor_SetActiveElement(hudTimerElement);
                             OVERLAY_DISP = Gfx_DrawTexRectI8(
-                                OVERLAY_DISP, sCounterTextures[mmvr_local_a38183d6730c52bf[j + 3]], 8, 0x10,
-                                ((void)0, gSaveContext.timerX[sTimerId]) + mmvr_local_bf45dcda33d24937[j],
-                                ((void)0, gSaveContext.timerY[sTimerId]), mmvr_local_53db457121d9a755[j], 0xFA, 0x370, 0x370);
+                                OVERLAY_DISP, sCounterTextures[mmvr_local_744a255ff0765ced[j + 3]], 8, 0x10,
+                                ((void)0, gSaveContext.timerX[sTimerId]) + mmvr_local_4c6e383d8ec30e3b[j],
+                                ((void)0, gSaveContext.timerY[sTimerId]), mmvr_local_0287d5a197c98458[j], 0xFA, 0x370, 0x370);
                         }
                     } else {
                         // draw sTimerDigits[3] (10s of seconds) to sTimerDigits[7] (10s of milliseconds)
                         for (j = 0; j < 5; j++) {
                             HudEditor_SetActiveElement(hudTimerElement);
                             OVERLAY_DISP = Gfx_DrawTexRectI8(
-                                OVERLAY_DISP, sCounterTextures[mmvr_local_a38183d6730c52bf[j + 3]], 8, 0x10,
-                                ((void)0, gSaveContext.timerX[sTimerId]) + mmvr_local_bf45dcda33d24937[j],
-                                ((void)0, gSaveContext.timerY[sTimerId]), mmvr_local_53db457121d9a755[j], 0xFA, 0x370, 0x370);
+                                OVERLAY_DISP, sCounterTextures[mmvr_local_744a255ff0765ced[j + 3]], 8, 0x10,
+                                ((void)0, gSaveContext.timerX[sTimerId]) + mmvr_local_4c6e383d8ec30e3b[j],
+                                ((void)0, gSaveContext.timerY[sTimerId]), mmvr_local_0287d5a197c98458[j], 0xFA, 0x370, 0x370);
                         }
                     }
                 } else {
@@ -8723,9 +8726,9 @@ void Interface_DrawTimers(PlayState* play) {
                     for (j = 0; j < 8; j++) {
                         HudEditor_SetActiveElement(hudTimerElement);
                         OVERLAY_DISP = Gfx_DrawTexRectI8(
-                            OVERLAY_DISP, sCounterTextures[mmvr_local_a38183d6730c52bf[j]], 8, 0x10,
-                            ((void)0, gSaveContext.timerX[sTimerId]) + mmvr_local_bf45dcda33d24937[j],
-                            ((void)0, gSaveContext.timerY[sTimerId]), mmvr_local_53db457121d9a755[j], 0xFA, 0x370, 0x370);
+                            OVERLAY_DISP, sCounterTextures[mmvr_local_744a255ff0765ced[j]], 8, 0x10,
+                            ((void)0, gSaveContext.timerX[sTimerId]) + mmvr_local_4c6e383d8ec30e3b[j],
+                            ((void)0, gSaveContext.timerY[sTimerId]), mmvr_local_0287d5a197c98458[j], 0xFA, 0x370, 0x370);
                     }
                 }
             }
@@ -9665,8 +9668,8 @@ void Interface_AllocStory(PlayState* play) {
     Interface_LoadStory(play, OS_MESG_NOBLOCK);
 }
 
-static u8 mmvr_local_ae1b3eead49fe3f0 = false;
-static s16 mmvr_local_ccacdaa6a078b0c9 = 0;
+static u8 mmvr_local_1c40393dbd32072f = false;
+static s16 mmvr_local_0f54f0f83599fbf1 = 0;
 void Interface_Update(PlayState* play) {
     /* persistent local storage is declared above */
     /* persistent local storage is declared above */
@@ -10096,20 +10099,20 @@ void Interface_Update(PlayState* play) {
         // handle suns song in areas where time moves
         if (play->envCtx.sceneTimeSpeed != 0) {
             if (gSaveContext.sunsSongState != SUNSSONG_SPEED_TIME) {
-                mmvr_local_ae1b3eead49fe3f0 = false;
+                mmvr_local_1c40393dbd32072f = false;
                 if ((CURRENT_TIME >= CLOCK_TIME(6, 0)) && (CURRENT_TIME <= CLOCK_TIME(18, 0))) {
-                    mmvr_local_ae1b3eead49fe3f0 = true;
+                    mmvr_local_1c40393dbd32072f = true;
                 }
 
                 gSaveContext.sunsSongState = SUNSSONG_SPEED_TIME;
-                mmvr_local_ccacdaa6a078b0c9 = R_TIME_SPEED;
+                mmvr_local_0f54f0f83599fbf1 = R_TIME_SPEED;
                 R_TIME_SPEED = 400;
-            } else if (!mmvr_local_ae1b3eead49fe3f0) {
+            } else if (!mmvr_local_1c40393dbd32072f) {
                 // Nighttime
                 if ((CURRENT_TIME >= CLOCK_TIME(6, 0)) && (CURRENT_TIME <= CLOCK_TIME(18, 0))) {
                     // Daytime has been reached. End suns song effect
                     gSaveContext.sunsSongState = SUNSSONG_INACTIVE;
-                    R_TIME_SPEED = mmvr_local_ccacdaa6a078b0c9;
+                    R_TIME_SPEED = mmvr_local_0f54f0f83599fbf1;
                     play->msgCtx.ocarinaMode = OCARINA_MODE_END;
                 }
             } else {
@@ -10117,7 +10120,7 @@ void Interface_Update(PlayState* play) {
                 if (CURRENT_TIME > CLOCK_TIME(18, 0)) {
                     // Nighttime has been reached. End suns song effect
                     gSaveContext.sunsSongState = SUNSSONG_INACTIVE;
-                    R_TIME_SPEED = mmvr_local_ccacdaa6a078b0c9;
+                    R_TIME_SPEED = mmvr_local_0f54f0f83599fbf1;
                     play->msgCtx.ocarinaMode = OCARINA_MODE_END;
                 }
             }

@@ -25,6 +25,7 @@
 #include "Interactions.h"
 #include "NativeCombat.h"
 #include "NativeForms.h"
+#include "NativeActions.h"
 #include "NativeClimbing.h"
 #include "PlayerBody.h"
 #include "2s2h/Enhancements/FrameInterpolation/FrameInterpolation.h"
@@ -61,7 +62,10 @@ bool Player_IsZTargeting(Player*);
 }
 extern "C" int MMVR_PlayAsKafeiApplied(void);
 #ifdef MMVR_LOCAL_TEST_TOOLS
-namespace mmvrgame { void PrepareNativeZoraSwimDraw(PlayState*,Player*); }
+namespace mmvrgame {
+void PrepareNativeZoraSwimDraw(PlayState*,Player*);
+void PrepareNativeBodyAnimationDraw(PlayState*,Player*);
+}
 #endif
 static_assert(int(KAFEI_LIMB_HEAD)==int(PLAYER_LIMB_HEAD) &&
               int(KAFEI_LIMB_WAIST)==int(PLAYER_LIMB_WAIST) &&
@@ -75,7 +79,7 @@ static_assert(int(KAFEI_LIMB_HEAD)==int(PLAYER_LIMB_HEAD) &&
 static bool FullBodyForPlayer(Player* player) {
     if (!player) return false;
     const auto& settings=mmvr::GetSettings();
-    return MMVR_KafeiModel(player) ? settings.Get(mmvr::Setting::KafeiBody)>.5f
+    return MMVR_KafeiModel(player) ? settings.Get(mmvr::Setting::FullBody)>.5f
                                 : mmvr::FullBodyForForm(settings,player->transformation);
 }
 namespace {
@@ -87,6 +91,8 @@ mmvr::WalkStepCamera walkSteps;
 mmvr::LockOnOrbit lockOnOrbit;
 mmvr::OrbitFocusInterpolation lockOnFocus;
 mmvr::RoomScaleInterpolation roomScaleInterpolation;
+mmvr::CameraFrame frozenBodyPose{};
+bool bodyFrozen = false;
 double flowerTime = 0, heightTime = 0;
 float flowerGroundY = 0, flowerFloorY = 0;
 bool flowerGroundHeld = false, rideSmoothing = false;
@@ -156,6 +162,7 @@ void ResetCameraHistory(bool releaseActions, bool preserveActions = false) {
     handSkeletonPalette = nullptr;
     handSkeletonCount = 0;
     ++coordinateGeneration;
+    bodyFrozen = false;
     active = haveDraw = wasCinematic = drawingPlayer = false;
     rewardDrawValid=false;
     rewardViewAnchored=false;
@@ -199,7 +206,8 @@ void ResetCameraHistory(bool releaseActions, bool preserveActions = false) {
 }
 bool RightAuthoredItem(Player* p) {
     return p->transformation == PLAYER_FORM_HUMAN &&
-           (MMVR_IndependentHookshot(p) || p->rightHandType == PLAYER_MODELTYPE_RH_INSTRUMENT);
+           (MMVR_IndependentHookshot(p) || p->rightHandType == PLAYER_MODELTYPE_RH_INSTRUMENT ||
+            mmvrgame::BremenMarchActive(p));
 }
 bool PairedItem(Player* p) {
     return p->transformation == PLAYER_FORM_HUMAN || p->transformation == PLAYER_FORM_FIERCE_DEITY ||
@@ -278,7 +286,7 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
             for (int k = 0; k < 3; ++k)
                 pose.m[3][k] += (&p->actor.world.pos.x)[k] - (&lastPosition.x)[k];
         }
-        active = false;
+        active = bodyFrozen = false;
         lockOnOrbit.Reset();
         lockOnFocus.Reset();
         // Keep the prior invalid-draw input safety: only the camera is allowed
@@ -298,7 +306,7 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
     if (!mmvr::FirstPersonRequested() || !p || giantTransition ||
         (!mmvrgame::FirstPersonFormAllowed(p) && !cinematic) || mmvrgame::SceneView(play) != mmvr::SceneView::Player ||
         gSaveContext.save.saveInfo.playerData.health == 0 || !DrawReady(play, p)) {
-        active = false;
+        active = bodyFrozen = false;
         lockOnOrbit.Reset();
         lockOnFocus.Reset();
         mmvrgame::ResetHandGeometry();
@@ -423,7 +431,7 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
     // Center its interpolated focus at XR cadence, using the same basis as hands
     // and eyes. Physical head movement remains independent of this yaw orbit.
     const bool orbitAllowed = mmvr::GetSettings().Get(mmvr::Setting::LockOnOrbit) > .5f &&
-        !facts.transition && !facts.playerLocked && !cinematic && !MMVR_HookshotInFlight(p) &&
+        !p->actor.freezeTimer && !(p->stateFlags2 & PLAYER_STATE2_80) && !facts.transition && !facts.playerLocked && !cinematic && !MMVR_HookshotInFlight(p) &&
         mmvr::PhysicalActionsAllowed() && play->pauseCtx.state == PAUSE_STATE_OFF &&
         !mmvrgame::NativeAbilityOwnsFacing(p) && !p->rideActor &&
         !mmvrgame::ActiveEscortCart(play, p) &&
@@ -454,7 +462,7 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
     float dx = relative.m[3][0] - lastHead.m[3][0], dz = relative.m[3][2] - lastHead.m[3][2];
     lastHead = relative;
     // Lock-on and carrying own stance/item pose, not collision-checked room-scale translation.
-    if (!facts.transition && !facts.playerLocked && !cinematic && !MMVR_HookshotInFlight(p) && mmvr::InputFocused() && !mmvr::MenuPaused() &&
+    if (!p->actor.freezeTimer && !(p->stateFlags2 & PLAYER_STATE2_80) && !facts.transition && !facts.playerLocked && !cinematic && !MMVR_HookshotInFlight(p) && mmvr::InputFocused() && !mmvr::MenuPaused() &&
         !mmvrgame::NativeAbilityOwnsFacing(p) && !MMVR_FormAimStage(p) && play->pauseCtx.state == PAUSE_STATE_OFF &&
         !reset && mmvr::ContinuousStep(dx, dz) && (p->actor.bgCheckFlags & BGCHECKFLAG_GROUND) &&
         p->meleeWeaponState == PLAYER_MELEE_WEAPON_STATE_0) {
@@ -487,7 +495,7 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
         }
     }
     // Headset yaw owns facing, including targeting; scripted abilities retain their native rotation.
-    if (!facts.transition && !facts.playerLocked && !cinematic && !MMVR_HookshotInFlight(p) && mmvr::InputFocused() && !mmvr::MenuPaused() &&
+    if (!p->actor.freezeTimer && !(p->stateFlags2 & PLAYER_STATE2_80) && !facts.transition && !facts.playerLocked && !cinematic && !MMVR_HookshotInFlight(p) && mmvr::InputFocused() && !mmvr::MenuPaused() &&
         !mmvrgame::NativeAbilityOwnsFacing(p) && play->pauseCtx.state == PAUSE_STATE_OFF &&
         p->meleeWeaponState == PLAYER_MELEE_WEAPON_STATE_0) {
         p->actor.shape.rot.y = Angle(heading);
@@ -677,15 +685,10 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
             viewPose.m[3][1] + relative.m[3][1] * Units + neckOffset.y,
             viewPose.m[3][2] + std::cos(neckYaw) * neckOffset.z);
         mmvr::Matrix correction;
-        const float nativeYaw = tracking.visualValid ? tracking.visualYaw : Radians(drawYaw);
-        // Only native free swimming needs an anatomical basis: its torso rolls
-        // through vertical, which must not exchange the tracked arm shoulders.
-        // Land, underwater walking and authored cutscenes retain their policy.
-        const auto basis = p->transformation == PLAYER_FORM_ZORA && !cinematic && func_801242B4(p)
-            ? mmvr::body::TorsoBasis::AnatomicalShoulders : mmvr::body::TorsoBasis::NativeForward;
-        if (mmvr::body::AnchorTorso(tracking.bodyBones, nativeYaw, neck, correction, basis))
+        if (mmvr::body::AnchorTorso(tracking.bodyBones, neck, correction))
             result.bodyCorrection = correction;
     }
+    if (reset || systemRecenter) bodyFrozen = false;
     if (reset) {
         itemSmoother.Reset();
         bowHandSmoother.Reset();
@@ -806,6 +809,26 @@ mmvr::CameraFrame Update(const mmvr::TrackingFrame& rawTracking) {
             result.rewardActive=true;
         }
     } else rewardViewAnchored=false;
+    // Actor freeze pauses native animation/update. Keep both tracked wrists and
+    // torso at their first frozen world pose while XR eyes continue freely.
+    // Raw tracking above remains available to ReDead/Gibdo struggle detection.
+    if (p->actor.freezeTimer && !cinematic) {
+        if (!bodyFrozen) frozenBodyPose = result;
+        bodyFrozen = true;
+        result.bodyCorrection = frozenBodyPose.bodyCorrection;
+        result.fullBodyArms = FullBodyForPlayer(p) && frozenBodyPose.fullBodyArms;
+        for (int i=0;i<6;++i) result.bodyArms[i] = frozenBodyPose.bodyArms[i];
+        for (int i=0;i<2;++i) {
+            result.hands[i] = frozenBodyPose.hands[i];
+            result.formFins[i] = frozenBodyPose.formFins[i];
+        }
+        result.heldMask = frozenBodyPose.heldMask;
+        result.bowString = frozenBodyPose.bowString;
+        result.bowArrow = frozenBodyPose.bowArrow;
+        result.shieldEffectAnchor = frozenBodyPose.shieldEffectAnchor;
+        result.dekuGuard = frozenBodyPose.dekuGuard;
+        result.dekuGuardCorrection = frozenBodyPose.dekuGuardCorrection;
+    } else bodyFrozen = false;
     for (int i = 0; i < 2; ++i)
         if (extraActive[i]) {
             mmvr::Matrix inverse;
@@ -842,7 +865,7 @@ void ResetTestCamera() {
     lockOnOrbit.Reset();
     lockOnFocus.Reset();
     flowerTime = 0;
-    active = wasCinematic = false;
+    active = wasCinematic = bodyFrozen = false;
     owner = nullptr;
     submittedWorldView = nullptr;
     lastViewPose = {};
@@ -1111,6 +1134,11 @@ extern "C" int MMVR_KafeiModel(Player* player) {
          MMVR_PlayAsKafeiApplied()));
 }
 #ifdef MMVR_LOCAL_TEST_TOOLS
+extern "C" int MMVR_VerifyBremenHandMapping(Player* player) {
+    return mmvrgame::BremenMarchActive(player) &&
+           ControllerFor(player, 1) == mmvr::SwordController(mmvr::GetSettings()) &&
+           ControllerFor(player, 0) == 1 - mmvr::SwordController(mmvr::GetSettings());
+}
 extern "C" int MMVR_VerifyKafeiHandMapping(void) {
     Player player{};
     player.actor.id = ACTOR_EN_TEST3;
@@ -1220,6 +1248,8 @@ extern "C" int MMVR_HidePlayerLimb(Actor* actor, int limb) {
     const auto& settings = mmvr::GetSettings();
     if(FullBodyForPlayer((Player*)actor)) {
         if(mmvr::BodyRollPoseWaiting()) return true; // No stale pose when loading mid-roll.
+        const bool hideLegs = settings.Get(mmvr::Setting::HideBodyLegs) > .5f;
+        if (hideLegs && limb >= PLAYER_LIMB_RIGHT_THIGH && limb <= PLAYER_LIMB_LEFT_FOOT) return true;
         if(limb==PLAYER_LIMB_SHEATH &&
            (settings.Get(mmvr::Setting::HideSheath)>.5f || settings.Get(mmvr::Setting::HideShield)>.5f)) return true;
         // Quest Kafei's hands share elbow/wrist palette vertices with his
@@ -1229,8 +1259,8 @@ extern "C" int MMVR_HidePlayerLimb(Actor* actor, int limb) {
                (!MMVR_ControlledKafei((Player*)actor) &&
                 (limb==PLAYER_LIMB_LEFT_HAND || limb==PLAYER_LIMB_RIGHT_HAND));
     }
-    if (settings.Get(mmvr::Setting::HideLegs) > .5f &&
-        (limb == PLAYER_LIMB_WAIST || (limb >= PLAYER_LIMB_RIGHT_THIGH && limb <= PLAYER_LIMB_LEFT_FOOT)))
+    // Native legs/waist do not belong beneath detached first-person hands.
+    if (limb == PLAYER_LIMB_WAIST || (limb >= PLAYER_LIMB_RIGHT_THIGH && limb <= PLAYER_LIMB_LEFT_FOOT))
         return true;
     if (limb == PLAYER_LIMB_SHEATH &&
         (settings.Get(mmvr::Setting::HideSheath) > .5f || settings.Get(mmvr::Setting::HideShield) > .5f))
@@ -1368,6 +1398,7 @@ extern "C" void MMVR_PlayerDrawBegin(PlayState* play, Actor* actor) {
     auto* player = (Player*)actor;
 #ifdef MMVR_LOCAL_TEST_TOOLS
     mmvrgame::PrepareNativeZoraSwimDraw(play,player);
+    mmvrgame::PrepareNativeBodyAnimationDraw(play,player);
 #endif
     const bool trackedBody = HideCurrentPlayer(play) && FullBodyForPlayer(player);
     const uint32_t poseBones = (1u << PLAYER_LIMB_WAIST) | (1u << PLAYER_LIMB_HEAD) |

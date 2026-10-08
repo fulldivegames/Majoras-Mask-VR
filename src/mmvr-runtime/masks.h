@@ -1,5 +1,6 @@
 #pragma once
 #include "projection.h"
+#include "mask_fit.h"
 #include <cstdint>
 namespace mmvr {
 inline XrPosef MaskFacePose(const XrPosef& grip, const XrPosef& aim, float height) {

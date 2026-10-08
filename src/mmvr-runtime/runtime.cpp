@@ -34,6 +34,7 @@
 #include "eye_facing_cache.h"
 #include "billboard_group.h"
 #include "fairy_mask_cue.h"
+#include "wearable_mask.h"
 #ifdef __ANDROID__
 #include "gles_bridge.h"
 #include "native_bounds_gles_test.h"
@@ -179,6 +180,8 @@ int maskItem = -1, maskPending = -1, maskSelected = -1, maskWornItem = -1;
 bool maskWorn = false, maskAllowed = false, maskPendingRemoval = false;
 double maskStatusUntil = 0;
 uintptr_t maskIcon = 0;
+uintptr_t wearableMaskTexture = 0;
+int wearableMaskItem = -1;
 XrPosef maskPose{ { 0, 0, 0, 1 }, {} };
 float applicationFps = 0;
 MenuState menu;
@@ -206,7 +209,7 @@ PauseTriggers pauseTriggers;
 bool throwable = false, throwArmed = false, throwRequested = false;
 bool canSelect = false, ocarina = false, selectedItemMode = false;
 bool holsterAvailable = false, holsterGripClaimed = false;
-bool dialogueChoice = false;
+bool dialogueChoice = false, owlMapSelection = false;
 bool (*maskGrabBlocker)(int hand) = nullptr;
 std::array<int, MaxItemSlots> assignments{ 0, 1, 6, 29, -1, -1, -1, -1 };
 int pendingSlot = -1;
@@ -394,6 +397,17 @@ class TheaterRuntime {
     XrSwapchain uiChain = XR_NULL_HANDLE;
     unsigned uiHeight = 768;
     std::vector<SwapchainImage> uiImages;
+    bool WearableMaskVisible() const {
+        return wearableMaskTexture && wearableMaskItem == maskWornItem &&
+            WearableMaskItem(settings, maskWornItem, firstPersonRequested && nativeFirstPersonEligible &&
+                sceneGameplay && cameraFrame.active && !cameraFrame.exclusiveView && !menu.open &&
+                !nativePause && !notebookActive && !stateTrackingCallback && !inputRelease) >= 0;
+    }
+    void AttachWearableMask(UiDrawFrame& frame) const {
+        if ((frame.kind != UiKind::Vision && frame.kind != UiKind::WearableMask) || !WearableMaskVisible()) return;
+        frame.wearableMaskTexture = wearableMaskTexture;
+        frame.wearableMaskUv = WearableMaskUv(currentFov, views[0].fov, views[1].fov, maskWornItem);
+    }
 #ifdef __ANDROID__
 #include "runtime_gles_ui.inc"
 #else
@@ -428,7 +442,7 @@ class TheaterRuntime {
         context->OMGetRenderTargets(1, &previous, &depth);
         const float clear[4] = {
             0, 0, 0,
-            (frame.kind == UiKind::Theater || frame.kind == UiKind::Vision || frame.kind == UiKind::MotionBlur || frame.kind == UiKind::Reveal) ? 1.f
+            (frame.kind == UiKind::Theater || frame.kind == UiKind::Vision || frame.kind == UiKind::MotionBlur || frame.kind == UiKind::Reveal || frame.kind == UiKind::WearableMask) ? 1.f
                                                                                                                 : 0.f
         };
         context->ClearRenderTargetView(target, clear);
@@ -465,9 +479,10 @@ class TheaterRuntime {
         }
         CopyGameImage(context, source, hudSample.Get());
         SourceBlendBinding blend{ context, sourceBlends.Get(context, kind != UiKind::Hud) };
-        PaintUi(context, hudTarget.Get(),
-                { kind, width, height, reinterpret_cast<uintptr_t>(hudSampleView.Get()), SourceBlendBinding::Apply,
-                  &blend, currentFov, history, historyAlpha });
+        UiDrawFrame frame{kind, width, height, reinterpret_cast<uintptr_t>(hudSampleView.Get()),
+                          SourceBlendBinding::Apply, &blend, currentFov, history, historyAlpha};
+        AttachWearableMask(frame);
+        PaintUi(context, hudTarget.Get(), frame);
         return hudTexture.Get();
     }
     void DrawUiLayer(ID3D11DeviceContext* context) {
@@ -1316,12 +1331,8 @@ class TheaterRuntime {
         if (dialogueChoice && !nativePause) {
             // Choices own stick navigation even while the instrument remains equipped.
             // Keep the instrument context for rendering and suppression of locomotion/turning.
-            auto browse = std::hypot(stick.x, stick.y) >= std::hypot(item.x, item.y) ? stick : item;
-            pad.x = Axis(browse.x, browse.y);
-            pad.y = Axis(browse.y, browse.x);
-            pad.rightX = pad.rightY = 0;
-            pad.buttons = (Bool(buttons[0]) || Bool(buttons[2]) ? 0x8000 : 0) |
-                          (Bool(buttons[1]) ? 0x4000 : 0);
+            pad = NativeChoiceInput(pad, stick.x, stick.y, item.x, item.y,
+                                    Bool(buttons[0]) || Bool(buttons[2]), Bool(buttons[1]), owlMapSelection);
         }
         pad = ItemWheelInput(pad, SelectorGrip() > .25f && canSelect && !holsterGripClaimed && !originalThirdPerson && !ocarina && !climbing && !dialogueChoice);
         bool changed = false;
@@ -2529,7 +2540,7 @@ class TheaterRuntime {
                     const bool eyeBlur=drawUi && motionBlurAlpha>0 && comfortHudEffects<=.5f;
                     const bool eyeVision=drawUi && comfortHudEffects<.5f &&
                         (lensVision>0 || worldTint[3]>0 || speedStreaks>0 || viewToolKind==1 || viewToolKind==2);
-                    const bool directMultiviewLayer=paired && !eyeBlur && !eyeVision;
+                    const bool directMultiviewLayer=paired && !eyeBlur && !eyeVision && !WearableMaskVisible();
 #endif
                     for (int i = 0; i < 2; ++i) {
                         selectEye(i);
@@ -2559,13 +2570,11 @@ class TheaterRuntime {
                         draw(false);
 #endif
                         auto* eyeSource = CompositeMotionBlur(context, renderedSource, i);
-                        CopyImage(context,
-                                  drawUi && settings.Get(Setting::ComfortHudEffects) < .5f &&
-                                          (lensVision > 0 || worldTint[3] > 0 || speedStreaks > 0 ||
-                                           viewToolKind == 1 || viewToolKind == 2)
-                                      ? CompositeSource(context, eyeSource, UiKind::Vision)
-                                      : eyeSource,
-                                  eyes[i].handle, eyes[i].images);
+                        const bool visionEffects = drawUi && settings.Get(Setting::ComfortHudEffects) < .5f &&
+                            (lensVision > 0 || worldTint[3] > 0 || speedStreaks > 0 || viewToolKind == 1 || viewToolKind == 2);
+                        CopyImage(context, drawUi && (visionEffects || WearableMaskVisible())
+                            ? CompositeSource(context, eyeSource, visionEffects ? UiKind::Vision : UiKind::WearableMask)
+                            : eyeSource, eyes[i].handle, eyes[i].images);
 #ifdef __ANDROID__
                         if (eyeTrace) eyeComposeCopyMs[i] = std::chrono::duration<double, std::milli>(
                             std::chrono::steady_clock::now() - eyeAfterDraw).count();
@@ -3485,6 +3494,7 @@ void ControlBindingsChanged() noexcept {
     if (runtime) runtime->ClearBindingState();
 }
 void SetDialogueChoice(bool active) noexcept { dialogueChoice = active; }
+void SetOwlMapSelection(bool active) noexcept { owlMapSelection = active; }
 void SetMaskGrabBlocker(bool (*callback)(int)) noexcept { maskGrabBlocker = callback; }
 void SetMaskInventory(int selected, int worn, bool allowed) noexcept {
     if (selected != maskSelected || worn != maskWornItem || !allowed) {
@@ -3504,6 +3514,10 @@ void SetMaskContext(int item, bool worn) noexcept {
 }
 int WornMaskItem() noexcept {
     return maskWornItem;
+}
+void SetWearableMaskTexture(int item, uintptr_t texture) noexcept {
+    wearableMaskItem = texture && FindWearableMask(item) ? item : -1;
+    wearableMaskTexture = wearableMaskItem >= 0 ? texture : 0;
 }
 bool MaskStatusVisible() noexcept {
     return false;
@@ -3554,6 +3568,8 @@ bool UpdateMaskTracking(const TrackingFrame& frame, bool allowed) noexcept {
                                                                                                           : -1;
             worn = candidate >= 0 && candidate == maskWornItem;
         }
+        const auto wearContact = candidate == 0x44 && !worn
+            ? CaptainMaskWearContact(frame.hands[hand], settings.Get(Setting::MaskSize)) : frame.hands[hand];
         const bool wasCarrying = gesture.carrying;
         const bool blocked = handEnabled && candidate >= 0 && !gesture.carrying && gesture.armed &&
                              frame.triggers[hand] > .7f && maskGrabBlocker && maskGrabBlocker(hand);
@@ -3561,10 +3577,10 @@ bool UpdateMaskTracking(const TrackingFrame& frame, bool allowed) noexcept {
             ? gesture.UpdateWheel(frame.timeSeconds, frame.epoch,
                                   handEnabled && firstPersonRequested && candidate >= 0 && QuickWheelSpecialItems(settings),
                                   frame.handTracked[hand] && frame.aimValid[hand], frame.triggers[hand],
-                                  frame.hands[hand], frame.head, settings.Get(Setting::MaskFaceDistance))
+                                  wearContact, frame.head, settings.Get(Setting::MaskFaceDistance))
             : gesture.Update(frame.timeSeconds, frame.epoch, handEnabled && candidate >= 0 && !blocked,
                                   frame.handTracked[hand] && frame.aimValid[hand], frame.triggers[hand], worn,
-                                  frame.hands[hand], frame.head, settings.Get(Setting::MaskFaceDistance),
+                                  wearContact, frame.head, settings.Get(Setting::MaskFaceDistance),
                                   settings.Get(Setting::MaskRemoveDistance));
         if (!wasCarrying && gesture.carrying) {
             maskItem = candidate;
@@ -4518,13 +4534,13 @@ void SetReticleMatrix(int i, const void* p, const float* rotation, float x, floa
     binding.basis.m[3][2] = z;
     binding.basis.m[3][3] = 1;
 }
-void ResetCoordinateTracking(bool releaseActions) noexcept {
+void ResetPlayerDrawBindings() noexcept {
+    // The graphics arenas are reused each native frame. Soaring, culling and
+    // hidden-player actions can skip PlayerDrawBegin/End entirely. Retaining
+    // their old addresses would attach unrelated new geometry to a controller.
+    // Keep camera calibration, interpolation and the upright roll history:
+    // only references into the display list being replaced expire here.
     ClearBodyBones();
-    bodyRoll = {};
-    cameraFrame = {};
-    worldView = {};
-    eyeFacingCache = {};
-    skyboxMatrix = nullptr;
     SetBodyAnchor(nullptr, 0, 0, 0);
     SetHeadAnchor(nullptr, 0, 0, 0);
     SetPhysicalPushAnchor(nullptr);
@@ -4541,11 +4557,19 @@ void ResetCoordinateTracking(bool releaseActions) noexcept {
             SetHandExtraRange(hand, nullptr, nullptr, layer);
     }
     ResetFormEffectMatrices();
-    ResetReticles();
     SetNotebookModelMatrix(nullptr);
     SetBowStringMatrix(nullptr);
     SetBowArrowMatrix(nullptr);
     SetItemReticleMatrix(nullptr);
+}
+void ResetCoordinateTracking(bool releaseActions) noexcept {
+    ResetPlayerDrawBindings();
+    bodyRoll = {};
+    cameraFrame = {};
+    worldView = {};
+    eyeFacingCache = {};
+    skyboxMatrix = nullptr;
+    ResetReticles();
     // Only the history epoch changes: origin, originEpoch and snapYaw remain intact.
     ++trackingEpoch;
     CancelMaskGestures();
@@ -4654,6 +4678,9 @@ extern "C" int MMVR_RecordWorldScreenFade(unsigned char r, unsigned char g, unsi
 }
 extern "C" void MMVR_ResetReticles() {
     mmvr::ResetReticles();
+}
+extern "C" void MMVR_ResetPlayerDrawBindings() {
+    mmvr::ResetPlayerDrawBindings();
 }
 extern "C" void MMVR_SetReticleMatrix(int i, const void* p, const float* rotation, float x, float y, float z) {
     mmvr::SetReticleMatrix(i, p, rotation, x, y, z);

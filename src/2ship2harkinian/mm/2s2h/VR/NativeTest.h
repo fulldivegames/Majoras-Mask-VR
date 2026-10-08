@@ -16,6 +16,8 @@ void CollisionCheck_AC_CylVsQuad(PlayState*,CollisionCheckContext*,Collider*,Col
 #include "MoonMaskTest.h"
 #include "NotebookTest.h"
 #include "FullBodyTest.h"
+#include "RenderBindingTest.h"
+#include "LensWheelTest.h"
 #include "FairyMaskCueTest.h"
 #include "StrayFairyInterpolationTest.h"
 #include "WeaponReachTest.h"
@@ -151,6 +153,15 @@ static mmvr::Pad NativeTestInput(){
   if(std::getenv("MMVR_QUICK_WHEEL_TEST")){if(playTicks==60)NativeQuickWheelTest(gPlayState);return pad;}
   if(std::getenv("MMVR_MOON_MASK_TEST")){if(playTicks==60)NativeMoonMaskTest(gPlayState);return pad;}
   if(std::getenv("MMVR_FULL_BODY_TEST")){NativeFullBodyTest(gPlayState,playTicks);return pad;}
+  if(std::getenv("MMVR_RENDER_BINDING_TEST")){
+   if(playTicks==60){NativeRenderBindingTest(gPlayState);Ship::Context::GetRawInstance()->GetWindow()->Close();}
+   return pad;
+  }
+  if(std::getenv("MMVR_HELD_MASK_GEOMETRY_TEST")){
+   if(playTicks==60){if(!mmvrgame::TestHeldMaskGeometry())throw std::runtime_error("Held mask geometry regression");Ship::Context::GetRawInstance()->GetWindow()->Close();}
+   return pad;
+  }
+  if(std::getenv("MMVR_LENS_WHEEL_TEST")){if(playTicks==60)NativeLensWheelTest(gPlayState);return pad;}
   if(std::getenv("MMVR_FAIRY_MASK_CUE_TEST")){if(playTicks==60)NativeFairyMaskCueTest(gPlayState);return pad;}
   if(std::getenv("MMVR_FAIRY_MASK_CUE_LAUNDRY_TEST"))return NativeLaundryFairyMaskCueTest(gPlayState,playTicks);
   if(std::getenv("MMVR_STRAY_FAIRY_INTERPOLATION_TEST")){if(playTicks==60)NativeStrayFairyInterpolationTest(gPlayState);return pad;}

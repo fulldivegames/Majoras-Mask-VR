@@ -104,7 +104,7 @@ s16 Angle(float value) {
     return static_cast<s16>(static_cast<int32_t>(std::remainder(value, 6.283185307f) * 32768.f / 3.141592654f));
 }
 bool Eligible(PlayState* play, Player* player) {
-    return valid && mmvr::FirstPersonRequested() && mmvr::InputFocused() && play && player && player == owner &&
+    return valid && player && !player->actor.freezeTimer && !(player->stateFlags2 & PLAYER_STATE2_80) && mmvr::FirstPersonRequested() && mmvr::InputFocused() && play && player && player == owner &&
            scene == play->sceneId && mmvrgame::FirstPersonFormAllowed(player) && !MMVR_ItemPresentationActive(player) &&
            !mmvrgame::NativeViewfinderActive(play) && player->csAction == PLAYER_CSACTION_NONE &&
            play->csCtx.state == CS_STATE_IDLE && play->transitionTrigger == TRANS_TRIGGER_OFF &&
@@ -675,6 +675,10 @@ extern "C" void MMVR_ApplyThrowVelocity(PlayState*, Player*, Actor* actor) {
 }
 
 extern "C" const void* MMVR_TrackedRightHandMesh(Player* player) {
+    // Use the existing native instrument-and-hand mesh, including its size and
+    // controller attachment. Never equip an item or start ocarina input here.
+    if (mmvrgame::BremenMarchActive(player))
+        return gLinkHumanRightHandHoldingOcarinaDL;
     if (mmvrgame::BowHeld())
         return gLinkHumanRightHandHoldingBowDL;
     if (auto* shield = mmvrgame::TrackedShieldMesh(player))

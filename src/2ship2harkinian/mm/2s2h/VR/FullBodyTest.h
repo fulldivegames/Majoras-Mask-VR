@@ -7,6 +7,7 @@ extern "C" {
 AnimationHeaderCommon* ResourceMgr_LoadAnimByName(const char*);
 }
 namespace mmvrgame { bool TestFullBodyRig(); bool TestZoraSwimFrame(const char*,unsigned); }
+#include "BodyAnimationTest.h"
 
 // The dry debug-room update legitimately exits swimming before its action runs.
 // Apply archived swim poses at the isolated draw boundary instead; the ordinary
@@ -86,13 +87,14 @@ static void NativeFullBodyTest(PlayState* play,unsigned tick) {
         auto* player=GET_PLAYER(play);
         const int form=player->transformation;
         if(MMVR_KafeiModel(player)) {
-            CVarSetFloat("gVR.KafeiBody",1);mmvr::GetSettings().Set(mmvr::Setting::KafeiBody,1);
+            CVarSetFloat("gVR.FullBody",1);mmvr::GetSettings().Set(mmvr::Setting::FullBody,1);
         } else if(form>=0 && form<PLAYER_FORM_MAX) {
             CVarSetFloat(keys[form],1);mmvr::GetSettings().Set(options[form],1);
         }
         mmvr::ApplyViewMode(2);
         mmvr::SetNativeTestTracking(true);
     }
+    if(NativeBodyAnimations(play,tick)) return;
     const char* swim=std::getenv("MMVR_FULL_BODY_ZORA_SWIM");
     if(swim) {
         if(tick==60) {

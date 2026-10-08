@@ -1,0 +1,120 @@
+{
+  "schema": 1,
+  "description": "Full Dive Games wearer-view mask overlay artwork, generated with image_gen and approved for this mod. Transformation and Giant masks excluded.",
+  "assets": [
+    {
+      "id": "postman",
+      "name": "Postman's Hat",
+      "file": "postman.png",
+      "sha256": "00de0a4bbf44927ed61af8ff52d5e6763ca182cb46ab0db541784c4e242c2bfe"
+    },
+    {
+      "id": "all-night",
+      "name": "All-Night Mask",
+      "file": "all-night.png",
+      "sha256": "9900513565d2ca664eb9952caf5ecaf0f54e03506cd909d519ad52c4667748cc"
+    },
+    {
+      "id": "blast",
+      "name": "Blast Mask",
+      "file": "blast.png",
+      "sha256": "52b87b5b0eece16baea45cc887a806e1e71a4cff22e1db098028636042cb066f"
+    },
+    {
+      "id": "stone",
+      "name": "Stone Mask",
+      "file": "stone.png",
+      "sha256": "a0f5b162553d6f71d2f922c2dcc286c5465b9fbe3126c7811bc7e8462ea7aef1"
+    },
+    {
+      "id": "great-fairy",
+      "name": "Great Fairy Mask",
+      "file": "great-fairy.png",
+      "sha256": "90575aac1d39f984c75f42a4a629e9d18110c000f7a9e7897fcca4cd22d54d5e"
+    },
+    {
+      "id": "keaton",
+      "name": "Keaton Mask",
+      "file": "keaton.png",
+      "sha256": "989870a68f9f191782a91c598c2096bb019d82f174cffef020e6a8a8b5769f87"
+    },
+    {
+      "id": "bremen",
+      "name": "Bremen Mask",
+      "file": "bremen.png",
+      "sha256": "cd923966e61cb6ee1d561b9c561d049c654dbcc480b45a5c574eb81e28569043"
+    },
+    {
+      "id": "bunny",
+      "name": "Bunny Hood",
+      "file": "bunny.png",
+      "sha256": "f290cd5e412b79e77575e387e43a401ba72a6dde79122ee3f863c7cb3f86683e"
+    },
+    {
+      "id": "don-gero",
+      "name": "Don Gero's Mask",
+      "file": "don-gero.png",
+      "sha256": "cb1290f23101c4c0ef5f1486b49d4abfbb249d55f9e51d987465f3e8bf064af4"
+    },
+    {
+      "id": "scents",
+      "name": "Mask of Scents",
+      "file": "scents.png",
+      "sha256": "e4d2a85535eaf12f748960b6afffaa2f1221d504849f24b59643d7cb4263e0ff"
+    },
+    {
+      "id": "romani",
+      "name": "Romani's Mask",
+      "file": "romani.png",
+      "sha256": "256e458297f2b1bde98334a05cee32fdf29c09d5a9a008f78bd6bc567b0786af"
+    },
+    {
+      "id": "circus",
+      "name": "Circus Leader's Mask",
+      "file": "circus.png",
+      "sha256": "aaa76467e7a9ccf141c449e4c756c9c0ae33c7e10a109445c01166692c3e5da6"
+    },
+    {
+      "id": "kafei-mask",
+      "name": "Kafei's Mask",
+      "file": "kafei-mask.png",
+      "sha256": "6dad24e2eba41bec0a9a1c1cc851af1a80675d1df27a9e284e2344430c9e7f71"
+    },
+    {
+      "id": "couple",
+      "name": "Couple's Mask",
+      "file": "couple.png",
+      "sha256": "a727452efde303d49ddc748d923ff6e67ac823a20bb5231b35732a8835012a69"
+    },
+    {
+      "id": "truth",
+      "name": "Mask of Truth",
+      "file": "truth.png",
+      "sha256": "6fba9e6fa9c991f29b7aa29753dc8250c6d4fa80498c73f6ce840d199f5a2df7"
+    },
+    {
+      "id": "kamaro",
+      "name": "Kamaro's Mask",
+      "file": "kamaro.png",
+      "sha256": "81f3f103c63f76c5c2a47ce4a0bf1c5c2f538edd730eece4dcf671edeecc6bd0"
+    },
+    {
+      "id": "gibdo",
+      "name": "Gibdo Mask",
+      "file": "gibdo.png",
+      "sha256": "cd01961f2ed464339a00fc2442e587fd534040c1109f4f5cfcc98a32340d37eb"
+    },
+    {
+      "id": "garo",
+      "name": "Garo's Mask",
+      "file": "garo.png",
+      "sha256": "9e92e7a0e8d0ca4edd1e1e97f75de2badccd75fb83cc1fbdf124a896d675651e"
+    },
+    {
+      "id": "captain",
+      "name": "Captain's Hat",
+      "file": "captain.png",
+      "sha256": "42631198bc758a8e10378efb67d08a81e1bb0689003a6c288aa025af19c54b7a"
+    }
+  ]
+}

@@ -23,7 +23,7 @@ void PaintUi(GlImage& target, const UiDrawFrame& frame) {
     glViewport(0, 0, target.width, target.height);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glClearColor(0, 0, 0,
-                 (frame.kind == UiKind::Theater || frame.kind == UiKind::Vision || frame.kind == UiKind::MotionBlur || frame.kind == UiKind::Reveal)
+                 (frame.kind == UiKind::Theater || frame.kind == UiKind::Vision || frame.kind == UiKind::MotionBlur || frame.kind == UiKind::Reveal || frame.kind == UiKind::WearableMask)
                      ? 1.f
                      : 0.f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -47,8 +47,10 @@ GlImage* CompositeSource(GlContext*, GlImage* source, UiKind kind, uintptr_t his
     hudTexture.Resize(width, height);
     hudSample.Resize(width, height, true);
     transfer.Copy(*source, hudSample.image);
-    PaintUi(hudTexture.image, { kind, width, height, hudSample.image.texture, SourceBlend,
-                                kind == UiKind::Hud ? nullptr : this, currentFov, history, historyAlpha });
+    UiDrawFrame frame{kind, width, height, hudSample.image.texture, SourceBlend,
+                      kind == UiKind::Hud ? nullptr : this, currentFov, history, historyAlpha};
+    AttachWearableMask(frame);
+    PaintUi(hudTexture.image, frame);
     return &hudTexture.image;
 }
 void VerifyVisionComposition() {

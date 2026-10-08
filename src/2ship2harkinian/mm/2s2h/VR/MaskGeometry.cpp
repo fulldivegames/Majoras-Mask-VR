@@ -6,6 +6,9 @@
 #include <fast/resource/type/DisplayList.h>
 #include <unordered_map>
 #include <cstring>
+#ifdef MMVR_LOCAL_TEST_TOOLS
+#include <fstream>
+#endif
 namespace {
 struct Trim {
     const char* path;
@@ -17,6 +20,7 @@ struct Visual {
     const char* first;
     const char* second;
     bool translucent;
+    bool twoSided = false;
 };
 #include "MaskGeometry.inc"
 struct Filtered {
@@ -24,7 +28,7 @@ struct Filtered {
     std::vector<Gfx> commands;
 };
 std::unordered_map<std::string, Filtered> cache;
-const Gfx* MaskList(const char* path) {
+const Gfx* MaskList(const char* path, bool twoSided) {
     auto source = std::dynamic_pointer_cast<Fast::DisplayList>(
         Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(path));
     if (!source)
@@ -45,6 +49,15 @@ const Gfx* MaskList(const char* path) {
                     auto* command = &entry.commands[t.index];
                     gSPNoOp(command);
                 }
+        // The Captain's thin hood is held and inspected from either side in
+        // VR. Keep its native materials and stand exclusions, but show its
+        // reverse faces too. Never modify the shared native display list.
+        if (twoSided)
+            for (auto& command : entry.commands)
+                if ((command.words.w0 >> 24) == G_GEOMETRYMODE) {
+                    command.words.w0 &= ~(G_CULL_FRONT | G_CULL_BACK);
+                    command.words.w1 &= ~(G_CULL_FRONT | G_CULL_BACK);
+                }
     }
     return entry.commands.data();
 }
@@ -61,11 +74,11 @@ static void DrawNativeMask(PlayState* play, int item) {
     OPEN_DISPS(play->state.gfxCtx);
     Gfx_SetupDL25_Opa(play->state.gfxCtx);
     MATRIX_FINALIZE_AND_LOAD(POLY_OPA_DISP++, play->state.gfxCtx);
-    if (auto* list = MaskList(v->first)) {
+    if (auto* list = MaskList(v->first, v->twoSided)) {
         gSPDisplayList(POLY_OPA_DISP++, (Gfx*)list);
     }
     if (v->second) {
-        auto* list = MaskList(v->second);
+        auto* list = MaskList(v->second, v->twoSided);
         if (list) {
             if (v->translucent) {
                 Gfx_SetupDL25_Xlu(play->state.gfxCtx);
@@ -82,5 +95,47 @@ namespace mmvrgame {
 void DrawMaskModel(PlayState* play, int item) {
     DrawNativeMask(play, item);
 }
+#ifdef MMVR_LOCAL_TEST_TOOLS
+bool TestHeldMaskGeometry() {
+    bool passed = true;
+    unsigned lists = 0, removed = 0, captainModes = 0;
+    for (const auto& visual : visuals)
+        for (const auto* path : {visual.first, visual.second}) {
+            if (!path) continue;
+            auto resource = std::dynamic_pointer_cast<Fast::DisplayList>(
+                Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(path));
+            if (!resource) { passed = false; continue; }
+            const auto original = resource->Instructions;
+            const auto* filtered = MaskList(path, visual.twoSided);
+            passed &= filtered && filtered == MaskList(path, visual.twoSided);
+            if (!filtered) continue;
+            ++lists;
+            for (size_t index = 0; index < original.size(); ++index) {
+                Gfx expected = original[index];
+                for (const auto& trim : trims)
+                    if (!std::strcmp(path, trim.path) && index == trim.index) {
+                        passed &= expected.words.w0 == trim.w0 && expected.words.w1 == trim.w1;
+                        gSPNoOp(&expected);
+                        ++removed;
+                    }
+                if (visual.twoSided && (expected.words.w0 >> 24) == G_GEOMETRYMODE) {
+                    expected.words.w0 &= ~(G_CULL_FRONT | G_CULL_BACK);
+                    expected.words.w1 &= ~(G_CULL_FRONT | G_CULL_BACK);
+                    ++captainModes;
+                    passed &= visual.item == ITEM_MASK_CAPTAIN;
+                }
+                passed &= expected.words.w0 == filtered[index].words.w0 &&
+                          expected.words.w1 == filtered[index].words.w1;
+                passed &= original[index].words.w0 == resource->Instructions[index].words.w0 &&
+                          original[index].words.w1 == resource->Instructions[index].words.w1;
+            }
+        }
+    passed &= removed == ARRAY_COUNT(trims) && captainModes > 0;
+    std::ofstream("native-held-mask-geometry.json") << "{\"passed\":" << (passed ? "true" : "false")
+        << ",\"lists\":" << lists << ",\"removedPresentationCommands\":" << removed
+        << ",\"captainTwoSidedModes\":" << captainModes << "}";
+    return passed;
+}
+#endif
 } // namespace mmvrgame
 #endif

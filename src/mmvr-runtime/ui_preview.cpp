@@ -15,6 +15,7 @@
 #include <stdexcept>
 using Microsoft::WRL::ComPtr;
 void hr(HRESULT value){if(FAILED(value))throw std::runtime_error("UI offscreen rendering failed");}
+#include "wearable_mask_preview_test.h"
 int main(int argc,char** argv){
  if(argc!=2 && argc!=3)return 2;
  ComPtr<ID3D11Device> device;ComPtr<ID3D11DeviceContext> context;D3D_FEATURE_LEVEL level;
@@ -24,6 +25,10 @@ int main(int argc,char** argv){
  D3D11_TEXTURE2D_DESC desc{};desc.Width=1024;desc.Height=768;desc.MipLevels=desc.ArraySize=desc.SampleDesc.Count=1;desc.Format=DXGI_FORMAT_R8G8B8A8_UNORM;desc.BindFlags=D3D11_BIND_RENDER_TARGET;
  ComPtr<ID3D11Texture2D> target,readback;hr(device->CreateTexture2D(&desc,nullptr,&target));ComPtr<ID3D11RenderTargetView> view;hr(device->CreateRenderTargetView(target.Get(),nullptr,&view));
  desc.BindFlags=0;desc.Usage=D3D11_USAGE_STAGING;desc.CPUAccessFlags=D3D11_CPU_ACCESS_READ;hr(device->CreateTexture2D(&desc,nullptr,&readback));
+ if(argc==3 && std::string(argv[2])=="--wearable-only") {
+  CheckWearableMaskPixels(argv[1],device.Get(),context.Get(),view.Get(),target.Get(),readback.Get());
+  ImGui::EndFrame();ImGui_ImplDX11_Shutdown();ImGui::DestroyContext();return 0;
+ }
  if(argc==3 && (std::string(argv[2])=="--setup-only" || std::string(argv[2])=="--notes-first" || std::string(argv[2])=="--notes-last")) {
   mmvr::setupGuideVisible=std::string(argv[2])=="--setup-only";
   auto& menu=mmvr::GetMenu();menu.tab=mmvr::SystemTab;

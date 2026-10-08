@@ -18,6 +18,25 @@ inline void Text(ImDrawList& list, float x, float y, const char* text, float siz
                  ImU32 color = IM_COL32(230, 231, 215, 255)) {
     list.AddText(ImGui::GetFont(), size, { x, y }, color, text);
 }
+inline void DrawWearableMask(ImDrawList& list, const UiDrawFrame& frame) {
+    const auto& uv=frame.wearableMaskUv;
+    std::array<float,4> xs{0,1,1,1}, ys{0,1,1,1};
+    int nx=2, ny=2;
+    auto splits=[](float a,float b,std::array<float,4>& points,int& count) {
+        for (float edge : {0.f,1.f}) {
+            const float at=(edge-a)/(b-a);
+            if (at>0 && at<1) points[count++]=at;
+        }
+        std::sort(points.begin(),points.begin()+count);
+    };
+    splits(uv[0],uv[2],xs,nx); splits(uv[1],uv[3],ys,ny);
+    auto sample=[](float a,float b,float t,float halfTexel){return std::clamp(a+(b-a)*t,halfTexel,1.f-halfTexel);};
+    for(int y=0;y<ny-1;++y) for(int x=0;x<nx-1;++x)
+        list.AddImage((ImTextureID)frame.wearableMaskTexture,
+            {xs[x]*frame.width,ys[y]*frame.height},{xs[x+1]*frame.width,ys[y+1]*frame.height},
+            {sample(uv[0],uv[2],xs[x],.5f/1672),sample(uv[1],uv[3],ys[y],.5f/941)},
+            {sample(uv[0],uv[2],xs[x+1],.5f/1672),sample(uv[1],uv[3],ys[y+1],.5f/941)});
+}
 inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTexture,
                  const std::array<ImTextureID, MaxItemSlots>& icons,
                  const std::array<ImTextureID, MaxItemSlots>& bombIcons = {},
@@ -28,7 +47,8 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
         list.AddRectFilled({ 0, 0 }, { float(frame.width), float(frame.height) },
                            IM_COL32(int(c[0] * 255), int(c[1] * 255), int(c[2] * 255), int(c[3] * 255)));
     } else if (frame.kind == mmvr::UiKind::Hud || frame.kind == mmvr::UiKind::Theater ||
-               frame.kind == mmvr::UiKind::Vision || frame.kind == UiKind::MotionBlur || frame.kind == UiKind::Reveal) {
+               frame.kind == mmvr::UiKind::Vision || frame.kind == UiKind::MotionBlur || frame.kind == UiKind::Reveal ||
+               frame.kind == UiKind::WearableMask) {
         if (frame.sourceBlend)
             list.AddCallback(
                 [](const ImDrawList*, const ImDrawCmd* command) {
@@ -90,6 +110,10 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
             if (c[3] > 0)
                 list.AddRectFilled({ 0, 0 }, { float(frame.width), float(frame.height) },
                                    IM_COL32(int(c[0] * 255), int(c[1] * 255), int(c[2] * 255), int(c[3] * 255)));
+        }
+        if (frame.wearableMaskTexture) {
+            // Preserve PNG alpha and extend outer rims without wrapped copies.
+            DrawWearableMask(list, frame);
         }
         if (frame.kind == UiKind::Hud && settings.Get(Setting::HudFps) > .5f) {
             auto pos = HudPosition(HudGroup::TopLeft, 18, 61, settings.Get(Setting::HudWidth),
@@ -238,7 +262,12 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
                     { "Save-state restoration", "New compatible states restore settings and recorded pack selection.", "Keep required packs installed; incompatible old states need their old build." },
                     { "Menu and shield options", "VR settings search; 2Ship results come first in 2Ship search.", "Editable cutscene options and optional sword-drawn shield for human Link." },
                     { "v0.33 - Save states disabled", "Save states are temporarily disabled.", "Use menu and owl saving to keep your progress." },
-                    { "v0.34 - Bodies, controls and item wheel", "Tracked Kafei body, fairy-mask cues and Zora swim visuals.", "Goron roll binding, instant items and rolling speed-line toggle." }
+                    { "v0.34 - Bodies, controls and item wheel", "Tracked Kafei body, fairy-mask cues and Zora swim visuals.", "Goron roll binding, instant items and rolling speed-line toggle." },
+                    { "v0.35 - Body, mask and song hotfixes", "Fixed reversed shoulders and arms across forms and animations.", "One Hide legs option; Kafei follows the Human tracked body." },
+                    { "Wearable masks", "Optional mask overlays under HUD visibility and layout.", "Improved Captain's Hat fit; cosmetic Bremen march ocarina." },
+                    { "Instruments and Soaring", "Fixed first-person instrument input and owl selection.", "Either stick: Left/Up previous; Right/Down next." },
+                    { "Lens of Truth", "The Lens stays active when switching to the bow or ordinary items.", "Native magic costs and item restrictions still apply." },
+                    { "ReDead and Gibdo", "Scream freezes arms/body and blocks physical attacks.", "Head tracking continues; shaking controllers still escapes grabs." }
                 };
                 static_assert(std::size(notes) == ReleaseNotesCount);
                 const auto& note = notes[i - ReleaseNotesFirstRow];

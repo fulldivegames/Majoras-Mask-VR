@@ -3,6 +3,45 @@
 #include "z64eff_blure.h"
 #include <memory>
 namespace mmvrgame {
+bool TestBodyAnimationFrame(const char* animation,unsigned phase) {
+    auto* player=gPlayState?GET_PLAYER(gPlayState):nullptr;
+    if(!player || !haveDraw || !FullBodyForPlayer(player)) return false;
+    mmvr::TrackingFrame frame{};
+    frame.head={{0,0,0,1},{0,1.6f,0}};frame.origin=frame.head;
+    frame.handTracked[0]=frame.handTracked[1]=frame.handValid[0]=frame.handValid[1]=true;
+    frame.hands[0]={{0,0,0,1},{-.25f,1.4f,-.25f}};
+    frame.hands[1]={{0,0,0,1},{ .25f,1.4f,-.25f}};
+    frame.epoch=920;frame.originEpoch=920;frame.timeSeconds=300+gPlayState->gameplayFrames/90.;
+    for(int bone=0;bone<mmvr::BodyBoneCount;++bone) {
+        auto* address=mmvr::BodyBoneAddress(bone);
+        if(!address) return false;
+        MtxF native;Matrix_MtxToMtxF((Mtx*)address,&native);
+        std::memcpy(&frame.bodyBones[bone],&native,sizeof(native));
+        if(bone<6) frame.bodyGeometry[bone]=frame.bodyBones[bone];
+    }
+    bool ok=true;
+    float leftX=0,rightX=0;
+    for(int handedness=0;handedness<2;++handedness) {
+        mmvr::GetSettings().Set(mmvr::Setting::SwordLeftHanded,handedness);
+        const auto current=Update(frame);
+        const auto left=mmvr::Multiply(current.bodyArms[0],current.view);
+        const auto right=mmvr::Multiply(current.bodyArms[3],current.view);
+        leftX=left.m[3][0];rightX=right.m[3][0];
+        ok&=current.active && current.fullBodyArms && leftX<-.01f && rightX>.01f;
+        for(int side=0;side<2;++side) {
+            const int hand=ControllerFor(player,0)==side?0:1;
+            ok&=mmvr::body::Finite(current.bodyArms[side*3]) &&
+                mmvr::body::Finite(current.bodyArms[side*3+1]) &&
+                mmvr::body::Length(mmvr::body::Position(current.bodyArms[side*3+2])-
+                                  mmvr::body::Position(current.hands[hand]))<.001f;
+        }
+    }
+    mmvr::GetSettings().Set(mmvr::Setting::SwordLeftHanded,0);
+    std::ofstream("native-full-body.log",std::ios::app)
+        <<(ok?"PASS":"FAIL")<<" archived-animation form="<<int(player->transformation)
+        <<" name="<<animation<<" frame="<<phase<<" leftX="<<leftX<<" rightX="<<rightX<<"\n";
+    return ok;
+}
 extern "C" Gfx* ResourceMgr_LoadGfxByName(const char*);
 extern "C" void func_80126BD0(PlayState*,Player*,s32);
 bool TestNativeZoraSwimPose(Player*,unsigned);
@@ -243,7 +282,7 @@ bool TestFullBodyRig() {
     }
     constexpr mmvr::Setting formOptions[]{mmvr::Setting::FierceDeityBody,mmvr::Setting::GoronBody,
         mmvr::Setting::ZoraBody,mmvr::Setting::DekuBody,mmvr::Setting::FullBody};
-    const auto bodyOption=kafeiModel?mmvr::Setting::KafeiBody:formOptions[player->transformation];
+    const auto bodyOption=kafeiModel?mmvr::Setting::FullBody:formOptions[player->transformation];
     mmvr::GetSettings().Set(bodyOption,1);
     check(MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_HEAD),"head-hidden");
     check(!MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_TORSO),"torso-visible");
@@ -255,8 +294,20 @@ bool TestFullBodyRig() {
     mmvr::GetSettings().Set(bodyOption,0);
     check(!MMVR_PlayerNeckCap(&player->actor,PLAYER_LIMB_TORSO),"neck-cap-off-with-body");
     check(MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_TORSO),"off-hides-native-torso");
+    mmvr::GetSettings().Set(mmvr::Setting::HideLegs,0);
+    check(MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_WAIST) &&
+          MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_LEFT_THIGH),"body-off-always-hides-native-waist-legs");
     mmvr::GetSettings().Set(bodyOption,1);
     check(!MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_LEFT_THIGH),"legs-visible");
+    const auto legOption=mmvr::Setting::HideBodyLegs;
+    check(mmvr::Settings{}.Get(legOption)==0,"legs-default-visible");
+    mmvr::GetSettings().Set(legOption,1);
+    for(int limb=PLAYER_LIMB_RIGHT_THIGH;limb<=PLAYER_LIMB_LEFT_FOOT;++limb)
+        check(MMVR_HidePlayerLimb(&player->actor,limb),"selected-character-leg-hidden");
+    check(!MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_WAIST) &&
+          !MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_TORSO),"leg-toggle-preserves-waist-torso");
+    mmvr::GetSettings().Set(legOption,0);
+    check(!MMVR_HidePlayerLimb(&player->actor,PLAYER_LIMB_LEFT_THIGH),"leg-toggle-restores");
     for(int left=0;left<2;++left) {
         mmvr::GetSettings().Set(mmvr::Setting::SwordLeftHanded,float(left));
         mmvr::Matrix previousTorso{};
@@ -303,6 +354,40 @@ bool TestFullBodyRig() {
             }
         }
     }
+    // Scream freeze holds WORLD attachments; head rotation remains raw. Check
+    // every gameplay form/model through the production camera. Native scripts
+    // also use freezeTimer for waits; those must retain cinematic tracking.
+    const bool scriptedFreeze=mmvrgame::InWorldCinematic(gPlayState);
+    const auto beforeFreeze=frame;
+    const auto oldFreeze=player->actor.freezeTimer;
+    player->actor.freezeTimer=40;
+    frame.timeSeconds+=1./90.;
+    auto frozen=Update(frame);
+    check(!mmvrgame::InteractionsEligible(gPlayState,player),"frozen-physical-attacks-ineligible");
+    check(!mmvrgame::FormTrackingReady(player),"frozen-form-attacks-ineligible");
+    for(int sample=0;sample<12;++sample) {
+        frame.timeSeconds+=1./90.;
+        frame.hands[0].position.x-=.02f;frame.hands[1].position.y+=.02f;
+        const float turn=.05f*(sample+1);
+        frame.head.orientation={0,std::sin(turn/2),0,std::cos(turn/2)};
+        auto still=Update(frame);
+        check(std::abs(mmvr::PoseYaw(lastHead)-turn)<.001f,"freeze-keeps-head-tracking-free");
+        if(scriptedFreeze) {
+            check(std::memcmp(&still.hands[0],&frozen.hands[0],sizeof(mmvr::Matrix))!=0,
+                  "scripted-wait-preserves-tracked-hands");
+        } else {
+            for(int hand=0;hand<2;++hand)
+                check(std::memcmp(&still.hands[hand],&frozen.hands[hand],sizeof(mmvr::Matrix))==0,"freeze-hands-stay-world-fixed");
+            for(int bone=0;bone<6;++bone)
+                check(std::memcmp(&still.bodyArms[bone],&frozen.bodyArms[bone],sizeof(mmvr::Matrix))==0,"freeze-arms-stay-world-fixed");
+            check(std::memcmp(&still.bodyCorrection,&frozen.bodyCorrection,sizeof(mmvr::Matrix))==0,"freeze-torso-stays-world-fixed");
+        }
+    }
+    player->actor.freezeTimer=0;frame.timeSeconds+=1./90.;
+    auto released=Update(frame);
+    check(std::memcmp(&released.hands[0],&frozen.hands[0],sizeof(mmvr::Matrix))!=0,"freeze-release-restores-tracked-hand");
+    player->actor.freezeTimer=oldFreeze;frame=beforeFreeze;
+    std::ofstream("native-full-body.log",std::ios::app)<<"freeze-scope="<<(scriptedFreeze?"scripted-wait":"gameplay")<<"\n";
     // Quest-controlled Kafei does not receive or use Link's items. Model-swap
     // Kafei retains Link's normal inventory and must keep its reward path.
     if(!questKafei) {

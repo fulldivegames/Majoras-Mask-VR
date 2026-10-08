@@ -28,6 +28,17 @@ inline int8_t Axis(float value, float other) {
 inline uint16_t CButtons(float x, float y) {
     return (x < -.55f ? 2 : 0) | (x > .55f ? 1 : 0) | (y > .55f ? 8 : 0) | (y < -.55f ? 4 : 0);
 }
+inline Pad NativeChoiceInput(Pad pad, float lx, float ly, float rx, float ry, bool confirm, bool cancel, bool owlMap = false) {
+    const bool left = std::hypot(lx, ly) >= std::hypot(rx, ry);
+    const float x = left ? lx : rx, y = left ? ly : ry;
+    // The native owl map is a horizontal ring. Up means previous (left),
+    // down means next (right); other native choice screens retain both axes.
+    pad.x = owlMap && std::abs(y) > std::abs(x) ? Axis(-y, x) : Axis(x, y);
+    pad.y = owlMap ? 0 : Axis(y, x);
+    pad.rightX = pad.rightY = 0;
+    pad.buttons = (confirm ? 0x8000 : 0) | (cancel ? 0x4000 : 0);
+    return pad;
+}
 // Five native notes; B and Y both remain cancel rather than changing pitch.
 inline uint16_t InstrumentButtons(float lx, float ly, float rx, float ry, bool a, bool x, bool b, bool y) {
     return CButtons(lx, ly) | CButtons(rx, ry) | ((a || x) ? 0x8000 : 0) | ((b || y) ? 0x4000 : 0);

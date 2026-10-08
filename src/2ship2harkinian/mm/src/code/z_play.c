@@ -1736,6 +1736,7 @@ void Play_Draw(PlayState* this) {
     MMVR_SetMonochromeCommands(NULL, NULL);
     MMVR_SetScreenScaleCommands(NULL, NULL);
     MMVR_ResetReticles();
+    MMVR_ResetPlayerDrawBindings();
 #endif
     GraphicsContext* gfxCtx = this->state.gfxCtx;
 

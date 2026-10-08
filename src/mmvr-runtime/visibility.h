@@ -12,6 +12,7 @@ int MMVR_RecordWorldScreenFade(unsigned char r, unsigned char g, unsigned char b
 int MMVR_HudLayout(void);
 void MMVR_SetSkyboxMatrix(const void* matrix);
 void MMVR_ResetReticles(void);
+void MMVR_ResetPlayerDrawBindings(void);
 void MMVR_BeginBillboardGroup(const void* rootMatrix, const float* nativeRoot);
 void MMVR_EndBillboardGroup(void);
 void MMVR_SetBillboardMatrix(const void* matrix, const float* rotation, float x, float y, float z);

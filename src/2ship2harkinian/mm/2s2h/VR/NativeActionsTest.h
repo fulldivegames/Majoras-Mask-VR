@@ -4,6 +4,8 @@
 extern "C" {
 void Player_Action_11(Player*,PlayState*);void Player_Action_12(Player*,PlayState*);
 void Interface_UpdateButtonsPart1(PlayState*);
+int MMVR_VerifyBremenHandMapping(Player*);
+#include "objects/object_link_child/object_link_child.h"
 extern Input* sPlayerControlInput;
 }
 static void NativeActionTest(PlayState* play,const Player& baseline,std::ostream& log){
@@ -34,13 +36,28 @@ static void NativeActionTest(PlayState* play,const Player& baseline,std::ostream
   std::vector<Actor*> old;for(auto* a=play->actorCtx.actorLists[ACTORCAT_EXPLOSIVES].first;a;a=a->next)old.push_back(a);
   controls.cur.button=controls.press.button=BTN_B;mmvrgame::ProcessSwordEquip(play,true);bool inputPassed=(controls.cur.button&BTN_B)&&(controls.press.button&BTN_B);
   Player_ProcessItemButtons(p,play);bool started=i==0?p->blastMaskTimer==310:i==1?p->actionFunc==Player_Action_11:p->actionFunc==Player_Action_12;
-  bool held=true,released=true,guard=true;
+  bool held=true,released=true,guard=true,cosmeticHeld=true,cosmeticReleased=true;
+  auto ocarinaMesh=[&](){return std::strcmp(static_cast<const char*>(mmvrgame::FormHandMesh(p,1)),gLinkHumanRightHandHoldingOcarinaDL)==0;};
+  if(i==1) {
+   for(int left=0;left<2;++left) {
+    mmvr::GetSettings().Set(mmvr::Setting::SwordLeftHanded,left);
+    cosmeticHeld&=ocarinaMesh()&&MMVR_VerifyBremenHandMapping(p);
+   }
+   mmvr::GetSettings().Set(mmvr::Setting::SwordLeftHanded,0);
+  } else cosmeticHeld=!ocarinaMesh();
   if(i){controls.press.button=0;mmvrgame::ProcessSwordEquip(play,true);auto action=p->actionFunc;action(p,play);held=p->actionFunc==action;
    mmvrgame::StowItem(play);mmvrgame::SelectItem(play,SLOT_BOMB,ITEM_BOMB);guard=p->actionFunc==action&&mmvrgame::SelectedItem(play)==ITEM_NONE;
    controls.cur.button=0;action(p,play);released=p->actionFunc!=action;}
   else {p->blastMaskTimer=100;Player_ProcessItemButtons(p,play);guard=p->blastMaskTimer==100;}
+  cosmeticReleased=!ocarinaMesh();
+  if(i==1) {
+   // Interruptions may leave a flag/itemAction until native cleanup completes.
+   // An idle action must never leave the march's cosmetic instrument attached.
+   p->actionFunc=Player_Action_Idle;p->stateFlags3|=PLAYER_STATE3_20000000;p->itemAction=PLAYER_IA_OCARINA;
+   cosmeticReleased&=!ocarinaMesh();
+  }
   for(auto* a=play->actorCtx.actorLists[ACTORCAT_EXPLOSIVES].first;a;){auto* next=a->next;if(std::find(old.begin(),old.end(),a)==old.end())Actor_Delete(&play->actorCtx,a,play);a=next;}
-  if(i)log<<",";log<<"{\"mask\":"<<masks[i]<<",\"inputPassed\":"<<inputPassed<<",\"started\":"<<started<<",\"held\":"<<held<<",\"released\":"<<released<<",\"guard\":"<<guard<<"}";
+  if(i)log<<",";log<<"{\"mask\":"<<masks[i]<<",\"inputPassed\":"<<inputPassed<<",\"started\":"<<started<<",\"held\":"<<held<<",\"released\":"<<released<<",\"guard\":"<<guard<<",\"cosmeticHeld\":"<<cosmeticHeld<<",\"cosmeticReleased\":"<<cosmeticReleased<<"}";
  }
  log<<"],\"maskSwordSlots\":[";
  for(int mask=0;mask<3;++mask)for(int sword=ITEM_SWORD_KOKIRI;sword<=ITEM_SWORD_GILDED;++sword)for(int left=0;left<2;++left){

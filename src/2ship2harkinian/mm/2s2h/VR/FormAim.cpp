@@ -45,7 +45,7 @@ void ClearFormTracking() {
 bool FormTrackingReady(Player* p) {
     auto* play = gPlayState;
     return play && p && p == owner && p == GET_PLAYER(play) && scene == play->sceneId && form == p->transformation &&
-           valid[2] && mmvr::FirstPersonRequested() && FirstPersonFormAllowed(p) && mmvr::PhysicalActionsAllowed() &&
+           valid[2] && !p->actor.freezeTimer && !(p->stateFlags2 & PLAYER_STATE2_80) && mmvr::FirstPersonRequested() && FirstPersonFormAllowed(p) && mmvr::PhysicalActionsAllowed() &&
            p->csAction == PLAYER_CSACTION_NONE && play->csCtx.state == CS_STATE_IDLE &&
            play->transitionTrigger == TRANS_TRIGGER_OFF && play->pauseCtx.state == PAUSE_STATE_OFF &&
            play->msgCtx.msgMode == MSGMODE_NONE && gSaveContext.save.saveInfo.playerData.health > 0 &&

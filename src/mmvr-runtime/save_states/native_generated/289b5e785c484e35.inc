@@ -501,217 +501,217 @@ void MMVR_StateVisit_289b5e785c484e35(MMVR_StateSink* sink) {
     sink->pointer(sink->context, (const void*)&(mmvr_local_352a1e056bc7ec1a[mmvr_i0]), 0, "code/z_parameter.c::Interface_LoadAButtonDoActionLabel::sDoActionTextures::local0[]");
     }
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sCUpLabelTextures::local0", "array:5:pointer:scalar:void", 0, sizeof(mmvr_local_5d91fae0782f77f1), MMVR_STATE_ALIGN_TYPE(void*), 5);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sCUpLabelTextures::local0[]", "pointer:scalar:void", (size_t)((const unsigned char*)&(mmvr_local_5d91fae0782f77f1[0])-(const unsigned char*)&(mmvr_local_5d91fae0782f77f1)), sizeof(mmvr_local_5d91fae0782f77f1[0]), MMVR_STATE_ALIGN_TYPE(void*), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sCUpLabelTextures::local0", "array:5:pointer:scalar:void", 0, sizeof(mmvr_local_f42236a788148356), MMVR_STATE_ALIGN_TYPE(void*), 5);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sCUpLabelTextures::local0[]", "pointer:scalar:void", (size_t)((const unsigned char*)&(mmvr_local_f42236a788148356[0])-(const unsigned char*)&(mmvr_local_f42236a788148356)), sizeof(mmvr_local_f42236a788148356[0]), MMVR_STATE_ALIGN_TYPE(void*), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sCUpLabelTextures::local0", &mmvr_local_5d91fae0782f77f1, sizeof(mmvr_local_5d91fae0782f77f1));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sCUpLabelTextures::local0", &mmvr_local_f42236a788148356, sizeof(mmvr_local_f42236a788148356));
     for (size_t mmvr_i0=0; mmvr_i0<5; ++mmvr_i0) {
-    sink->pointer(sink->context, (const void*)&(mmvr_local_5d91fae0782f77f1[mmvr_i0]), 0, "code/z_parameter.c::Interface_DrawItemButtons::sCUpLabelTextures::local0[]");
+    sink->pointer(sink->context, (const void*)&(mmvr_local_f42236a788148356[mmvr_i0]), 0, "code/z_parameter.c::Interface_DrawItemButtons::sCUpLabelTextures::local0[]");
     }
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sStartButtonLeftPos::local0", "array:5:scalar:short", 0, sizeof(mmvr_local_f734b7830e1caa2a), MMVR_STATE_SCALAR_ALIGN(mmvr_local_f734b7830e1caa2a[0]), 5);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sStartButtonLeftPos::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_f734b7830e1caa2a[0])-(const unsigned char*)&(mmvr_local_f734b7830e1caa2a)), sizeof(mmvr_local_f734b7830e1caa2a[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_f734b7830e1caa2a[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sStartButtonLeftPos::local0", "array:5:scalar:short", 0, sizeof(mmvr_local_02ee103d2cceee35), MMVR_STATE_SCALAR_ALIGN(mmvr_local_02ee103d2cceee35[0]), 5);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sStartButtonLeftPos::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_02ee103d2cceee35[0])-(const unsigned char*)&(mmvr_local_02ee103d2cceee35)), sizeof(mmvr_local_02ee103d2cceee35[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_02ee103d2cceee35[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sStartButtonLeftPos::local0", &mmvr_local_f734b7830e1caa2a, sizeof(mmvr_local_f734b7830e1caa2a));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sStartButtonLeftPos::local0", &mmvr_local_02ee103d2cceee35, sizeof(mmvr_local_02ee103d2cceee35));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sBCButtonSizes::local0", "array:4:scalar:short", 0, sizeof(mmvr_local_9ff7f287466b5b78), MMVR_STATE_SCALAR_ALIGN(mmvr_local_9ff7f287466b5b78[0]), 4);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sBCButtonSizes::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_9ff7f287466b5b78[0])-(const unsigned char*)&(mmvr_local_9ff7f287466b5b78)), sizeof(mmvr_local_9ff7f287466b5b78[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_9ff7f287466b5b78[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sBCButtonSizes::local0", "array:4:scalar:short", 0, sizeof(mmvr_local_ea03cc895564ce1a), MMVR_STATE_SCALAR_ALIGN(mmvr_local_ea03cc895564ce1a[0]), 4);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sBCButtonSizes::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_ea03cc895564ce1a[0])-(const unsigned char*)&(mmvr_local_ea03cc895564ce1a)), sizeof(mmvr_local_ea03cc895564ce1a[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_ea03cc895564ce1a[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sBCButtonSizes::local0", &mmvr_local_9ff7f287466b5b78, sizeof(mmvr_local_9ff7f287466b5b78));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawItemButtons::sBCButtonSizes::local0", &mmvr_local_ea03cc895564ce1a, sizeof(mmvr_local_ea03cc895564ce1a));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_Dpad_DrawItemIconTexture::sDpadItemIconWidth::local0", "array:4:scalar:short", 0, sizeof(mmvr_local_6f10bd92808462d0), MMVR_STATE_SCALAR_ALIGN(mmvr_local_6f10bd92808462d0[0]), 4);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_Dpad_DrawItemIconTexture::sDpadItemIconWidth::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_6f10bd92808462d0[0])-(const unsigned char*)&(mmvr_local_6f10bd92808462d0)), sizeof(mmvr_local_6f10bd92808462d0[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_6f10bd92808462d0[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_Dpad_DrawItemIconTexture::sDpadItemIconWidth::local0", "array:4:scalar:short", 0, sizeof(mmvr_local_05c48629b59b8895), MMVR_STATE_SCALAR_ALIGN(mmvr_local_05c48629b59b8895[0]), 4);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_Dpad_DrawItemIconTexture::sDpadItemIconWidth::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_05c48629b59b8895[0])-(const unsigned char*)&(mmvr_local_05c48629b59b8895)), sizeof(mmvr_local_05c48629b59b8895[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_05c48629b59b8895[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_Dpad_DrawItemIconTexture::sDpadItemIconWidth::local0", &mmvr_local_6f10bd92808462d0, sizeof(mmvr_local_6f10bd92808462d0));
+    sink->block(sink->context, "code/z_parameter.c::Interface_Dpad_DrawItemIconTexture::sDpadItemIconWidth::local0", &mmvr_local_05c48629b59b8895, sizeof(mmvr_local_05c48629b59b8895));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemIconTexture::sItemIconTextureDimensions::local0", "array:4:scalar:short", 0, sizeof(mmvr_local_83612b64a8dbcf16), MMVR_STATE_SCALAR_ALIGN(mmvr_local_83612b64a8dbcf16[0]), 4);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemIconTexture::sItemIconTextureDimensions::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_83612b64a8dbcf16[0])-(const unsigned char*)&(mmvr_local_83612b64a8dbcf16)), sizeof(mmvr_local_83612b64a8dbcf16[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_83612b64a8dbcf16[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemIconTexture::sItemIconTextureDimensions::local0", "array:4:scalar:short", 0, sizeof(mmvr_local_e274cab3e6471835), MMVR_STATE_SCALAR_ALIGN(mmvr_local_e274cab3e6471835[0]), 4);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawItemIconTexture::sItemIconTextureDimensions::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_e274cab3e6471835[0])-(const unsigned char*)&(mmvr_local_e274cab3e6471835)), sizeof(mmvr_local_e274cab3e6471835[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_e274cab3e6471835[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawItemIconTexture::sItemIconTextureDimensions::local0", &mmvr_local_83612b64a8dbcf16, sizeof(mmvr_local_83612b64a8dbcf16));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawItemIconTexture::sItemIconTextureDimensions::local0", &mmvr_local_e274cab3e6471835, sizeof(mmvr_local_e274cab3e6471835));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsXPositions::local0", "array:4:scalar:short", 0, sizeof(mmvr_local_d8c60d5a0ee7052f), MMVR_STATE_SCALAR_ALIGN(mmvr_local_d8c60d5a0ee7052f[0]), 4);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsXPositions::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_d8c60d5a0ee7052f[0])-(const unsigned char*)&(mmvr_local_d8c60d5a0ee7052f)), sizeof(mmvr_local_d8c60d5a0ee7052f[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_d8c60d5a0ee7052f[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsXPositions::local0", "array:4:scalar:short", 0, sizeof(mmvr_local_8d01dcf83e92e89d), MMVR_STATE_SCALAR_ALIGN(mmvr_local_8d01dcf83e92e89d[0]), 4);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsXPositions::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_8d01dcf83e92e89d[0])-(const unsigned char*)&(mmvr_local_8d01dcf83e92e89d)), sizeof(mmvr_local_8d01dcf83e92e89d[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_8d01dcf83e92e89d[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsXPositions::local0", &mmvr_local_d8c60d5a0ee7052f, sizeof(mmvr_local_d8c60d5a0ee7052f));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsXPositions::local0", &mmvr_local_8d01dcf83e92e89d, sizeof(mmvr_local_8d01dcf83e92e89d));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsYPositions::local0", "array:4:scalar:short", 0, sizeof(mmvr_local_9602f984f64ac5de), MMVR_STATE_SCALAR_ALIGN(mmvr_local_9602f984f64ac5de[0]), 4);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsYPositions::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_9602f984f64ac5de[0])-(const unsigned char*)&(mmvr_local_9602f984f64ac5de)), sizeof(mmvr_local_9602f984f64ac5de[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_9602f984f64ac5de[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsYPositions::local0", "array:4:scalar:short", 0, sizeof(mmvr_local_43ce236c1f198e18), MMVR_STATE_SCALAR_ALIGN(mmvr_local_43ce236c1f198e18[0]), 4);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsYPositions::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_43ce236c1f198e18[0])-(const unsigned char*)&(mmvr_local_43ce236c1f198e18)), sizeof(mmvr_local_43ce236c1f198e18[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_43ce236c1f198e18[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsYPositions::local0", &mmvr_local_9602f984f64ac5de, sizeof(mmvr_local_9602f984f64ac5de));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawAmmoCount::sAmmoDigitsYPositions::local0", &mmvr_local_43ce236c1f198e18, sizeof(mmvr_local_43ce236c1f198e18));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsR::local0", "array:3:scalar:short", 0, sizeof(mmvr_local_5371b43daee91971), MMVR_STATE_SCALAR_ALIGN(mmvr_local_5371b43daee91971[0]), 3);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsR::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_5371b43daee91971[0])-(const unsigned char*)&(mmvr_local_5371b43daee91971)), sizeof(mmvr_local_5371b43daee91971[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_5371b43daee91971[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsR::local0", "array:3:scalar:short", 0, sizeof(mmvr_local_be6daa49bfce7937), MMVR_STATE_SCALAR_ALIGN(mmvr_local_be6daa49bfce7937[0]), 3);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsR::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_be6daa49bfce7937[0])-(const unsigned char*)&(mmvr_local_be6daa49bfce7937)), sizeof(mmvr_local_be6daa49bfce7937[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_be6daa49bfce7937[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsR::local0", &mmvr_local_5371b43daee91971, sizeof(mmvr_local_5371b43daee91971));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsR::local0", &mmvr_local_be6daa49bfce7937, sizeof(mmvr_local_be6daa49bfce7937));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsG::local0", "array:3:scalar:short", 0, sizeof(mmvr_local_555461025d4b62c3), MMVR_STATE_SCALAR_ALIGN(mmvr_local_555461025d4b62c3[0]), 3);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsG::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_555461025d4b62c3[0])-(const unsigned char*)&(mmvr_local_555461025d4b62c3)), sizeof(mmvr_local_555461025d4b62c3[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_555461025d4b62c3[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsG::local0", "array:3:scalar:short", 0, sizeof(mmvr_local_300ec7ab1de8c8dc), MMVR_STATE_SCALAR_ALIGN(mmvr_local_300ec7ab1de8c8dc[0]), 3);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsG::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_300ec7ab1de8c8dc[0])-(const unsigned char*)&(mmvr_local_300ec7ab1de8c8dc)), sizeof(mmvr_local_300ec7ab1de8c8dc[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_300ec7ab1de8c8dc[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsG::local0", &mmvr_local_555461025d4b62c3, sizeof(mmvr_local_555461025d4b62c3));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsG::local0", &mmvr_local_300ec7ab1de8c8dc, sizeof(mmvr_local_300ec7ab1de8c8dc));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsB::local0", "array:3:scalar:short", 0, sizeof(mmvr_local_5580e660bbd3ee14), MMVR_STATE_SCALAR_ALIGN(mmvr_local_5580e660bbd3ee14[0]), 3);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsB::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_5580e660bbd3ee14[0])-(const unsigned char*)&(mmvr_local_5580e660bbd3ee14)), sizeof(mmvr_local_5580e660bbd3ee14[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_5580e660bbd3ee14[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsB::local0", "array:3:scalar:short", 0, sizeof(mmvr_local_88ee512b055255d6), MMVR_STATE_SCALAR_ALIGN(mmvr_local_88ee512b055255d6[0]), 3);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsB::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_88ee512b055255d6[0])-(const unsigned char*)&(mmvr_local_88ee512b055255d6)), sizeof(mmvr_local_88ee512b055255d6[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_88ee512b055255d6[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsB::local0", &mmvr_local_5580e660bbd3ee14, sizeof(mmvr_local_5580e660bbd3ee14));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawPauseMenuEquippingIcons::sMagicArrowEffectsB::local0", &mmvr_local_88ee512b055255d6, sizeof(mmvr_local_88ee512b055255d6));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockAlpha::local0", "scalar:short", 0, sizeof(mmvr_local_c5c562cc6d11f914), MMVR_STATE_SCALAR_ALIGN(mmvr_local_c5c562cc6d11f914), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockAlpha::local0", "scalar:short", 0, sizeof(mmvr_local_e5550e62cd4e2536), MMVR_STATE_SCALAR_ALIGN(mmvr_local_e5550e62cd4e2536), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockAlpha::local0", &mmvr_local_c5c562cc6d11f914, sizeof(mmvr_local_c5c562cc6d11f914));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockAlpha::local0", &mmvr_local_e5550e62cd4e2536, sizeof(mmvr_local_e5550e62cd4e2536));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockAlphaTimer1::local0", "scalar:short", 0, sizeof(mmvr_local_d354b1966d7eea44), MMVR_STATE_SCALAR_ALIGN(mmvr_local_d354b1966d7eea44), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockAlphaTimer1::local0", "scalar:short", 0, sizeof(mmvr_local_b65d73c969c0cbcd), MMVR_STATE_SCALAR_ALIGN(mmvr_local_b65d73c969c0cbcd), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockAlphaTimer1::local0", &mmvr_local_d354b1966d7eea44, sizeof(mmvr_local_d354b1966d7eea44));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockAlphaTimer1::local0", &mmvr_local_b65d73c969c0cbcd, sizeof(mmvr_local_b65d73c969c0cbcd));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockAlphaTimer2::local0", "scalar:short", 0, sizeof(mmvr_local_903fc04222c788fb), MMVR_STATE_SCALAR_ALIGN(mmvr_local_903fc04222c788fb), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockAlphaTimer2::local0", "scalar:short", 0, sizeof(mmvr_local_792b24c4779b081f), MMVR_STATE_SCALAR_ALIGN(mmvr_local_792b24c4779b081f), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockAlphaTimer2::local0", &mmvr_local_903fc04222c788fb, sizeof(mmvr_local_903fc04222c788fb));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockAlphaTimer2::local0", &mmvr_local_792b24c4779b081f, sizeof(mmvr_local_792b24c4779b081f));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHours::local0", "array:26:scalar:unsigned short", 0, sizeof(mmvr_local_43405b0461d1e1b7), MMVR_STATE_SCALAR_ALIGN(mmvr_local_43405b0461d1e1b7[0]), 26);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHours::local0[]", "scalar:unsigned short", (size_t)((const unsigned char*)&(mmvr_local_43405b0461d1e1b7[0])-(const unsigned char*)&(mmvr_local_43405b0461d1e1b7)), sizeof(mmvr_local_43405b0461d1e1b7[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_43405b0461d1e1b7[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHours::local0", "array:26:scalar:unsigned short", 0, sizeof(mmvr_local_28cbe229860af7ed), MMVR_STATE_SCALAR_ALIGN(mmvr_local_28cbe229860af7ed[0]), 26);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHours::local0[]", "scalar:unsigned short", (size_t)((const unsigned char*)&(mmvr_local_28cbe229860af7ed[0])-(const unsigned char*)&(mmvr_local_28cbe229860af7ed)), sizeof(mmvr_local_28cbe229860af7ed[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_28cbe229860af7ed[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHours::local0", &mmvr_local_43405b0461d1e1b7, sizeof(mmvr_local_43405b0461d1e1b7));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHours::local0", &mmvr_local_28cbe229860af7ed, sizeof(mmvr_local_28cbe229860af7ed));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTextures::local0", "array:26:pointer:scalar:void", 0, sizeof(mmvr_local_2c620d7747be0a90), MMVR_STATE_ALIGN_TYPE(void*), 26);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTextures::local0[]", "pointer:scalar:void", (size_t)((const unsigned char*)&(mmvr_local_2c620d7747be0a90[0])-(const unsigned char*)&(mmvr_local_2c620d7747be0a90)), sizeof(mmvr_local_2c620d7747be0a90[0]), MMVR_STATE_ALIGN_TYPE(void*), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTextures::local0", "array:26:pointer:scalar:void", 0, sizeof(mmvr_local_db6ea80496b2e6a8), MMVR_STATE_ALIGN_TYPE(void*), 26);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTextures::local0[]", "pointer:scalar:void", (size_t)((const unsigned char*)&(mmvr_local_db6ea80496b2e6a8[0])-(const unsigned char*)&(mmvr_local_db6ea80496b2e6a8)), sizeof(mmvr_local_db6ea80496b2e6a8[0]), MMVR_STATE_ALIGN_TYPE(void*), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTextures::local0", &mmvr_local_2c620d7747be0a90, sizeof(mmvr_local_2c620d7747be0a90));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTextures::local0", &mmvr_local_db6ea80496b2e6a8, sizeof(mmvr_local_db6ea80496b2e6a8));
     for (size_t mmvr_i0=0; mmvr_i0<26; ++mmvr_i0) {
-    sink->pointer(sink->context, (const void*)&(mmvr_local_2c620d7747be0a90[mmvr_i0]), 0, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTextures::local0[]");
+    sink->pointer(sink->context, (const void*)&(mmvr_local_db6ea80496b2e6a8[mmvr_i0]), 0, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTextures::local0[]");
     }
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTwentyFourHoursTextures::local0", "array:26:pointer:scalar:void", 0, sizeof(mmvr_local_e0ed1079eced22dd), MMVR_STATE_ALIGN_TYPE(void*), 26);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTwentyFourHoursTextures::local0[]", "pointer:scalar:void", (size_t)((const unsigned char*)&(mmvr_local_e0ed1079eced22dd[0])-(const unsigned char*)&(mmvr_local_e0ed1079eced22dd)), sizeof(mmvr_local_e0ed1079eced22dd[0]), MMVR_STATE_ALIGN_TYPE(void*), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTwentyFourHoursTextures::local0", "array:26:pointer:scalar:void", 0, sizeof(mmvr_local_19bf86f38ff8c366), MMVR_STATE_ALIGN_TYPE(void*), 26);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTwentyFourHoursTextures::local0[]", "pointer:scalar:void", (size_t)((const unsigned char*)&(mmvr_local_19bf86f38ff8c366[0])-(const unsigned char*)&(mmvr_local_19bf86f38ff8c366)), sizeof(mmvr_local_19bf86f38ff8c366[0]), MMVR_STATE_ALIGN_TYPE(void*), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTwentyFourHoursTextures::local0", &mmvr_local_e0ed1079eced22dd, sizeof(mmvr_local_e0ed1079eced22dd));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTwentyFourHoursTextures::local0", &mmvr_local_19bf86f38ff8c366, sizeof(mmvr_local_19bf86f38ff8c366));
     for (size_t mmvr_i0=0; mmvr_i0<26; ++mmvr_i0) {
-    sink->pointer(sink->context, (const void*)&(mmvr_local_e0ed1079eced22dd[mmvr_i0]), 0, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTwentyFourHoursTextures::local0[]");
+    sink->pointer(sink->context, (const void*)&(mmvr_local_19bf86f38ff8c366[mmvr_i0]), 0, "code/z_parameter.c::Interface_DrawClock::sThreeDayClockHourTwentyFourHoursTextures::local0[]");
     }
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimRed::local0", "scalar:short", 0, sizeof(mmvr_local_2d990b69c61607d5), MMVR_STATE_SCALAR_ALIGN(mmvr_local_2d990b69c61607d5), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimRed::local0", "scalar:short", 0, sizeof(mmvr_local_4fda3c23ad8ee841), MMVR_STATE_SCALAR_ALIGN(mmvr_local_4fda3c23ad8ee841), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimRed::local0", &mmvr_local_2d990b69c61607d5, sizeof(mmvr_local_2d990b69c61607d5));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimRed::local0", &mmvr_local_4fda3c23ad8ee841, sizeof(mmvr_local_4fda3c23ad8ee841));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimGreen::local0", "scalar:short", 0, sizeof(mmvr_local_66a7e4252ce44771), MMVR_STATE_SCALAR_ALIGN(mmvr_local_66a7e4252ce44771), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimGreen::local0", "scalar:short", 0, sizeof(mmvr_local_b24c0c2e824e61d2), MMVR_STATE_SCALAR_ALIGN(mmvr_local_b24c0c2e824e61d2), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimGreen::local0", &mmvr_local_66a7e4252ce44771, sizeof(mmvr_local_66a7e4252ce44771));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimGreen::local0", &mmvr_local_b24c0c2e824e61d2, sizeof(mmvr_local_b24c0c2e824e61d2));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimBlue::local0", "scalar:short", 0, sizeof(mmvr_local_da860621ef54c1a6), MMVR_STATE_SCALAR_ALIGN(mmvr_local_da860621ef54c1a6), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimBlue::local0", "scalar:short", 0, sizeof(mmvr_local_c7c70aa8b4ec6d5e), MMVR_STATE_SCALAR_ALIGN(mmvr_local_c7c70aa8b4ec6d5e), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimBlue::local0", &mmvr_local_da860621ef54c1a6, sizeof(mmvr_local_da860621ef54c1a6));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimBlue::local0", &mmvr_local_c7c70aa8b4ec6d5e, sizeof(mmvr_local_c7c70aa8b4ec6d5e));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvRed::local0", "scalar:short", 0, sizeof(mmvr_local_ef10e330816e03cc), MMVR_STATE_SCALAR_ALIGN(mmvr_local_ef10e330816e03cc), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvRed::local0", "scalar:short", 0, sizeof(mmvr_local_95ff211f501b00bb), MMVR_STATE_SCALAR_ALIGN(mmvr_local_95ff211f501b00bb), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvRed::local0", &mmvr_local_ef10e330816e03cc, sizeof(mmvr_local_ef10e330816e03cc));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvRed::local0", &mmvr_local_95ff211f501b00bb, sizeof(mmvr_local_95ff211f501b00bb));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvGreen::local0", "scalar:short", 0, sizeof(mmvr_local_f419d105079d3b34), MMVR_STATE_SCALAR_ALIGN(mmvr_local_f419d105079d3b34), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvGreen::local0", "scalar:short", 0, sizeof(mmvr_local_dd06fba20ccef3f1), MMVR_STATE_SCALAR_ALIGN(mmvr_local_dd06fba20ccef3f1), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvGreen::local0", &mmvr_local_f419d105079d3b34, sizeof(mmvr_local_f419d105079d3b34));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvGreen::local0", &mmvr_local_dd06fba20ccef3f1, sizeof(mmvr_local_dd06fba20ccef3f1));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvBlue::local0", "scalar:short", 0, sizeof(mmvr_local_22f85e4f92905882), MMVR_STATE_SCALAR_ALIGN(mmvr_local_22f85e4f92905882), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvBlue::local0", "scalar:short", 0, sizeof(mmvr_local_0e001c3ee146e108), MMVR_STATE_SCALAR_ALIGN(mmvr_local_0e001c3ee146e108), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvBlue::local0", &mmvr_local_22f85e4f92905882, sizeof(mmvr_local_22f85e4f92905882));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvBlue::local0", &mmvr_local_0e001c3ee146e108, sizeof(mmvr_local_0e001c3ee146e108));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondTimer::local0", "scalar:short", 0, sizeof(mmvr_local_8517986903174556), MMVR_STATE_SCALAR_ALIGN(mmvr_local_8517986903174556), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondTimer::local0", "scalar:short", 0, sizeof(mmvr_local_3831d3071a16ae19), MMVR_STATE_SCALAR_ALIGN(mmvr_local_3831d3071a16ae19), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondTimer::local0", &mmvr_local_8517986903174556, sizeof(mmvr_local_8517986903174556));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondTimer::local0", &mmvr_local_3831d3071a16ae19, sizeof(mmvr_local_3831d3071a16ae19));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondTargetIndex::local0", "scalar:short", 0, sizeof(mmvr_local_e92473cfd76dd363), MMVR_STATE_SCALAR_ALIGN(mmvr_local_e92473cfd76dd363), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondTargetIndex::local0", "scalar:short", 0, sizeof(mmvr_local_967ad68e02edb9dc), MMVR_STATE_SCALAR_ALIGN(mmvr_local_967ad68e02edb9dc), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondTargetIndex::local0", &mmvr_local_e92473cfd76dd363, sizeof(mmvr_local_e92473cfd76dd363));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondTargetIndex::local0", &mmvr_local_967ad68e02edb9dc, sizeof(mmvr_local_967ad68e02edb9dc));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimRedTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_a2087cc52db112c4), MMVR_STATE_SCALAR_ALIGN(mmvr_local_a2087cc52db112c4[0]), 2);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimRedTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_a2087cc52db112c4[0])-(const unsigned char*)&(mmvr_local_a2087cc52db112c4)), sizeof(mmvr_local_a2087cc52db112c4[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_a2087cc52db112c4[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimRedTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_4095a068c7fd502f), MMVR_STATE_SCALAR_ALIGN(mmvr_local_4095a068c7fd502f[0]), 2);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimRedTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_4095a068c7fd502f[0])-(const unsigned char*)&(mmvr_local_4095a068c7fd502f)), sizeof(mmvr_local_4095a068c7fd502f[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_4095a068c7fd502f[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimRedTargets::local0", &mmvr_local_a2087cc52db112c4, sizeof(mmvr_local_a2087cc52db112c4));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimRedTargets::local0", &mmvr_local_4095a068c7fd502f, sizeof(mmvr_local_4095a068c7fd502f));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimGreenTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_bd1560d667f15a22), MMVR_STATE_SCALAR_ALIGN(mmvr_local_bd1560d667f15a22[0]), 2);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimGreenTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_bd1560d667f15a22[0])-(const unsigned char*)&(mmvr_local_bd1560d667f15a22)), sizeof(mmvr_local_bd1560d667f15a22[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_bd1560d667f15a22[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimGreenTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_335d2fc6ec38f3fd), MMVR_STATE_SCALAR_ALIGN(mmvr_local_335d2fc6ec38f3fd[0]), 2);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimGreenTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_335d2fc6ec38f3fd[0])-(const unsigned char*)&(mmvr_local_335d2fc6ec38f3fd)), sizeof(mmvr_local_335d2fc6ec38f3fd[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_335d2fc6ec38f3fd[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimGreenTargets::local0", &mmvr_local_bd1560d667f15a22, sizeof(mmvr_local_bd1560d667f15a22));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimGreenTargets::local0", &mmvr_local_335d2fc6ec38f3fd, sizeof(mmvr_local_335d2fc6ec38f3fd));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimBlueTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_31745cd7dc9bee80), MMVR_STATE_SCALAR_ALIGN(mmvr_local_31745cd7dc9bee80[0]), 2);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimBlueTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_31745cd7dc9bee80[0])-(const unsigned char*)&(mmvr_local_31745cd7dc9bee80)), sizeof(mmvr_local_31745cd7dc9bee80[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_31745cd7dc9bee80[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimBlueTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_784d05d05343482e), MMVR_STATE_SCALAR_ALIGN(mmvr_local_784d05d05343482e[0]), 2);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimBlueTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_784d05d05343482e[0])-(const unsigned char*)&(mmvr_local_784d05d05343482e)), sizeof(mmvr_local_784d05d05343482e[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_784d05d05343482e[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimBlueTargets::local0", &mmvr_local_31745cd7dc9bee80, sizeof(mmvr_local_31745cd7dc9bee80));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondPrimBlueTargets::local0", &mmvr_local_784d05d05343482e, sizeof(mmvr_local_784d05d05343482e));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvRedTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_fe446010bc0f56da), MMVR_STATE_SCALAR_ALIGN(mmvr_local_fe446010bc0f56da[0]), 2);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvRedTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_fe446010bc0f56da[0])-(const unsigned char*)&(mmvr_local_fe446010bc0f56da)), sizeof(mmvr_local_fe446010bc0f56da[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_fe446010bc0f56da[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvRedTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_04da8a2496f3edff), MMVR_STATE_SCALAR_ALIGN(mmvr_local_04da8a2496f3edff[0]), 2);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvRedTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_04da8a2496f3edff[0])-(const unsigned char*)&(mmvr_local_04da8a2496f3edff)), sizeof(mmvr_local_04da8a2496f3edff[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_04da8a2496f3edff[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvRedTargets::local0", &mmvr_local_fe446010bc0f56da, sizeof(mmvr_local_fe446010bc0f56da));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvRedTargets::local0", &mmvr_local_04da8a2496f3edff, sizeof(mmvr_local_04da8a2496f3edff));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvGreenTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_8c43be1c55a44fa2), MMVR_STATE_SCALAR_ALIGN(mmvr_local_8c43be1c55a44fa2[0]), 2);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvGreenTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_8c43be1c55a44fa2[0])-(const unsigned char*)&(mmvr_local_8c43be1c55a44fa2)), sizeof(mmvr_local_8c43be1c55a44fa2[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_8c43be1c55a44fa2[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvGreenTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_d3f601d6265fd5ec), MMVR_STATE_SCALAR_ALIGN(mmvr_local_d3f601d6265fd5ec[0]), 2);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvGreenTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_d3f601d6265fd5ec[0])-(const unsigned char*)&(mmvr_local_d3f601d6265fd5ec)), sizeof(mmvr_local_d3f601d6265fd5ec[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_d3f601d6265fd5ec[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvGreenTargets::local0", &mmvr_local_8c43be1c55a44fa2, sizeof(mmvr_local_8c43be1c55a44fa2));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvGreenTargets::local0", &mmvr_local_d3f601d6265fd5ec, sizeof(mmvr_local_d3f601d6265fd5ec));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvBlueTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_b7d4dc1453267157), MMVR_STATE_SCALAR_ALIGN(mmvr_local_b7d4dc1453267157[0]), 2);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvBlueTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_b7d4dc1453267157[0])-(const unsigned char*)&(mmvr_local_b7d4dc1453267157)), sizeof(mmvr_local_b7d4dc1453267157[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_b7d4dc1453267157[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvBlueTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_9e5fbd7a505ce667), MMVR_STATE_SCALAR_ALIGN(mmvr_local_9e5fbd7a505ce667[0]), 2);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvBlueTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_9e5fbd7a505ce667[0])-(const unsigned char*)&(mmvr_local_9e5fbd7a505ce667)), sizeof(mmvr_local_9e5fbd7a505ce667[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_9e5fbd7a505ce667[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvBlueTargets::local0", &mmvr_local_b7d4dc1453267157, sizeof(mmvr_local_b7d4dc1453267157));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sClockInvDiamondEnvBlueTargets::local0", &mmvr_local_9e5fbd7a505ce667, sizeof(mmvr_local_9e5fbd7a505ce667));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockDigitsRedTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_8251b472e7538bd7), MMVR_STATE_SCALAR_ALIGN(mmvr_local_8251b472e7538bd7[0]), 2);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockDigitsRedTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_8251b472e7538bd7[0])-(const unsigned char*)&(mmvr_local_8251b472e7538bd7)), sizeof(mmvr_local_8251b472e7538bd7[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_8251b472e7538bd7[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockDigitsRedTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_b08c586d34c74503), MMVR_STATE_SCALAR_ALIGN(mmvr_local_b08c586d34c74503[0]), 2);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockDigitsRedTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_b08c586d34c74503[0])-(const unsigned char*)&(mmvr_local_b08c586d34c74503)), sizeof(mmvr_local_b08c586d34c74503[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_b08c586d34c74503[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockDigitsRedTargets::local0", &mmvr_local_8251b472e7538bd7, sizeof(mmvr_local_8251b472e7538bd7));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockDigitsRedTargets::local0", &mmvr_local_b08c586d34c74503, sizeof(mmvr_local_b08c586d34c74503));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvRedTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_25add4391b52dce9), MMVR_STATE_SCALAR_ALIGN(mmvr_local_25add4391b52dce9[0]), 2);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvRedTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_25add4391b52dce9[0])-(const unsigned char*)&(mmvr_local_25add4391b52dce9)), sizeof(mmvr_local_25add4391b52dce9[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_25add4391b52dce9[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvRedTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_71048874c053aeea), MMVR_STATE_SCALAR_ALIGN(mmvr_local_71048874c053aeea[0]), 2);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvRedTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_71048874c053aeea[0])-(const unsigned char*)&(mmvr_local_71048874c053aeea)), sizeof(mmvr_local_71048874c053aeea[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_71048874c053aeea[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvRedTargets::local0", &mmvr_local_25add4391b52dce9, sizeof(mmvr_local_25add4391b52dce9));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvRedTargets::local0", &mmvr_local_71048874c053aeea, sizeof(mmvr_local_71048874c053aeea));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvGreenTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_7a90f8cc46fe885a), MMVR_STATE_SCALAR_ALIGN(mmvr_local_7a90f8cc46fe885a[0]), 2);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvGreenTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_7a90f8cc46fe885a[0])-(const unsigned char*)&(mmvr_local_7a90f8cc46fe885a)), sizeof(mmvr_local_7a90f8cc46fe885a[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_7a90f8cc46fe885a[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvGreenTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_d25e5f3cfb4ac274), MMVR_STATE_SCALAR_ALIGN(mmvr_local_d25e5f3cfb4ac274[0]), 2);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvGreenTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_d25e5f3cfb4ac274[0])-(const unsigned char*)&(mmvr_local_d25e5f3cfb4ac274)), sizeof(mmvr_local_d25e5f3cfb4ac274[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_d25e5f3cfb4ac274[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvGreenTargets::local0", &mmvr_local_7a90f8cc46fe885a, sizeof(mmvr_local_7a90f8cc46fe885a));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvGreenTargets::local0", &mmvr_local_d25e5f3cfb4ac274, sizeof(mmvr_local_d25e5f3cfb4ac274));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvBlueTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_7b771415f122a93a), MMVR_STATE_SCALAR_ALIGN(mmvr_local_7b771415f122a93a[0]), 2);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvBlueTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_7b771415f122a93a[0])-(const unsigned char*)&(mmvr_local_7b771415f122a93a)), sizeof(mmvr_local_7b771415f122a93a[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_7b771415f122a93a[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvBlueTargets::local0", "array:2:scalar:short", 0, sizeof(mmvr_local_1c46deaaec0829e8), MMVR_STATE_SCALAR_ALIGN(mmvr_local_1c46deaaec0829e8[0]), 2);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvBlueTargets::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_1c46deaaec0829e8[0])-(const unsigned char*)&(mmvr_local_1c46deaaec0829e8)), sizeof(mmvr_local_1c46deaaec0829e8[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_1c46deaaec0829e8[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvBlueTargets::local0", &mmvr_local_7b771415f122a93a, sizeof(mmvr_local_7b771415f122a93a));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursClockFrameEnvBlueTargets::local0", &mmvr_local_1c46deaaec0829e8, sizeof(mmvr_local_1c46deaaec0829e8));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitTextures::local0", "array:11:pointer:scalar:void", 0, sizeof(mmvr_local_e75b5f09883c94a3), MMVR_STATE_ALIGN_TYPE(void*), 11);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitTextures::local0[]", "pointer:scalar:void", (size_t)((const unsigned char*)&(mmvr_local_e75b5f09883c94a3[0])-(const unsigned char*)&(mmvr_local_e75b5f09883c94a3)), sizeof(mmvr_local_e75b5f09883c94a3[0]), MMVR_STATE_ALIGN_TYPE(void*), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitTextures::local0", "array:11:pointer:scalar:void", 0, sizeof(mmvr_local_d75e3c5813442b7a), MMVR_STATE_ALIGN_TYPE(void*), 11);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitTextures::local0[]", "pointer:scalar:void", (size_t)((const unsigned char*)&(mmvr_local_d75e3c5813442b7a[0])-(const unsigned char*)&(mmvr_local_d75e3c5813442b7a)), sizeof(mmvr_local_d75e3c5813442b7a[0]), MMVR_STATE_ALIGN_TYPE(void*), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitTextures::local0", &mmvr_local_e75b5f09883c94a3, sizeof(mmvr_local_e75b5f09883c94a3));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitTextures::local0", &mmvr_local_d75e3c5813442b7a, sizeof(mmvr_local_d75e3c5813442b7a));
     for (size_t mmvr_i0=0; mmvr_i0<11; ++mmvr_i0) {
-    sink->pointer(sink->context, (const void*)&(mmvr_local_e75b5f09883c94a3[mmvr_i0]), 0, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitTextures::local0[]");
+    sink->pointer(sink->context, (const void*)&(mmvr_local_d75e3c5813442b7a[mmvr_i0]), 0, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitTextures::local0[]");
     }
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitSlotPosXOffset::local0", "array:8:scalar:short", 0, sizeof(mmvr_local_32dfb37f0916cd8f), MMVR_STATE_SCALAR_ALIGN(mmvr_local_32dfb37f0916cd8f[0]), 8);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitSlotPosXOffset::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_32dfb37f0916cd8f[0])-(const unsigned char*)&(mmvr_local_32dfb37f0916cd8f)), sizeof(mmvr_local_32dfb37f0916cd8f[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_32dfb37f0916cd8f[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitSlotPosXOffset::local0", "array:8:scalar:short", 0, sizeof(mmvr_local_bd837720da19e738), MMVR_STATE_SCALAR_ALIGN(mmvr_local_bd837720da19e738[0]), 8);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitSlotPosXOffset::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_bd837720da19e738[0])-(const unsigned char*)&(mmvr_local_bd837720da19e738)), sizeof(mmvr_local_bd837720da19e738[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_bd837720da19e738[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitSlotPosXOffset::local0", &mmvr_local_32dfb37f0916cd8f, sizeof(mmvr_local_32dfb37f0916cd8f));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawClock::sFinalHoursDigitSlotPosXOffset::local0", &mmvr_local_bd837720da19e738, sizeof(mmvr_local_bd837720da19e738));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerStateTimer::local0", "scalar:short", 0, sizeof(mmvr_local_4d1836197b4310a6), MMVR_STATE_SCALAR_ALIGN(mmvr_local_4d1836197b4310a6), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerStateTimer::local0", "scalar:short", 0, sizeof(mmvr_local_b20bd4b94b63eea8), MMVR_STATE_SCALAR_ALIGN(mmvr_local_b20bd4b94b63eea8), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerStateTimer::local0", &mmvr_local_4d1836197b4310a6, sizeof(mmvr_local_4d1836197b4310a6));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerStateTimer::local0", &mmvr_local_b20bd4b94b63eea8, sizeof(mmvr_local_b20bd4b94b63eea8));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigits::local0", "array:8:scalar:short", 0, sizeof(mmvr_local_a38183d6730c52bf), MMVR_STATE_SCALAR_ALIGN(mmvr_local_a38183d6730c52bf[0]), 8);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigits::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_a38183d6730c52bf[0])-(const unsigned char*)&(mmvr_local_a38183d6730c52bf)), sizeof(mmvr_local_a38183d6730c52bf[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_a38183d6730c52bf[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigits::local0", "array:8:scalar:short", 0, sizeof(mmvr_local_744a255ff0765ced), MMVR_STATE_SCALAR_ALIGN(mmvr_local_744a255ff0765ced[0]), 8);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigits::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_744a255ff0765ced[0])-(const unsigned char*)&(mmvr_local_744a255ff0765ced)), sizeof(mmvr_local_744a255ff0765ced[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_744a255ff0765ced[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigits::local0", &mmvr_local_a38183d6730c52bf, sizeof(mmvr_local_a38183d6730c52bf));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigits::local0", &mmvr_local_744a255ff0765ced, sizeof(mmvr_local_744a255ff0765ced));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerBeepSfxSeconds::local0", "scalar:short", 0, sizeof(mmvr_local_0dfe057c374159e9), MMVR_STATE_SCALAR_ALIGN(mmvr_local_0dfe057c374159e9), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerBeepSfxSeconds::local0", "scalar:short", 0, sizeof(mmvr_local_5647ad49df8824c2), MMVR_STATE_SCALAR_ALIGN(mmvr_local_5647ad49df8824c2), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerBeepSfxSeconds::local0", &mmvr_local_0dfe057c374159e9, sizeof(mmvr_local_0dfe057c374159e9));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerBeepSfxSeconds::local0", &mmvr_local_5647ad49df8824c2, sizeof(mmvr_local_5647ad49df8824c2));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsOffsetX::local0", "array:8:scalar:short", 0, sizeof(mmvr_local_bf45dcda33d24937), MMVR_STATE_SCALAR_ALIGN(mmvr_local_bf45dcda33d24937[0]), 8);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsOffsetX::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_bf45dcda33d24937[0])-(const unsigned char*)&(mmvr_local_bf45dcda33d24937)), sizeof(mmvr_local_bf45dcda33d24937[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_bf45dcda33d24937[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsOffsetX::local0", "array:8:scalar:short", 0, sizeof(mmvr_local_4c6e383d8ec30e3b), MMVR_STATE_SCALAR_ALIGN(mmvr_local_4c6e383d8ec30e3b[0]), 8);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsOffsetX::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_4c6e383d8ec30e3b[0])-(const unsigned char*)&(mmvr_local_4c6e383d8ec30e3b)), sizeof(mmvr_local_4c6e383d8ec30e3b[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_4c6e383d8ec30e3b[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsOffsetX::local0", &mmvr_local_bf45dcda33d24937, sizeof(mmvr_local_bf45dcda33d24937));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsOffsetX::local0", &mmvr_local_4c6e383d8ec30e3b, sizeof(mmvr_local_4c6e383d8ec30e3b));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsWidth::local0", "array:8:scalar:short", 0, sizeof(mmvr_local_53db457121d9a755), MMVR_STATE_SCALAR_ALIGN(mmvr_local_53db457121d9a755[0]), 8);
-    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsWidth::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_53db457121d9a755[0])-(const unsigned char*)&(mmvr_local_53db457121d9a755)), sizeof(mmvr_local_53db457121d9a755[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_53db457121d9a755[0]), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsWidth::local0", "array:8:scalar:short", 0, sizeof(mmvr_local_0287d5a197c98458), MMVR_STATE_SCALAR_ALIGN(mmvr_local_0287d5a197c98458[0]), 8);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsWidth::local0[]", "scalar:short", (size_t)((const unsigned char*)&(mmvr_local_0287d5a197c98458[0])-(const unsigned char*)&(mmvr_local_0287d5a197c98458)), sizeof(mmvr_local_0287d5a197c98458[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_0287d5a197c98458[0]), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsWidth::local0", &mmvr_local_53db457121d9a755, sizeof(mmvr_local_53db457121d9a755));
+    sink->block(sink->context, "code/z_parameter.c::Interface_DrawTimers::sTimerDigitsWidth::local0", &mmvr_local_0287d5a197c98458, sizeof(mmvr_local_0287d5a197c98458));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_Update::sIsSunsPlayedAtDay::local0", "scalar:unsigned char", 0, sizeof(mmvr_local_ae1b3eead49fe3f0), MMVR_STATE_SCALAR_ALIGN(mmvr_local_ae1b3eead49fe3f0), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_Update::sIsSunsPlayedAtDay::local0", "scalar:unsigned char", 0, sizeof(mmvr_local_1c40393dbd32072f), MMVR_STATE_SCALAR_ALIGN(mmvr_local_1c40393dbd32072f), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_Update::sIsSunsPlayedAtDay::local0", &mmvr_local_ae1b3eead49fe3f0, sizeof(mmvr_local_ae1b3eead49fe3f0));
+    sink->block(sink->context, "code/z_parameter.c::Interface_Update::sIsSunsPlayedAtDay::local0", &mmvr_local_1c40393dbd32072f, sizeof(mmvr_local_1c40393dbd32072f));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_parameter.c::Interface_Update::sPrevTimeSpeed::local0", "scalar:short", 0, sizeof(mmvr_local_ccacdaa6a078b0c9), MMVR_STATE_SCALAR_ALIGN(mmvr_local_ccacdaa6a078b0c9), 1);
+    sink->layout(sink->context, "code/z_parameter.c::Interface_Update::sPrevTimeSpeed::local0", "scalar:short", 0, sizeof(mmvr_local_0f54f0f83599fbf1), MMVR_STATE_SCALAR_ALIGN(mmvr_local_0f54f0f83599fbf1), 1);
     }
-    sink->block(sink->context, "code/z_parameter.c::Interface_Update::sPrevTimeSpeed::local0", &mmvr_local_ccacdaa6a078b0c9, sizeof(mmvr_local_ccacdaa6a078b0c9));
+    sink->block(sink->context, "code/z_parameter.c::Interface_Update::sPrevTimeSpeed::local0", &mmvr_local_0f54f0f83599fbf1, sizeof(mmvr_local_0f54f0f83599fbf1));
     sink->function(sink->context, "code/z_parameter.c::Gfx_DrawTexRectRGBA16", (void (*)(void))Gfx_DrawTexRectRGBA16);
     sink->function(sink->context, "code/z_parameter.c::Gfx_DrawTexRectIA8", (void (*)(void))Gfx_DrawTexRectIA8);
     sink->function(sink->context, "code/z_parameter.c::Gfx_DrawTexRectIA16_DropShadow", (void (*)(void))Gfx_DrawTexRectIA16_DropShadow);

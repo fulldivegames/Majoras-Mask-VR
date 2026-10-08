@@ -213,6 +213,14 @@ enum class Setting {
     QuickWheelAllItems,
     KafeiBody,
     GreatFairyMaskCue,
+    WearableMaskOverlay,
+    HideHumanBodyLegs,
+    HideKafeiBodyLegs,
+    HideGoronBodyLegs,
+    HideZoraBodyLegs,
+    HideDekuBodyLegs,
+    HideDeityBodyLegs,
+    HideBodyLegs,
     Count
 };
 struct SettingDefinition {
@@ -429,6 +437,14 @@ inline constexpr SettingDefinition SettingDefinitions[] = {
     { "gVR.QuickWheelAllItems", "Ready all items on selection", 0, 0, 1, 1, "off/on" },
     { "gVR.KafeiBody", "Kafei body with tracked arms", 1, 0, 1, 1, "off/on" },
     { "gVR.GreatFairyMaskCue", "Great Fairy Mask proximity sparkles", 1, 0, 1, 1, "off/on" },
+    { "gVR.WearableMaskOverlay", "Wearable mask overlay", 0, 0, 1, 1, "off/on" },
+    { "gVR.HideHumanBodyLegs", "Hide Link legs", 0, 0, 1, 1, "off/on" },
+    { "gVR.HideKafeiBodyLegs", "Hide Kafei legs", 0, 0, 1, 1, "off/on" },
+    { "gVR.HideGoronBodyLegs", "Hide Goron legs", 0, 0, 1, 1, "off/on" },
+    { "gVR.HideZoraBodyLegs", "Hide Zora legs", 0, 0, 1, 1, "off/on" },
+    { "gVR.HideDekuBodyLegs", "Hide Deku legs", 0, 0, 1, 1, "off/on" },
+    { "gVR.HideDeityBodyLegs", "Hide Fierce Deity legs", 0, 0, 1, 1, "off/on" },
+    { "gVR.HideBodyLegs", "Hide legs (all bodies)", 0, 0, 1, 1, "off/on" },
 };
 static_assert(sizeof(SettingDefinitions) / sizeof(SettingDefinitions[0]) == size_t(Setting::Count));
 inline float BoundSetting(Setting id, float value) {

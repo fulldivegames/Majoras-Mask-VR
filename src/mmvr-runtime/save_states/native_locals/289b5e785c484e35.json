@@ -10,306 +10,306 @@
       "at": 223700
     },
     {
-      "name": "mmvr_local_5d91fae0782f77f1",
+      "name": "mmvr_local_f42236a788148356",
       "original": "sCUpLabelTextures",
       "function": "Interface_DrawItemButtons",
-      "line": 5906,
-      "at": 263782
+      "line": 5909,
+      "at": 263870
     },
     {
-      "name": "mmvr_local_f734b7830e1caa2a",
+      "name": "mmvr_local_02ee103d2cceee35",
       "original": "sStartButtonLeftPos",
       "function": "Interface_DrawItemButtons",
-      "line": 5913,
-      "at": 264047
+      "line": 5916,
+      "at": 264135
     },
     {
-      "name": "mmvr_local_9ff7f287466b5b78",
+      "name": "mmvr_local_ea03cc895564ce1a",
       "original": "sBCButtonSizes",
       "function": "Interface_DrawItemButtons",
-      "line": 5921,
-      "at": 264286
+      "line": 5924,
+      "at": 264374
     },
     {
-      "name": "mmvr_local_6f10bd92808462d0",
+      "name": "mmvr_local_05c48629b59b8895",
       "original": "sDpadItemIconWidth",
       "function": "Interface_Dpad_DrawItemIconTexture",
-      "line": 6149,
-      "at": 276081
+      "line": 6152,
+      "at": 276169
     },
     {
-      "name": "mmvr_local_83612b64a8dbcf16",
+      "name": "mmvr_local_e274cab3e6471835",
       "original": "sItemIconTextureDimensions",
       "function": "Interface_DrawItemIconTexture",
-      "line": 6268,
-      "at": 280944
+      "line": 6271,
+      "at": 281032
     },
     {
-      "name": "mmvr_local_d8c60d5a0ee7052f",
+      "name": "mmvr_local_8d01dcf83e92e89d",
       "original": "sAmmoDigitsXPositions",
       "function": "Interface_DrawAmmoCount",
-      "line": 6337,
-      "at": 284647
+      "line": 6340,
+      "at": 284735
     },
     {
-      "name": "mmvr_local_9602f984f64ac5de",
+      "name": "mmvr_local_43ce236c1f198e18",
       "original": "sAmmoDigitsYPositions",
       "function": "Interface_DrawAmmoCount",
-      "line": 6338,
-      "at": 284713
+      "line": 6341,
+      "at": 284801
     },
     {
-      "name": "mmvr_local_5371b43daee91971",
+      "name": "mmvr_local_be6daa49bfce7937",
       "original": "sMagicArrowEffectsR",
       "function": "Interface_DrawPauseMenuEquippingIcons",
-      "line": 6747,
-      "at": 307499
+      "line": 6750,
+      "at": 307587
     },
     {
-      "name": "mmvr_local_555461025d4b62c3",
+      "name": "mmvr_local_300ec7ab1de8c8dc",
       "original": "sMagicArrowEffectsG",
       "function": "Interface_DrawPauseMenuEquippingIcons",
-      "line": 6748,
-      "at": 307558
+      "line": 6751,
+      "at": 307646
     },
     {
-      "name": "mmvr_local_5580e660bbd3ee14",
+      "name": "mmvr_local_88ee512b055255d6",
       "original": "sMagicArrowEffectsB",
       "function": "Interface_DrawPauseMenuEquippingIcons",
-      "line": 6749,
-      "at": 307615
+      "line": 6752,
+      "at": 307703
     },
     {
-      "name": "mmvr_local_c5c562cc6d11f914",
+      "name": "mmvr_local_e5550e62cd4e2536",
       "original": "sThreeDayClockAlpha",
       "function": "Interface_DrawClock",
-      "line": 6823,
-      "at": 311830
+      "line": 6826,
+      "at": 311918
     },
     {
-      "name": "mmvr_local_d354b1966d7eea44",
+      "name": "mmvr_local_b65d73c969c0cbcd",
       "original": "sClockAlphaTimer1",
       "function": "Interface_DrawClock",
-      "line": 6824,
-      "at": 311873
+      "line": 6827,
+      "at": 311961
     },
     {
-      "name": "mmvr_local_903fc04222c788fb",
+      "name": "mmvr_local_792b24c4779b081f",
       "original": "sClockAlphaTimer2",
       "function": "Interface_DrawClock",
-      "line": 6825,
-      "at": 311912
+      "line": 6828,
+      "at": 312000
     },
     {
-      "name": "mmvr_local_43405b0461d1e1b7",
+      "name": "mmvr_local_28cbe229860af7ed",
       "original": "sThreeDayClockHours",
       "function": "Interface_DrawClock",
-      "line": 6826,
-      "at": 311951
+      "line": 6829,
+      "at": 312039
     },
     {
-      "name": "mmvr_local_2c620d7747be0a90",
+      "name": "mmvr_local_db6ea80496b2e6a8",
       "original": "sThreeDayClockHourTextures",
       "function": "Interface_DrawClock",
-      "line": 6836,
-      "at": 312724
+      "line": 6839,
+      "at": 312812
     },
     {
-      "name": "mmvr_local_e0ed1079eced22dd",
+      "name": "mmvr_local_19bf86f38ff8c366",
       "original": "sThreeDayClockHourTwentyFourHoursTextures",
       "function": "Interface_DrawClock",
-      "line": 6847,
-      "at": 313664
+      "line": 6850,
+      "at": 313752
     },
     {
-      "name": "mmvr_local_2d990b69c61607d5",
+      "name": "mmvr_local_4fda3c23ad8ee841",
       "original": "sClockInvDiamondPrimRed",
       "function": "Interface_DrawClock",
-      "line": 6858,
-      "at": 314594
+      "line": 6861,
+      "at": 314682
     },
     {
-      "name": "mmvr_local_66a7e4252ce44771",
+      "name": "mmvr_local_b24c0c2e824e61d2",
       "original": "sClockInvDiamondPrimGreen",
       "function": "Interface_DrawClock",
-      "line": 6859,
-      "at": 314639
+      "line": 6862,
+      "at": 314727
     },
     {
-      "name": "mmvr_local_da860621ef54c1a6",
+      "name": "mmvr_local_c7c70aa8b4ec6d5e",
       "original": "sClockInvDiamondPrimBlue",
       "function": "Interface_DrawClock",
-      "line": 6860,
-      "at": 314688
+      "line": 6863,
+      "at": 314776
     },
     {
-      "name": "mmvr_local_ef10e330816e03cc",
+      "name": "mmvr_local_95ff211f501b00bb",
       "original": "sClockInvDiamondEnvRed",
       "function": "Interface_DrawClock",
-      "line": 6861,
-      "at": 314736
+      "line": 6864,
+      "at": 314824
     },
     {
-      "name": "mmvr_local_f419d105079d3b34",
+      "name": "mmvr_local_dd06fba20ccef3f1",
       "original": "sClockInvDiamondEnvGreen",
       "function": "Interface_DrawClock",
-      "line": 6862,
-      "at": 314780
+      "line": 6865,
+      "at": 314868
     },
     {
-      "name": "mmvr_local_22f85e4f92905882",
+      "name": "mmvr_local_0e001c3ee146e108",
       "original": "sClockInvDiamondEnvBlue",
       "function": "Interface_DrawClock",
-      "line": 6863,
-      "at": 314826
+      "line": 6866,
+      "at": 314914
     },
     {
-      "name": "mmvr_local_8517986903174556",
+      "name": "mmvr_local_3831d3071a16ae19",
       "original": "sClockInvDiamondTimer",
       "function": "Interface_DrawClock",
-      "line": 6864,
-      "at": 314871
+      "line": 6867,
+      "at": 314959
     },
     {
-      "name": "mmvr_local_e92473cfd76dd363",
+      "name": "mmvr_local_967ad68e02edb9dc",
       "original": "sClockInvDiamondTargetIndex",
       "function": "Interface_DrawClock",
-      "line": 6865,
-      "at": 314915
+      "line": 6868,
+      "at": 315003
     },
     {
-      "name": "mmvr_local_a2087cc52db112c4",
+      "name": "mmvr_local_4095a068c7fd502f",
       "original": "sClockInvDiamondPrimRedTargets",
       "function": "Interface_DrawClock",
-      "line": 6866,
-      "at": 314964
+      "line": 6869,
+      "at": 315052
     },
     {
-      "name": "mmvr_local_bd1560d667f15a22",
+      "name": "mmvr_local_335d2fc6ec38f3fd",
       "original": "sClockInvDiamondPrimGreenTargets",
       "function": "Interface_DrawClock",
-      "line": 6867,
-      "at": 315027
+      "line": 6870,
+      "at": 315115
     },
     {
-      "name": "mmvr_local_31745cd7dc9bee80",
+      "name": "mmvr_local_784d05d05343482e",
       "original": "sClockInvDiamondPrimBlueTargets",
       "function": "Interface_DrawClock",
-      "line": 6868,
-      "at": 315094
+      "line": 6871,
+      "at": 315182
     },
     {
-      "name": "mmvr_local_fe446010bc0f56da",
+      "name": "mmvr_local_04da8a2496f3edff",
       "original": "sClockInvDiamondEnvRedTargets",
       "function": "Interface_DrawClock",
-      "line": 6869,
-      "at": 315160
+      "line": 6872,
+      "at": 315248
     },
     {
-      "name": "mmvr_local_8c43be1c55a44fa2",
+      "name": "mmvr_local_d3f601d6265fd5ec",
       "original": "sClockInvDiamondEnvGreenTargets",
       "function": "Interface_DrawClock",
-      "line": 6870,
-      "at": 315221
+      "line": 6873,
+      "at": 315309
     },
     {
-      "name": "mmvr_local_b7d4dc1453267157",
+      "name": "mmvr_local_9e5fbd7a505ce667",
       "original": "sClockInvDiamondEnvBlueTargets",
       "function": "Interface_DrawClock",
-      "line": 6871,
-      "at": 315284
+      "line": 6874,
+      "at": 315372
     },
     {
-      "name": "mmvr_local_8251b472e7538bd7",
+      "name": "mmvr_local_b08c586d34c74503",
       "original": "sFinalHoursClockDigitsRedTargets",
       "function": "Interface_DrawClock",
-      "line": 6872,
-      "at": 315347
+      "line": 6875,
+      "at": 315435
     },
     {
-      "name": "mmvr_local_25add4391b52dce9",
+      "name": "mmvr_local_71048874c053aeea",
       "original": "sFinalHoursClockFrameEnvRedTargets",
       "function": "Interface_DrawClock",
-      "line": 6873,
-      "at": 315412
+      "line": 6876,
+      "at": 315500
     },
     {
-      "name": "mmvr_local_7a90f8cc46fe885a",
+      "name": "mmvr_local_d25e5f3cfb4ac274",
       "original": "sFinalHoursClockFrameEnvGreenTargets",
       "function": "Interface_DrawClock",
-      "line": 6874,
-      "at": 315479
+      "line": 6877,
+      "at": 315567
     },
     {
-      "name": "mmvr_local_7b771415f122a93a",
+      "name": "mmvr_local_1c46deaaec0829e8",
       "original": "sFinalHoursClockFrameEnvBlueTargets",
       "function": "Interface_DrawClock",
-      "line": 6875,
-      "at": 315547
+      "line": 6878,
+      "at": 315635
     },
     {
-      "name": "mmvr_local_e75b5f09883c94a3",
+      "name": "mmvr_local_d75e3c5813442b7a",
       "original": "sFinalHoursDigitTextures",
       "function": "Interface_DrawClock",
-      "line": 6876,
-      "at": 315622
+      "line": 6879,
+      "at": 315710
     },
     {
-      "name": "mmvr_local_32dfb37f0916cd8f",
+      "name": "mmvr_local_bd837720da19e738",
       "original": "sFinalHoursDigitSlotPosXOffset",
       "function": "Interface_DrawClock",
-      "line": 6881,
-      "at": 316000
+      "line": 6884,
+      "at": 316088
     },
     {
-      "name": "mmvr_local_4d1836197b4310a6",
+      "name": "mmvr_local_b20bd4b94b63eea8",
       "original": "sTimerStateTimer",
       "function": "Interface_DrawTimers",
-      "line": 8145,
-      "at": 378787
+      "line": 8148,
+      "at": 378875
     },
     {
-      "name": "mmvr_local_a38183d6730c52bf",
+      "name": "mmvr_local_744a255ff0765ced",
       "original": "sTimerDigits",
       "function": "Interface_DrawTimers",
-      "line": 8146,
-      "at": 378825
+      "line": 8149,
+      "at": 378913
     },
     {
-      "name": "mmvr_local_0dfe057c374159e9",
+      "name": "mmvr_local_5647ad49df8824c2",
       "original": "sTimerBeepSfxSeconds",
       "function": "Interface_DrawTimers",
-      "line": 8147,
-      "at": 378886
+      "line": 8150,
+      "at": 378974
     },
     {
-      "name": "mmvr_local_bf45dcda33d24937",
+      "name": "mmvr_local_4c6e383d8ec30e3b",
       "original": "sTimerDigitsOffsetX",
       "function": "Interface_DrawTimers",
-      "line": 8148,
-      "at": 378929
+      "line": 8151,
+      "at": 379017
     },
     {
-      "name": "mmvr_local_53db457121d9a755",
+      "name": "mmvr_local_0287d5a197c98458",
       "original": "sTimerDigitsWidth",
       "function": "Interface_DrawTimers",
-      "line": 8151,
-      "at": 379020
+      "line": 8154,
+      "at": 379108
     },
     {
-      "name": "mmvr_local_ae1b3eead49fe3f0",
+      "name": "mmvr_local_1c40393dbd32072f",
       "original": "sIsSunsPlayedAtDay",
       "function": "Interface_Update",
-      "line": 9627,
-      "at": 456566
+      "line": 9630,
+      "at": 456654
     },
     {
-      "name": "mmvr_local_ccacdaa6a078b0c9",
+      "name": "mmvr_local_0f54f0f83599fbf1",
       "original": "sPrevTimeSpeed",
       "function": "Interface_Update",
-      "line": 9628,
-      "at": 456610
+      "line": 9631,
+      "at": 456698
     }
   ],
-  "sourceSha256": "6598c32fda685842185013ecf9371c16a24830e100dbd24b65fbcb2a01bd712a"
+  "sourceSha256": "b505284d65afa0b4ea7152427a15834dfb50ba4722d4bde4da437d76474f12d8"
 }

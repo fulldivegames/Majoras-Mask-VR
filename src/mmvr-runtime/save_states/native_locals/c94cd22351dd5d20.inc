@@ -1745,6 +1745,7 @@ void Play_Draw(PlayState* this) {
     MMVR_SetMonochromeCommands(NULL, NULL);
     MMVR_SetScreenScaleCommands(NULL, NULL);
     MMVR_ResetReticles();
+    MMVR_ResetPlayerDrawBindings();
 #endif
     GraphicsContext* gfxCtx = this->state.gfxCtx;
 
@@ -1811,12 +1812,12 @@ void Play_Draw(PlayState* this) {
     }
 }
 
-static Input* mmvr_local_498329531a3500b5 = NULL;
+static Input* mmvr_local_a79447b43852ad32 = NULL;
 void Play_Main(GameState* thisx) {
     /* persistent local storage is declared above */
     PlayState* this = (PlayState*)thisx;
 
-    mmvr_local_498329531a3500b5 = CONTROLLER1(&this->state);
+    mmvr_local_a79447b43852ad32 = CONTROLLER1(&this->state);
     DebugDisplay_Init();
 
     {

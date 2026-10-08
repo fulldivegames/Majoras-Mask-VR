@@ -2103,8 +2103,12 @@ void AudioOcarina_ReadControllerInput(void) {
     // VR note sample without consuming button edges or accessing game state here.
     unsigned short vrNotes;
     if (MMVR_InstrumentButtons(&vrNotes)) {
-        sOcarinaInputButtonCur = vrNotes;
-        sOcarinaInputStickRel.x = sOcarinaInputStickRel.y = 0;
+        // The focused VR sample supplements native/custom gamepad notes.
+        // Idle VR controllers must not erase a connected gamepad's input.
+        sOcarinaInputButtonCur |= vrNotes;
+        if (vrNotes != 0) {
+            sOcarinaInputStickRel.x = sOcarinaInputStickRel.y = 0;
+        }
     }
 #endif
 }
@@ -3418,42 +3422,42 @@ void AudioOcarina_Update(void) {
 
 #define OCARINA_INSTRUMENT_OOT_MAX 7
 
-static u8 mmvr_local_0609eb68f306bf30 = 0;
-static u8 mmvr_local_50298c6cb45a15cf = OCARINA_INSTRUMENT_DEFAULT;
-static u16 mmvr_local_7f908f6674b49a53 = 1200;
+static u8 mmvr_local_f9cc9735bc0a91e9 = 0;
+static u8 mmvr_local_e1c3d77f69c535d8 = OCARINA_INSTRUMENT_DEFAULT;
+static u16 mmvr_local_4a03fcd514cc8a6e = 1200;
 void AudioOcarina_PlayLongScarecrowSong(void) {
     /* persistent local storage is declared above */
     /* persistent local storage is declared above */
     /* persistent local storage is declared above */
 
-    switch (mmvr_local_0609eb68f306bf30) {
+    switch (mmvr_local_f9cc9735bc0a91e9) {
         case 0:
-            if (mmvr_local_7f908f6674b49a53-- == 0) {
+            if (mmvr_local_4a03fcd514cc8a6e-- == 0) {
                 // OoT originally had 7 Ocarina instruments
                 // MM has more so this does not go all the way to the max
-                if (mmvr_local_50298c6cb45a15cf < OCARINA_INSTRUMENT_OOT_MAX) {
+                if (mmvr_local_e1c3d77f69c535d8 < OCARINA_INSTRUMENT_OOT_MAX) {
                     // set next ocarina instrument and restart
-                    mmvr_local_0609eb68f306bf30++;
+                    mmvr_local_f9cc9735bc0a91e9++;
                 } else {
                     // finished
-                    mmvr_local_0609eb68f306bf30 = 3;
+                    mmvr_local_f9cc9735bc0a91e9 = 3;
                     AudioOcarina_SetInstrument(OCARINA_INSTRUMENT_OFF);
                 }
-                mmvr_local_7f908f6674b49a53 = 1200;
+                mmvr_local_4a03fcd514cc8a6e = 1200;
             }
             break;
 
         case 1:
             AudioSfx_MuteBanks(0);
-            AudioOcarina_SetInstrument(mmvr_local_50298c6cb45a15cf);
+            AudioOcarina_SetInstrument(mmvr_local_e1c3d77f69c535d8);
             AudioOcarina_SetPlaybackSong(OCARINA_SONG_SCARECROW_LONG + 1, 1);
-            mmvr_local_50298c6cb45a15cf++;
-            mmvr_local_0609eb68f306bf30++;
+            mmvr_local_e1c3d77f69c535d8++;
+            mmvr_local_f9cc9735bc0a91e9++;
             break;
 
         case 2:
             if (AudioOcarina_GetPlaybackStaff()->state == 0) {
-                mmvr_local_0609eb68f306bf30 = 0;
+                mmvr_local_f9cc9735bc0a91e9 = 0;
             }
             break;
     }
@@ -4011,7 +4015,7 @@ s8 AudioSfx_ComputeCombFilter(f32 posY, u16 sfxParams) {
     return combFilterGain | 1;
 }
 
-static s8 mmvr_local_433732a3615ed694[] = {
+static s8 mmvr_local_ffd5f019fe44bb9b[] = {
         0,  2,  4,   6,   8,   10,  12,  14,  16,  18,  20,  22,  24,  25,  26,  27,  28,  29,  30, 31, 32, 33,
         34, 35, 36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52, 53, 54, 55,
         56, 56, 57,  57,  58,  58,  59,  59,  60,  60,  60,  61,  61,  61,  62,  62,  62,  63,  63, 63, 64, 64,
@@ -4066,7 +4070,7 @@ void AudioSfx_SetProperties(u8 bankId, u8 entryIndex, u8 channelIndex) {
                         zVolume = 127;
                     }
                 }
-                zVolume = mmvr_local_433732a3615ed694[zVolume];
+                zVolume = mmvr_local_ffd5f019fe44bb9b[zVolume];
             }
 
             if (sAudioBaseFilter != 0) {
@@ -6391,11 +6395,11 @@ s32 func_801A46F8(void) {
 }
 
 // used for z_obj_sound and z_en_gk
-static Vec3f mmvr_local_631e3b0de1ef59bf[] = { 0.0f, 0.0f, 0.0f };
+static Vec3f mmvr_local_a9bac78950a10216[] = { 0.0f, 0.0f, 0.0f };
 void Audio_PlaySfx_AtFixedPos(Vec3f* pos, u16 sfxId) {
     /* persistent local storage is declared above */
     s32 i;
-    f32* dstPos = (f32*)&mmvr_local_631e3b0de1ef59bf;
+    f32* dstPos = (f32*)&mmvr_local_a9bac78950a10216;
     f32* srcPos = (f32*)pos;
 
     // Vec3f copy
@@ -6403,7 +6407,7 @@ void Audio_PlaySfx_AtFixedPos(Vec3f* pos, u16 sfxId) {
         dstPos[i] = srcPos[i];
     }
 
-    Audio_PlaySfx_AtPos(mmvr_local_631e3b0de1ef59bf, sfxId);
+    Audio_PlaySfx_AtPos(mmvr_local_a9bac78950a10216, sfxId);
 }
 
 void Audio_PlaySfx_AtPosWithVolumeTransition(Vec3f* pos, u16 sfxId, u16 duration) {

@@ -234,7 +234,7 @@ static int ApproachClimb(PlayState* play, const mmvr::TrackingFrame& frame, cons
     auto* p = play ? GET_PLAYER(play) : nullptr;
     // PhysicalActionsAllowed excludes the climbing context itself; that context
     // remains latched through a native handoff until the next input update.
-    if (!MMVR_PhysicalClimbEnabled(play, p) || !mmvr::InputFocused() || mmvr::MenuPaused() ||
+    if (!MMVR_PhysicalClimbEnabled(play, p) || (p && (p->actor.freezeTimer || (p->stateFlags2 & PLAYER_STATE2_80))) || !mmvr::InputFocused() || mmvr::MenuPaused() ||
         MMVR_ItemPresentationActive(p) || NativeViewfinderActive(play) || p->itemAction != p->heldItemAction ||
         p->transformation == PLAYER_FORM_GORON || p->csAction != PLAYER_CSACTION_NONE || p->heldActor ||
         play->csCtx.state != CS_STATE_IDLE || play->pauseCtx.state != PAUSE_STATE_OFF ||
@@ -371,6 +371,11 @@ void UpdateClimbing(const mmvr::TrackingFrame& frame, const mmvr::Matrix& view, 
         return;
     }
     auto* play = gPlayState;
+    auto* player = play ? GET_PLAYER(play) : nullptr;
+    if (player && (player->actor.freezeTimer || (player->stateFlags2 & PLAYER_STATE2_80))) {
+        ClearClimbing();
+        return;
+    }
     int attached = -1;
     if (!ClimbingContext(play)) {
         // Reset stale latched state once, not every free-standing tracking sample.

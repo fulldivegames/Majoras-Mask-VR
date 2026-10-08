@@ -93,6 +93,15 @@ void Equip(PlayState* play, Player* p, int item) {
         MMVR_PlayerEquipSword(play, p, static_cast<ItemId>(item));
 }
 } // namespace
+extern "C" int MMVR_LensAvailableFromWheel(PlayState* play) {
+    auto* player = play ? GET_PLAYER(play) : nullptr;
+    // The wheel replaces C-down on every selection. Owning the usable Lens
+    // is its virtual equipment slot; selecting another weapon must not cancel
+    // an already active Lens. Native drain, toggle and transition rules remain.
+    return player && mmvr::FirstPersonRequested() &&
+           mmvrgame::InventorySlotItem(SLOT(ITEM_LENS_OF_TRUTH)) == ITEM_LENS_OF_TRUTH &&
+           mmvrgame::ItemAllowed(player, ITEM_LENS_OF_TRUTH);
+}
 namespace mmvrgame {
 bool ExchangePromptActive(PlayState* play) {
     auto* p = play ? GET_PLAYER(play) : nullptr;

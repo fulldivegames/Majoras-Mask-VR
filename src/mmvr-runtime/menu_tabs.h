@@ -25,7 +25,7 @@ inline constexpr int AssignmentFirst = int(Setting::Count), ResetSettingsRow = A
                      DiagnosticExportRow = NativeOptionsRow + 1,
                      SetupGuideRow = NativeOptionsRow + 2,
                      ReleaseNotesFirstRow = NativeOptionsRow + 3,
-                     ReleaseNotesCount = 41,
+                     ReleaseNotesCount = 46,
                      SaveGameRow = ReleaseNotesFirstRow + ReleaseNotesCount,
                      SearchSettingsRow = SaveGameRow + 1,
                      MenuRows = SearchSettingsRow + 1;
@@ -91,6 +91,11 @@ struct MenuEntry {
 };
 // Explicit presentation order is independent of persistent setting IDs.
 inline constexpr MenuEntry OrderedMenu[] = {
+    { ReleaseNotesFirstRow + 41, 39 },
+    { ReleaseNotesFirstRow + 42, 39 },
+    { ReleaseNotesFirstRow + 43, 39 },
+    { ReleaseNotesFirstRow + 44, 39 },
+    { ReleaseNotesFirstRow + 45, 39 },
     { ReleaseNotesFirstRow + 40, 39 },
     { ReleaseNotesFirstRow + 39, 39 },
     { ReleaseNotesFirstRow + 34, 39 },
@@ -181,6 +186,13 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { int(Setting::ZoraBody), 2 },
     { int(Setting::DekuBody), 2 },
     { int(Setting::FierceDeityBody), 2 },
+    { int(Setting::HideBodyLegs), 2 },
+    { int(Setting::HideHumanBodyLegs), 2 },
+    { int(Setting::HideKafeiBodyLegs), 2 },
+    { int(Setting::HideGoronBodyLegs), 2 },
+    { int(Setting::HideZoraBodyLegs), 2 },
+    { int(Setting::HideDekuBodyLegs), 2 },
+    { int(Setting::HideDeityBodyLegs), 2 },
     { int(Setting::HideSheath), 2 },
     { int(Setting::HideShield), 2 },
     { int(Setting::HideBunnyHood), 2 },
@@ -228,6 +240,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { int(Setting::HandHudSize), 10 },
     { int(Setting::HudMap), 10 },
     { int(Setting::MaskStatus), 10 },
+    { int(Setting::WearableMaskOverlay), 10 },
     { int(Setting::HudSize), 10 },
     { int(Setting::HudHorizontalSpread), 10 },
     { int(Setting::HudVerticalSpread), 10 },
@@ -429,6 +442,10 @@ static_assert(sizeof(OrderedMenu) / sizeof(OrderedMenu[0]) == MenuRows);
 inline bool MenuRowVisible(int row) {
     if (!ExactStatesEnabled && ExactStateRow(row)) return false;
     if (row == int(Setting::PhysicalSword) || row == int(Setting::PhysicalShield) || row == int(Setting::PhysicalBow) || row == int(Setting::PhysicalBottle) || row == int(Setting::PhysicalCarry) || row == int(Setting::PhysicalMasks) || row == int(Setting::PhysicalFists) || row == int(Setting::PhysicalFins) || row == int(Setting::TrackedAim)) return false;
+    // Retain saved IDs, but one shared leg control and the human body control
+    // now own these policies. Retired rows also stay out of both search menus.
+    if (row == int(Setting::HideLegs) || row == int(Setting::KafeiBody) ||
+        (row >= int(Setting::HideHumanBodyLegs) && row <= int(Setting::HideDeityBodyLegs))) return false;
     if (row == int(Setting::AreaPanoramaScreens)) return false;
     if(!PrivateDebugTools && (row==DebugReturnRow || row==SkipDayRow || row==SkipTwoHoursRow || row==int(Setting::DebugRoomSpawn) ||
        row==int(Setting::DebugSkipCutscenes) || row==int(Setting::DebugHitboxes) || row==int(Setting::SwordDiagnostics)))return false;

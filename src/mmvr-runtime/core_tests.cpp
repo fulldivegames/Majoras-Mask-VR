@@ -1,4 +1,5 @@
 #include "body_collision.h"
+#include "wearable_mask.h"
 #include "notebook_book.h"
 #include "body_ik.h"
 #include "body_roll.h"
@@ -79,6 +80,58 @@ int main(){
     check(mmvr::Settings{}.Get(mmvr::Setting::QuickWheelAllItems)==0);
     check(mmvr::SettingTab(int(mmvr::Setting::QuickWheelAllItems))==mmvr::ItemsTab);
     check(mmvr::Settings{}.Get(mmvr::Setting::GreatFairyMaskCue)==1);
+    {
+        mmvr::Settings overlay;
+        check(overlay.Get(mmvr::Setting::WearableMaskOverlay)==0);
+        check(mmvr::SettingTab(int(mmvr::Setting::WearableMaskOverlay))==mmvr::HudTab);
+        bool adjacent=false;
+        for(size_t i=1;i<std::size(mmvr::OrderedMenu);++i)
+            if(mmvr::OrderedMenu[i].row==int(mmvr::Setting::WearableMaskOverlay))
+                adjacent=mmvr::OrderedMenu[i-1].row==int(mmvr::Setting::MaskStatus) && mmvr::OrderedMenu[i].section==10;
+        check(adjacent);
+        check(std::size(mmvr::WearableMaskAssets)==19);
+        for(int item=-1;item<256;++item) {
+            const bool supported=item>=0x36 && item<=0x48;
+            check(bool(mmvr::FindWearableMask(item))==supported);
+            check(mmvr::WearableMaskItem(overlay,item,true)==-1);
+            overlay.Set(mmvr::Setting::WearableMaskOverlay,1);
+            check(mmvr::WearableMaskItem(overlay,item,true)==(supported?item:-1));
+            check(mmvr::WearableMaskItem(overlay,item,false)==-1);
+            overlay.Set(mmvr::Setting::WearableMaskOverlay,0);
+        }
+        XrFovf left{-.95f,.65f,.8f,-.7f},right{-.65f,.95f,.8f,-.7f};
+        auto a=mmvr::WearableMaskUv(left,left,right),b=mmvr::WearableMaskUv(right,left,right);
+        check(close(a[0],0)&&close(b[2],1)&&a[2]<1&&b[0]>0);
+        check(close(a[1],0)&&close(a[3],1));
+        auto rayUv=[](const XrFovf& eye,const std::array<float,4>& uv){
+            return uv[0]+(-std::tan(eye.angleLeft)/(std::tan(eye.angleRight)-std::tan(eye.angleLeft)))*(uv[2]-uv[0]);};
+        check(close(rayUv(left,a),rayUv(right,b)));
+        check(mmvr::WearableMaskUv({},{},{})==std::array<float,4>{0,0,1,1});
+        for(const auto& asset:mmvr::WearableMaskAssets) {
+            auto aa=mmvr::WearableMaskUv(left,left,right,asset.item),bb=mmvr::WearableMaskUv(right,left,right,asset.item);
+            check(close(rayUv(left,aa),rayUv(right,bb)));
+            if(asset.item==0x39 || asset.item==0x3e || asset.item==0x47) check(aa==a && bb==b);
+            else check(aa[0]<a[0] && aa[2]>a[2] && aa[1]<a[1] && aa[3]>a[3]);
+        }
+        // Captain's visual face reaches the wear slot while the holding palm
+        // can stay outside it. Removal retains the original grip-based slot.
+        XrPosef palm{{0,0,0,1},{0,.07f,.03f}},head{{0,0,0,1},{0,0,0}};
+        check(!mmvr::InMaskFaceSlot(palm,head,.14f));
+        check(mmvr::InMaskFaceSlot(mmvr::CaptainMaskWearContact(palm,.42f),head,.14f));
+    }
+    check(mmvr::Settings{}.Get(mmvr::Setting::HideBunnyHood)==1);
+    check(mmvr::Settings{}.Get(mmvr::Setting::HideBodyLegs)==0);
+    check(mmvr::MenuRowVisible(int(mmvr::Setting::HideBodyLegs)));
+    for(auto retired : {mmvr::Setting::HideLegs,mmvr::Setting::KafeiBody,
+        mmvr::Setting::HideHumanBodyLegs,mmvr::Setting::HideKafeiBodyLegs,mmvr::Setting::HideGoronBodyLegs,
+        mmvr::Setting::HideZoraBodyLegs,mmvr::Setting::HideDekuBodyLegs,mmvr::Setting::HideDeityBodyLegs})
+        check(!mmvr::MenuRowVisible(int(retired)));
+    for(int hand=0;hand<2;++hand)for(float d : {-1.f,1.f}) {
+        auto owl=mmvr::NativeChoiceInput({},0,hand?0:d,0,hand?d:0,false,false,true);
+        check(owl.x==(d>0?-85:85) && owl.y==0 && owl.rightX==0 && owl.rightY==0);
+        auto normal=mmvr::NativeChoiceInput({},0,d,0,0,false,false);
+        check(normal.x==0 && normal.y==(d>0?85:-85));
+    }
     check(mmvr::SettingTab(int(mmvr::Setting::GreatFairyMaskCue))==mmvr::ViewTab);
     check(mmvr::SettingTab(int(mmvr::Setting::QuickWheelItems))==mmvr::ItemsTab);
     for(float scale : {.5f,1.f,2.f}) for(float blade : {13.77f,15.52f,29.98f,51.48f,47.f}) {
@@ -1707,23 +1760,20 @@ int main(){
             auto animation=mmvr::Multiply(mmvr::PoseMatrix({{std::sin(lean/2),0,0,std::cos(lean/2)},{0,0,0}}),
                 mmvr::YawPose(yaw,3.f*i,2.f*std::sin(i),-4.f*i));
             mmvr::Matrix bones[mmvr::BodyBoneCount]{};
-            bones[0]=mmvr::Multiply(mmvr::YawPose(0,-8*scale,30*scale),animation);
-            bones[3]=mmvr::Multiply(mmvr::YawPose(0,8*scale,30*scale),animation);
+            bones[0]=mmvr::Multiply(mmvr::YawPose(0,8*scale,30*scale),animation);
+            bones[3]=mmvr::Multiply(mmvr::YawPose(0,-8*scale,30*scale),animation);
             bones[6]=mmvr::Multiply(mmvr::YawPose(0,0,34*scale),animation);
             bones[7]=mmvr::Multiply(mmvr::YawPose(0,0,15*scale),animation);
             auto target=mmvr::YawPose(-.11f*i,20,40*scale,30),correction=mmvr::Matrix{};
-            check(AnchorTorso(bones,yaw,target,correction));
-            mmvr::Matrix explicitDefault{};
-            check(AnchorTorso(bones,yaw,target,explicitDefault,TorsoBasis::NativeForward));
-            check(std::memcmp(&correction,&explicitDefault,sizeof(correction))==0);
+            check(AnchorTorso(bones,target,correction));
             check(Length(Transform(Position(bones[6]),correction)-Position(target))<.001f);
             const auto waist=Transform(Position(bones[7]),correction);
             check(std::abs(waist.x-20)<.001f && std::abs(waist.z-30)<.001f);
             check(std::abs(Length(waist-Position(target))-19*scale)<.001f);
             const auto shoulder=Transform(Position(bones[3]),correction)-Transform(Position(bones[0]),correction);
-            check(Length(shoulder-Vec{target.m[0][0],target.m[0][1],target.m[0][2]}*(16*scale))<.001f);
+            check(Length(shoulder-Vec{target.m[0][0],target.m[0][1],target.m[0][2]}*(-16*scale))<.001f);
         }
-        // Zora's free-swim torso crosses the forward hemisphere boundary. A
+        // Native receipt/impact/swim torsos cross the forward hemisphere. A
         // stateless anatomical basis keeps the left/right shoulder on its own
         // side of the HMD through pitch and roll, including a cold swim start.
         for(float scale:{.5f,1.f,2.f}) for(float yaw:{-.7f,0.f,.9f})
@@ -1743,17 +1793,16 @@ int main(){
             const auto head=mmvr::YawPose(yaw+.3f,25,50,40);
             const auto target=mmvr::YawPose(mmvr::PoseYaw(head)-pi,25,50,40);
             mmvr::Matrix correction{};
-            check(AnchorTorso(bones,yaw,target,correction,TorsoBasis::AnatomicalShoulders));
+            check(AnchorTorso(bones,target,correction));
             const auto local=mmvr::Multiply(correction,mmvr::InversePose(head));
             const auto left=Transform(Position(bones[0]),local),right=Transform(Position(bones[3]),local);
             check(std::abs(left.x+6.3f*scale)<.001f && std::abs(right.x-6.3f*scale)<.001f);
             check(Length(Transform(Position(bones[6]),correction)-Position(target))<.001f);
             check(std::abs(Length(Transform(Position(bones[7]),correction)-Position(target))-19*scale)<.001f);
-            // Returning to the ordinary upright native basis has no yaw/side
-            // snap; the other forms and their callers keep the legacy policy.
+            // Upright entry uses the same basis without a mode-dependent snap.
             if(degrees==0 && rollDegrees==0) {
                 mmvr::Matrix standing{};
-                check(AnchorTorso(bones,yaw,target,standing));
+                check(AnchorTorso(bones,target,standing));
                 for(int row=0;row<4;++row) for(int col=0;col<4;++col)
                     check(std::abs(standing.m[row][col]-correction.m[row][col])<.001f);
             }

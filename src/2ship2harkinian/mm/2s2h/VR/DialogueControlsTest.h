@@ -7,12 +7,38 @@ float MMVR_DialogueScale(int);
 int MMVR_TextAlpha(int);
 void Player_Action_ExchangeItem(Player*,PlayState*);
 int MMVR_ItemPresentationPosition(float*);
+void KaleidoScope_UpdateWorldMapCursor(PlayState*);
+int MMVR_InstrumentInputActive(void);
 }
 static void NativeDialogueControlsTest(PlayState* play) {
  auto settings=mmvr::GetSettings();auto saved=*GET_PLAYER(play);auto msg=play->msgCtx;
  auto input=*CONTROLLER1(&play->state);auto* p=GET_PLAYER(play);int failures=0;
  std::ofstream log("native-dialogue-controls.log");
  auto check=[&](bool ok,const char* what){log<<(ok?"PASS ":"FAIL ")<<what<<"\n";failures+=!ok;};
+ const auto savedPause=play->pauseCtx;
+ p->stateFlags2 |= PLAYER_STATE2_USING_OCARINA;
+ play->pauseCtx.state=PAUSE_STATE_OFF;
+ check(MMVR_InstrumentInputActive(),"regular instrument still owns notes");
+ for(int state=PAUSE_STATE_OWL_WARP_0;state<=PAUSE_STATE_OWL_WARP_6;++state){
+  play->pauseCtx.state=state;
+  check(!MMVR_InstrumentInputActive(),"owl map releases instrument input despite stale flag");
+ }
+ play->pauseCtx.state=PAUSE_STATE_OWL_WARP_SELECT;
+ for(auto& point:play->pauseCtx.worldMapPoints)point=1;
+ play->pauseCtx.cursorPoint[PAUSE_WORLD_MAP]=OWL_WARP_CLOCK_TOWN;
+ for(int hand=0;hand<2;++hand)for(int axis=0;axis<2;++axis)for(float direction:{-1.f,1.f}){
+  const float x=axis==0?direction:0,y=axis==1?direction:0;
+  auto choice=mmvr::NativeChoiceInput({},hand?0:x,hand?0:y,hand?x:0,hand?y:0,false,false,true);
+  check((choice.x<0)==(axis==1?direction>0:direction<0),"up previous down next native owl destination");
+  check(std::abs(choice.x)>30 && !choice.buttons,"either stick selects destinations without notes");
+  play->pauseCtx.stickAdjX=choice.x;play->pauseCtx.stickAdjY=0;
+  const auto before=play->pauseCtx.cursorPoint[PAUSE_WORLD_MAP];
+  KaleidoScope_UpdateWorldMapCursor(play);
+  check(play->pauseCtx.cursorPoint[PAUSE_WORLD_MAP]!=before,"native owl cursor moves");
+ }
+ check(mmvr::NativeChoiceInput({},0,0,0,0,true,false).buttons==BTN_A,"owl confirmation preserved");
+ check(mmvr::NativeChoiceInput({},0,0,0,0,false,true).buttons==BTN_B,"owl cancellation preserved");
+ play->pauseCtx=savedPause;*p=saved;
  const std::string oldEnable=std::getenv("MMVR_ENABLE")?std::getenv("MMVR_ENABLE"):"0";
 #ifdef _WIN32
  _putenv_s("MMVR_ENABLE","1");

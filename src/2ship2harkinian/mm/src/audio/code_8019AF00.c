@@ -2103,8 +2103,12 @@ void AudioOcarina_ReadControllerInput(void) {
     // VR note sample without consuming button edges or accessing game state here.
     unsigned short vrNotes;
     if (MMVR_InstrumentButtons(&vrNotes)) {
-        sOcarinaInputButtonCur = vrNotes;
-        sOcarinaInputStickRel.x = sOcarinaInputStickRel.y = 0;
+        // The focused VR sample supplements native/custom gamepad notes.
+        // Idle VR controllers must not erase a connected gamepad's input.
+        sOcarinaInputButtonCur |= vrNotes;
+        if (vrNotes != 0) {
+            sOcarinaInputStickRel.x = sOcarinaInputStickRel.y = 0;
+        }
     }
 #endif
 }

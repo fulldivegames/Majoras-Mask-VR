@@ -1,8 +1,8 @@
 {
   "done": [
     {
-      "source": "overlays/actors/ovl_En_Elforg/z_en_elforg.c",
-      "locals": 4
+      "source": "code/z_play.c",
+      "locals": 10
     }
   ],
   "failures": {}

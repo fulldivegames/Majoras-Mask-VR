@@ -3,40 +3,40 @@
   "include": "ae424d735b8f8c22.inc",
   "variables": [
     {
-      "name": "mmvr_local_0609eb68f306bf30",
+      "name": "mmvr_local_f9cc9735bc0a91e9",
       "original": "sScarecrowAfterCreditsState",
       "function": "AudioOcarina_PlayLongScarecrowSong",
-      "line": 3422,
-      "at": 129052
+      "line": 3426,
+      "at": 129248
     },
     {
-      "name": "mmvr_local_50298c6cb45a15cf",
+      "name": "mmvr_local_e1c3d77f69c535d8",
       "original": "sScarecrowAfterCreditsIntrumentId",
       "function": "AudioOcarina_PlayLongScarecrowSong",
-      "line": 3423,
-      "at": 129100
+      "line": 3427,
+      "at": 129296
     },
     {
-      "name": "mmvr_local_7f908f6674b49a53",
+      "name": "mmvr_local_4a03fcd514cc8a6e",
       "original": "sScarecrowAfterCreditsTimer",
       "function": "AudioOcarina_PlayLongScarecrowSong",
-      "line": 3424,
-      "at": 129180
+      "line": 3428,
+      "at": 129376
     },
     {
-      "name": "mmvr_local_433732a3615ed694",
+      "name": "mmvr_local_ffd5f019fe44bb9b",
       "original": "sZVolumes",
       "function": "AudioSfx_SetProperties",
-      "line": 4012,
-      "at": 147045
+      "line": 4016,
+      "at": 147241
     },
     {
-      "name": "mmvr_local_631e3b0de1ef59bf",
+      "name": "mmvr_local_a9bac78950a10216",
       "original": "sSfxOriginalPos",
       "function": "Audio_PlaySfx_AtFixedPos",
-      "line": 6391,
-      "at": 233863
+      "line": 6395,
+      "at": 234059
     }
   ],
-  "sourceSha256": "0b22c4220379f91b941007fc2c30c61a69724d371b1ca3b1a90c2f3b879cd84f"
+  "sourceSha256": "ffbb3ca9f53dc535b2bd68e6a1320e5bf2bdefca323eaac0386422eeb920743b"
 }

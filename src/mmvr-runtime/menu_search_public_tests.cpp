@@ -73,6 +73,16 @@ int main() {
         }
     }
     require(instantItemsFound);
+    bool maskOverlayFound=false;
+    for(const auto& entry:mmvr::VrMenuSearchEntries(menu))
+        if(entry.row==int(mmvr::Setting::WearableMaskOverlay)) {
+            maskOverlayFound=true;
+            require(mmvr::VrMenuSearchMatch("wearable mask overlay",entry));
+            require(menu.FocusSearchRow(entry.row));
+            require(menu.tab==mmvr::HudTab);
+        }
+    require(maskOverlayFound);
+    require(mmvr::GetSettings().Get(mmvr::Setting::WearableMaskOverlay)==0);
     require(mmvr::GetSettings().Get(mmvr::Setting::QuickWheelAllItems)==0);
     std::printf("Public VR menu search: %u checks passed\n", checks);
 }

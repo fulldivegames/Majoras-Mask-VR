@@ -22,7 +22,7 @@ inline XrPosef ExtendedMenuPose(XrPosef pose, float width, unsigned height) {
     pose.position.z += offset * 2.f * (q.y*q.z + q.w*q.x);
     return pose;
 }
-enum class UiKind { Hud, Menu, Selector, Theater, HeldMask, MaskStatus, Vision, ScreenFade, MotionBlur, Reveal };
+enum class UiKind { Hud, Menu, Selector, Theater, HeldMask, MaskStatus, Vision, ScreenFade, MotionBlur, Reveal, WearableMask };
 struct UiDrawFrame {
     UiKind kind;
     unsigned width, height;
@@ -32,6 +32,8 @@ struct UiDrawFrame {
     XrFovf eyeFov{ -.785398f, .785398f, .785398f, -.785398f };
     uintptr_t historyTexture = 0;
     float historyAlpha = 0;
+    uintptr_t wearableMaskTexture = 0;
+    std::array<float,4> wearableMaskUv{0,0,1,1};
 };
 using UiDrawCallback = void (*)(const UiDrawFrame&);
 using SettingCallback = void (*)(Setting, float);
@@ -143,6 +145,7 @@ float LensVision() noexcept;
 void SetUiCallbacks(UiDrawCallback, SettingCallback, SlotCallback) noexcept;
 void SetMaskContext(int item, bool worn) noexcept;
 void SetMaskIcon(uintptr_t texture) noexcept;
+void SetWearableMaskTexture(int item, uintptr_t texture) noexcept;
 void SetMaskInventory(int selected, int worn, bool allowed) noexcept;
 int WornMaskItem() noexcept;
 bool MaskTriggerClaimed() noexcept;

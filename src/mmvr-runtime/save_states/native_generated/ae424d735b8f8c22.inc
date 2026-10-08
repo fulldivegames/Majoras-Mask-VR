@@ -909,30 +909,30 @@ void MMVR_StateVisit_ae424d735b8f8c22(MMVR_StateSink* sink) {
     }
     sink->block(sink->context, "audio/code_8019AF00.c::sBigBellsVolume", &sBigBellsVolume, sizeof(sBigBellsVolume));
     if(sink->layout) {
-    sink->layout(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsState::local0", "scalar:unsigned char", 0, sizeof(mmvr_local_0609eb68f306bf30), MMVR_STATE_SCALAR_ALIGN(mmvr_local_0609eb68f306bf30), 1);
+    sink->layout(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsState::local0", "scalar:unsigned char", 0, sizeof(mmvr_local_f9cc9735bc0a91e9), MMVR_STATE_SCALAR_ALIGN(mmvr_local_f9cc9735bc0a91e9), 1);
     }
-    sink->block(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsState::local0", &mmvr_local_0609eb68f306bf30, sizeof(mmvr_local_0609eb68f306bf30));
+    sink->block(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsState::local0", &mmvr_local_f9cc9735bc0a91e9, sizeof(mmvr_local_f9cc9735bc0a91e9));
     if(sink->layout) {
-    sink->layout(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsIntrumentId::local0", "scalar:unsigned char", 0, sizeof(mmvr_local_50298c6cb45a15cf), MMVR_STATE_SCALAR_ALIGN(mmvr_local_50298c6cb45a15cf), 1);
+    sink->layout(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsIntrumentId::local0", "scalar:unsigned char", 0, sizeof(mmvr_local_e1c3d77f69c535d8), MMVR_STATE_SCALAR_ALIGN(mmvr_local_e1c3d77f69c535d8), 1);
     }
-    sink->block(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsIntrumentId::local0", &mmvr_local_50298c6cb45a15cf, sizeof(mmvr_local_50298c6cb45a15cf));
+    sink->block(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsIntrumentId::local0", &mmvr_local_e1c3d77f69c535d8, sizeof(mmvr_local_e1c3d77f69c535d8));
     if(sink->layout) {
-    sink->layout(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsTimer::local0", "scalar:unsigned short", 0, sizeof(mmvr_local_7f908f6674b49a53), MMVR_STATE_SCALAR_ALIGN(mmvr_local_7f908f6674b49a53), 1);
+    sink->layout(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsTimer::local0", "scalar:unsigned short", 0, sizeof(mmvr_local_4a03fcd514cc8a6e), MMVR_STATE_SCALAR_ALIGN(mmvr_local_4a03fcd514cc8a6e), 1);
     }
-    sink->block(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsTimer::local0", &mmvr_local_7f908f6674b49a53, sizeof(mmvr_local_7f908f6674b49a53));
+    sink->block(sink->context, "audio/code_8019AF00.c::AudioOcarina_PlayLongScarecrowSong::sScarecrowAfterCreditsTimer::local0", &mmvr_local_4a03fcd514cc8a6e, sizeof(mmvr_local_4a03fcd514cc8a6e));
     if(sink->layout) {
-    sink->layout(sink->context, "audio/code_8019AF00.c::AudioSfx_SetProperties::sZVolumes::local0", "array:128:scalar:signed char", 0, sizeof(mmvr_local_433732a3615ed694), MMVR_STATE_SCALAR_ALIGN(mmvr_local_433732a3615ed694[0]), 128);
-    sink->layout(sink->context, "audio/code_8019AF00.c::AudioSfx_SetProperties::sZVolumes::local0[]", "scalar:signed char", (size_t)((const unsigned char*)&(mmvr_local_433732a3615ed694[0])-(const unsigned char*)&(mmvr_local_433732a3615ed694)), sizeof(mmvr_local_433732a3615ed694[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_433732a3615ed694[0]), 1);
+    sink->layout(sink->context, "audio/code_8019AF00.c::AudioSfx_SetProperties::sZVolumes::local0", "array:128:scalar:signed char", 0, sizeof(mmvr_local_ffd5f019fe44bb9b), MMVR_STATE_SCALAR_ALIGN(mmvr_local_ffd5f019fe44bb9b[0]), 128);
+    sink->layout(sink->context, "audio/code_8019AF00.c::AudioSfx_SetProperties::sZVolumes::local0[]", "scalar:signed char", (size_t)((const unsigned char*)&(mmvr_local_ffd5f019fe44bb9b[0])-(const unsigned char*)&(mmvr_local_ffd5f019fe44bb9b)), sizeof(mmvr_local_ffd5f019fe44bb9b[0]), MMVR_STATE_SCALAR_ALIGN(mmvr_local_ffd5f019fe44bb9b[0]), 1);
     }
-    sink->block(sink->context, "audio/code_8019AF00.c::AudioSfx_SetProperties::sZVolumes::local0", &mmvr_local_433732a3615ed694, sizeof(mmvr_local_433732a3615ed694));
+    sink->block(sink->context, "audio/code_8019AF00.c::AudioSfx_SetProperties::sZVolumes::local0", &mmvr_local_ffd5f019fe44bb9b, sizeof(mmvr_local_ffd5f019fe44bb9b));
     if(sink->layout) {
-    sink->layout(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0", "array:1:record:Vec3f", 0, sizeof(mmvr_local_631e3b0de1ef59bf), MMVR_STATE_ALIGN_TYPE(Vec3f), 1);
-    sink->layout(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0[]", "record:Vec3f", (size_t)((const unsigned char*)&(mmvr_local_631e3b0de1ef59bf[0])-(const unsigned char*)&(mmvr_local_631e3b0de1ef59bf)), sizeof(mmvr_local_631e3b0de1ef59bf[0]), MMVR_STATE_ALIGN_TYPE(Vec3f), 1);
-    sink->layout(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0[].x", "scalar:float", (size_t)((const unsigned char*)&(mmvr_local_631e3b0de1ef59bf[0].x)-(const unsigned char*)&(mmvr_local_631e3b0de1ef59bf)), sizeof(mmvr_local_631e3b0de1ef59bf[0].x), MMVR_STATE_SCALAR_ALIGN(mmvr_local_631e3b0de1ef59bf[0].x), 1);
-    sink->layout(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0[].y", "scalar:float", (size_t)((const unsigned char*)&(mmvr_local_631e3b0de1ef59bf[0].y)-(const unsigned char*)&(mmvr_local_631e3b0de1ef59bf)), sizeof(mmvr_local_631e3b0de1ef59bf[0].y), MMVR_STATE_SCALAR_ALIGN(mmvr_local_631e3b0de1ef59bf[0].y), 1);
-    sink->layout(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0[].z", "scalar:float", (size_t)((const unsigned char*)&(mmvr_local_631e3b0de1ef59bf[0].z)-(const unsigned char*)&(mmvr_local_631e3b0de1ef59bf)), sizeof(mmvr_local_631e3b0de1ef59bf[0].z), MMVR_STATE_SCALAR_ALIGN(mmvr_local_631e3b0de1ef59bf[0].z), 1);
+    sink->layout(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0", "array:1:record:Vec3f", 0, sizeof(mmvr_local_a9bac78950a10216), MMVR_STATE_ALIGN_TYPE(Vec3f), 1);
+    sink->layout(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0[]", "record:Vec3f", (size_t)((const unsigned char*)&(mmvr_local_a9bac78950a10216[0])-(const unsigned char*)&(mmvr_local_a9bac78950a10216)), sizeof(mmvr_local_a9bac78950a10216[0]), MMVR_STATE_ALIGN_TYPE(Vec3f), 1);
+    sink->layout(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0[].x", "scalar:float", (size_t)((const unsigned char*)&(mmvr_local_a9bac78950a10216[0].x)-(const unsigned char*)&(mmvr_local_a9bac78950a10216)), sizeof(mmvr_local_a9bac78950a10216[0].x), MMVR_STATE_SCALAR_ALIGN(mmvr_local_a9bac78950a10216[0].x), 1);
+    sink->layout(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0[].y", "scalar:float", (size_t)((const unsigned char*)&(mmvr_local_a9bac78950a10216[0].y)-(const unsigned char*)&(mmvr_local_a9bac78950a10216)), sizeof(mmvr_local_a9bac78950a10216[0].y), MMVR_STATE_SCALAR_ALIGN(mmvr_local_a9bac78950a10216[0].y), 1);
+    sink->layout(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0[].z", "scalar:float", (size_t)((const unsigned char*)&(mmvr_local_a9bac78950a10216[0].z)-(const unsigned char*)&(mmvr_local_a9bac78950a10216)), sizeof(mmvr_local_a9bac78950a10216[0].z), MMVR_STATE_SCALAR_ALIGN(mmvr_local_a9bac78950a10216[0].z), 1);
     }
-    sink->block(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0", &mmvr_local_631e3b0de1ef59bf, sizeof(mmvr_local_631e3b0de1ef59bf));
+    sink->block(sink->context, "audio/code_8019AF00.c::Audio_PlaySfx_AtFixedPos::sSfxOriginalPos::local0", &mmvr_local_a9bac78950a10216, sizeof(mmvr_local_a9bac78950a10216));
     sink->function(sink->context, "audio/code_8019AF00.c::AudioOcarina_ReadControllerInput", (void (*)(void))AudioOcarina_ReadControllerInput);
     sink->function(sink->context, "audio/code_8019AF00.c::AudioOcarina_BendPitchTwoSemitones", (void (*)(void))AudioOcarina_BendPitchTwoSemitones);
     sink->function(sink->context, "audio/code_8019AF00.c::AudioOcarina_GetPlayingState", (void (*)(void))AudioOcarina_GetPlayingState);

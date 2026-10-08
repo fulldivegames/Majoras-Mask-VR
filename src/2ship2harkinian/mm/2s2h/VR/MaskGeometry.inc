@@ -74,7 +74,7 @@ static const Visual visuals[]={
  {ITEM_MASK_KEATON,"objects/object_gi_ki_tan_mask/gGiKeatonMaskDL","objects/object_gi_ki_tan_mask/gGiKeatonMaskEyesDL",true},
  {ITEM_MASK_BLAST,"objects/object_gi_mask21/gGiBlastMaskEmptyDL","objects/object_gi_mask21/gGiBlastMaskDL",true},
  {ITEM_MASK_SCENTS,"objects/object_gi_mask22/gGiMaskOfScentsFaceDL","objects/object_gi_mask22/gGiMaskOfScentsTeethDL",false},
- {ITEM_MASK_CAPTAIN,"objects/object_gi_mask18/gGiCaptainsHatBodyDL","objects/object_gi_mask18/gGiCaptainsHatFaceDL",false},
+ {ITEM_MASK_CAPTAIN,"objects/object_gi_mask18/gGiCaptainsHatBodyDL","objects/object_gi_mask18/gGiCaptainsHatFaceDL",false,true},
  {ITEM_MASK_BUNNY,"objects/object_gi_rabit_mask/gGiBunnyHoodDL","objects/object_gi_rabit_mask/gGiBunnyHoodEyesDL",true},
  {ITEM_MASK_TRUTH,"objects/object_gi_truth_mask/gGiMaskOfTruthDL","objects/object_gi_truth_mask/gGiMaskOfTruthAccentsDL",true},
  {ITEM_MASK_GORON,"objects/object_gi_golonmask/gGiGoronMaskEmptyDL","objects/object_gi_golonmask/gGiGoronMaskDL",true},

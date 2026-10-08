@@ -4195,10 +4195,10 @@ void MMVR_StateVisit_c94cd22351dd5d20(MMVR_StateSink* sink) {
     }
     sink->block(sink->context, "code/z_play.c::Play_DrawMain::hasCapturedPauseBuffer::local0", &mmvr_local_33f1cc4121222cee, sizeof(mmvr_local_33f1cc4121222cee));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_play.c::Play_Main::prevInput::local0", "pointer:record:struct Input", 0, sizeof(mmvr_local_498329531a3500b5), MMVR_STATE_ALIGN_TYPE(void*), 1);
+    sink->layout(sink->context, "code/z_play.c::Play_Main::prevInput::local0", "pointer:record:struct Input", 0, sizeof(mmvr_local_a79447b43852ad32), MMVR_STATE_ALIGN_TYPE(void*), 1);
     }
-    sink->block(sink->context, "code/z_play.c::Play_Main::prevInput::local0", &mmvr_local_498329531a3500b5, sizeof(mmvr_local_498329531a3500b5));
-    sink->pointer(sink->context, (const void*)&(mmvr_local_498329531a3500b5), 0, "code/z_play.c::Play_Main::prevInput::local0");
+    sink->block(sink->context, "code/z_play.c::Play_Main::prevInput::local0", &mmvr_local_a79447b43852ad32, sizeof(mmvr_local_a79447b43852ad32));
+    sink->pointer(sink->context, (const void*)&(mmvr_local_a79447b43852ad32), 0, "code/z_play.c::Play_Main::prevInput::local0");
     sink->function(sink->context, "code/z_play.c::Play_DrawMotionBlur", (void (*)(void))Play_DrawMotionBlur);
     sink->function(sink->context, "code/z_play.c::Play_InitMotionBlur", (void (*)(void))Play_InitMotionBlur);
     sink->function(sink->context, "code/z_play.c::Play_DestroyMotionBlur", (void (*)(void))Play_DestroyMotionBlur);

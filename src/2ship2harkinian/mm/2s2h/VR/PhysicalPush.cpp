@@ -71,7 +71,8 @@ mmvr::Matrix ActorDrawPose(PlayState* play, const Actor* actor) {
     return result;
 }
 bool Fresh(PlayState* play, Player* player, float threshold) {
-    return play && player && tracking.player == player && tracking.scene == play->sceneId &&
+    return play && player && !player->actor.freezeTimer && !(player->stateFlags2 & PLAYER_STATE2_80) &&
+        tracking.player == player && tracking.scene == play->sceneId &&
         mmvr::FirstPersonRequested() && mmvr::InputFocused() && mmvr::PhysicalActionsAllowed() &&
         mmvrgame::FirstPersonFormAllowed(player) && !mmvr::MenuPaused() &&
         mmvr::GetSettings().Get(mmvr::Setting::PhysicalCarry) > .5f &&

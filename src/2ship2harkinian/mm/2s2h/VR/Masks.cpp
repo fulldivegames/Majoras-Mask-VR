@@ -1,6 +1,7 @@
 #include "NativeActions.h"
 #ifdef MMVR_ENABLE
 #include "Masks.h"
+#include "mask_fit.h"
 #include "Carry.h"
 #include "MaskModels.h"
 #include "Camera.h"
@@ -38,7 +39,7 @@ bool MaskAllowed(PlayState* play) {
     if (!play)
         return false;
     auto* p = GET_PLAYER(play);
-    return p && !MMVR_ControlledKafei(p) && mmvr::InputFocused() && !mmvr::MenuPaused() && play->pauseCtx.state == PAUSE_STATE_OFF &&
+    return p && !p->actor.freezeTimer && !(p->stateFlags2 & PLAYER_STATE2_80) && !MMVR_ControlledKafei(p) && mmvr::InputFocused() && !mmvr::MenuPaused() && play->pauseCtx.state == PAUSE_STATE_OFF &&
            play->csCtx.state == CS_STATE_IDLE && play->msgCtx.msgMode == MSGMODE_NONE &&
            play->transitionTrigger == TRANS_TRIGGER_OFF && p->csAction == PLAYER_CSACTION_NONE &&
            !p->actor.init && !MMVR_LocalTransformation(p) && !MMVR_ItemPresentationActive(p) && !mmvrgame::NativeViewfinderActive(play) &&
@@ -220,7 +221,12 @@ mmvr::Matrix HeldMaskPose(const mmvr::TrackingFrame& frame, const mmvr::Matrix& 
     auto grip = mmvr::Multiply(mmvr::PoseMatrix(frame.hands[hand]), mmvr::InversePose(mmvr::PoseMatrix(frame.origin)));
     auto aim = mmvr::Multiply(mmvr::PoseMatrix(frame.aims[hand]), mmvr::InversePose(mmvr::PoseMatrix(frame.origin)));
     // Get-item masks face +Z; the outer face points along the controller aim (-Z).
-    auto pose = mmvr::Multiply(mmvr::YawPose(3.141592654f), aim);
+    // Hold the Captain's headgear by its base in the palm, not the pointer ray.
+    const auto& heldOrientation = mask && mask->item == ITEM_MASK_CAPTAIN ? grip : aim;
+    auto orientation = mmvr::YawPose(3.141592654f);
+    if (mask && mask->item == ITEM_MASK_CAPTAIN)
+        orientation = mmvr::CaptainMaskOrientation();
+    auto pose = mmvr::Multiply(orientation, heldOrientation);
     pose.m[3][0] = (grip.m[3][0] - head.m[3][0]) * 40;
     pose.m[3][1] = grip.m[3][1] * 40;
     pose.m[3][2] = (grip.m[3][2] - head.m[3][2]) * 40;

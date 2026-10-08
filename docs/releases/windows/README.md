@@ -3,7 +3,7 @@ Full Motion Majora's Mask VR mod, made by Full Dive Games.
 
 Disclaimer: This is made using Vibe coding. I make no money from this mod, and I've put a lot of time and testing into making it polished, fun, and fully playable.
 
-**v0.34:** Tracked Kafei body, fairy-mask proximity sparkles, Zora swim visual fix, optional Goron roll binding, instant wheel retrieval and rolling speed-line toggle. Save states remain disabled. Use menu and owl saving. Existing save files are preserved.
+**v0.35:** Body and mask fixes, optional wearable mask overlays, instrument and Soaring controls, and ReDead/Gibdo freeze behavior. Save states remain disabled; use menu and owl saving.
 
 ## First installation
 
@@ -23,7 +23,7 @@ This is an independent fan project. Nintendo does not make or endorse it. Ninten
 
 ## Beta release status
 
-This release is **version 0.1 beta**. It is intended to be fully playable, but a complete playthrough and every possible scenario have not been verified. Game systems, items, masks and functions have undergone development testing; that is not a guarantee that every combination or situation is free of bugs. Quest performance is not yet perfect and may vary by area and configuration. Please report reproducible issues, including your platform and build version.
+This release is **version 0.35 beta**. It is intended to be fully playable, but a complete playthrough and every possible scenario have not been verified. Game systems, items, masks and functions have undergone development testing; that is not a guarantee that every combination or situation is free of bugs. Quest performance is not yet perfect and may vary by area and configuration. Please report reproducible issues, including your platform and build version.
 
 ## PC runtime and headset setup
 
@@ -119,7 +119,7 @@ Optional **Ready all items on selection** in the same section also puts bottles,
 - **Bottles:** equip an empty bottle and physically scoop through catchable creatures or water. A filled bottle uses the item trigger to release/pour its contents. Potions and milk retain their drinking action. Quest creatures such as the Deku Princess still require their native story conditions.
 - **Masks:** select a mask, hold the dominant trigger to hold it, bring it to the face slot and release there to wear it. Changing selected equipment does not remove a worn mask. With either free hand at your face, press trigger, pull the mask away, then release. Press at the face rather than holding trigger before reaching it. Story-locked transformations cannot be removed early. Wearing another owned, permitted mask can replace the current mask.
 - **Quest handoffs:** select the requested item, approach the NPC and use the item trigger. This also works during an item-request dialogue. The offer keeps native item/quest eligibility; not every NPC accepts every item or supports offering before conversation.
-- **Other usable items:** select them and use the dominant trigger. The Lens of Truth retains its magic cost. For a pictograph, aim with your head and frame the subject inside the box. Take the photo, then choose whether to keep it. Follow native on-screen confirmation prompts for photographs and telescope interactions.
+- **Other usable items:** select them and use the dominant trigger. The Lens of Truth stays active when you select the bow or another ordinary item; its normal magic cost still applies. For a pictograph, aim with your head and frame the subject inside the box. Take the photo, then choose whether to keep it. Follow native on-screen confirmation prompts for photographs and telescope interactions.
 - **Shoulder holster:** with no conflicting selected/held item, reach behind the shoulder and press the dominant trigger to draw or stow the sword. The feature is configurable in Items.
 
 ## Forms, movement and songs
@@ -140,7 +140,7 @@ Optional **Ready all items on selection** in the same section also puts bottles,
 
 While shielding/curling as Goron, your view lowers and returns to standing height when you release. Deku shielding and ordinary Link rolling keep the stable camera.
 
-To escape a ReDead grab, shake your controllers back and forth repeatedly. The original button and stick escape controls still work.
+To escape a ReDead or Gibdo grab, shake your controllers back and forth repeatedly. The original button and stick escape controls still work. Their scream freezes your arms and body and prevents attacks; you can still look around.
 
 ## VR settings and rebinding
 
@@ -231,6 +231,8 @@ With world scale enabled (the default for new settings), recenter while sitting 
 - **Combat:** adjust sword and Goron fist hitbox size without enlarging their models. Fast physical sword spins can use the unlocked great spin when magic is available.
 - **HUD:** choose Headset, Left hand, or Right hand under HUD attachment; Hand HUD size resizes it. Existing HUD opacity still applies; dialogue and menus keep their own settings.
 
+Optional **HUD > HUD visibility and layout > Wearable mask overlay** shows the matching mask interior while you wear it in first person. Off by default; transformation masks and the Giant's Mask are excluded. Bremen marching also shows a cosmetic ocarina in your hand.
+
 Bottle pickup includes hot-spring water and bugs, with world-scale support.
 
 Frame rate options: Uncapped, 120, 90, 80 or 72 FPS. Uncapped removes the game limiter; the headset/runtime still controls display refresh.
@@ -241,6 +243,6 @@ Bow hand angles and holding-hand smoothing are under **Items → Bow and aiming*
 
 **v0.26:** Save game is under System > Session and files. Persistent owl saves, pause-menu saving and remembered location default on for unconfigured settings. Combat has an optional target-centered lock-on orbit. 2Ship search also finds VR settings.
 
-In first person, the Bombers' Notebook is a held open book: touch entries and arrows, or use the usual stick and B controls. **View > Body visibility** has separate tracked-body options. Human, Kafei, Zora and Deku default on; Goron and Fierce Deity default off. Kafei body works with the Play as Kafei option and quest handoff. Motion blur defaults off; restore it under **View > Comfort and cutscenes**. Extra non-VR options are under **FullDiveGames Additions** in 2Ship.
+In first person, the Bombers' Notebook is a held open book: touch entries and arrows, or use the usual stick and B controls. **View > Body visibility** has separate tracked-body options. Human, Zora and Deku default on; Goron and Fierce Deity default off. Kafei follows Human body with tracked arms, in character mode and quest handoffs. One Hide legs option applies to every body; it defaults off. Motion blur defaults off; restore it under **View > Comfort and cutscenes**. Extra non-VR options are under **FullDiveGames Additions** in 2Ship.
 
 The Great Fairy Mask shows subtle view-edge sparkles when it detects a stray fairy. This defaults on; change it under **View > Fairy**.

@@ -27,9 +27,27 @@ static bool NativeStageInstrumentContextChecks(PlayState* play, std::ostream& lo
                 const bool expected=view==2 && (regular || (scripted &&
                     (mode==MSGMODE_SONG_PROMPT_STARTING || mode==MSGMODE_SONG_PROMPT)));
                 ok &= bool(MMVR_InstrumentOverlay())==expected; ++assertions;
+                const bool inputExpected=regular || (scripted &&
+                    (mode==MSGMODE_SONG_PROMPT_STARTING || mode==MSGMODE_SONG_PROMPT));
+                ok &= bool(MMVR_InstrumentInputActive())==inputExpected; ++assertions;
             }
         }
     }
+    const auto custom = CVarGetInteger("gEnhancements.Playback.CustomizeOcarinaControls",0);
+    const auto rightStick = CVarGetInteger("gEnhancements.Playback.RightStickOcarina",0);
+    for (int view : {0,1,2}) for (int form = 0; form < PLAYER_FORM_MAX; ++form)
+    for (int customized : {0,1}) for (int stickEnabled : {0,1}) {
+        mmvr::ApplyViewMode(view); p->transformation=form;
+        p->stateFlags2=PLAYER_STATE2_USING_OCARINA;
+        CVarSetInteger("gEnhancements.Playback.CustomizeOcarinaControls",customized);
+        CVarSetInteger("gEnhancements.Playback.RightStickOcarina",stickEnabled);
+        ok &= bool(MMVR_InstrumentInputActive()); ++assertions;
+        for (unsigned short note : {BTN_A,BTN_CDOWN,BTN_CRIGHT,BTN_CLEFT,BTN_CUP}) {
+            ok &= bool(MMVR_TestInstrumentAudioSample(note)); ++assertions;
+        }
+    }
+    CVarSetInteger("gEnhancements.Playback.CustomizeOcarinaControls",custom);
+    CVarSetInteger("gEnhancements.Playback.RightStickOcarina",rightStick);
     *p=saved; play->csCtx.state=scriptState; play->msgCtx.msgMode=messageMode;
     mmvr::ApplyViewMode(2);
     log << "instrument-context assertions=" << assertions << " passed=" << ok << '\n' << std::flush;
