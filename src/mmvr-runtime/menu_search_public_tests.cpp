@@ -23,6 +23,7 @@ int main() {
         require(entry.row != int(mmvr::Setting::PhysicalFists));
         require(entry.row != int(mmvr::Setting::PhysicalFins));
         require(entry.row != int(mmvr::Setting::TrackedAim));
+        require(entry.row != int(mmvr::Setting::HideBunnyHood));
         require(menu.FocusSearchRow(entry.row));
     }
     require(!menu.FocusSearchRow(mmvr::MenuRows + 33));
@@ -84,5 +85,16 @@ int main() {
     require(maskOverlayFound);
     require(mmvr::GetSettings().Get(mmvr::Setting::WearableMaskOverlay)==0);
     require(mmvr::GetSettings().Get(mmvr::Setting::QuickWheelAllItems)==0);
+    bool drawAimFound=false;
+    for(const auto& entry:mmvr::VrMenuSearchEntries(menu))
+        if(entry.row==int(mmvr::Setting::BowDrawHandAim)) {
+            drawAimFound=true;
+            require(mmvr::VrMenuSearchMatch("draw-hand fine bow aiming",entry));
+            require(mmvr::VrMenuSearchMatch("bow aiming",entry));
+            require(menu.FocusSearchRow(entry.row));
+            require(menu.tab==mmvr::ItemsTab);
+        }
+    require(drawAimFound);
+    require(mmvr::GetSettings().Get(mmvr::Setting::BowDrawHandAim)==0);
     std::printf("Public VR menu search: %u checks passed\n", checks);
 }

@@ -43,6 +43,10 @@ Gfx *ResourceMgr_LoadGfxByName(const char *);
 #include "overlays/actors/ovl_En_Sellnuts/z_en_sellnuts.h"
 #include "overlays/actors/ovl_Obj_Bean/z_obj_bean.h"
 #include "overlays/actors/ovl_Obj_Tsubo/z_obj_tsubo.h"
+#include "overlays/actors/ovl_En_Zog/z_en_zog.h"
+#include "overlays/actors/ovl_En_Talk_Gibud/z_en_talk_gibud.h"
+void func_80B93BA8(EnZog*, s16);
+void func_80B943C0(EnZog*, PlayState*);
 void func_80A5B490(EnKusa2 *, PlayState *);
 void MMVR_PlayerEquipSword(PlayState *, Player *, ItemId);
 void Player_UseItem(PlayState *, Player *, ItemId);
@@ -292,7 +296,10 @@ const Pad pads[] = {{"DEKU BABA", -820, 470, ACTOR_EN_DEKUBABA, 0},
                     {"RAZOR SWORD", -460, -1030, -16, ITEM_SWORD_RAZOR},
                     {"GILDED SWORD", -200, -1030, -16, ITEM_SWORD_GILDED},
                     {"HERO SHIELD", 60, -1030, -17, ITEM_SHIELD_HERO},
-                    {"MIRROR SHIELD", 320, -1030, -17, ITEM_SHIELD_MIRROR}};
+                    {"MIRROR SHIELD", 320, -1030, -17, ITEM_SHIELD_MIRROR},
+                    // Native well Gibdo: no path or quest switch prerequisite.
+                    // It screams/grabs normally unless the Gibdo Mask is worn.
+                    {"GIBDO", -820, -430, ACTOR_EN_TALK_GIBUD, EN_TALK_GIBUD_SWITCH_FLAG_NONE << 4}};
 #include "DebugCatalog.inc"
 #include "DebugCutsceneCatalog.inc"
 void BuildCutsceneAssets() {
@@ -923,9 +930,11 @@ extern "C" int MMVR_DebugExchangeNpcInit(Actor *actor, PlayState *play) {
     return true;
 }
 extern "C" void MMVR_DebugOnSaveLoad(int slot) {
+    giantCutsceneTrial = false;
     trial = -1;
     trialSnapshot = trialReturning = false;
     townPanoramaPending = -1;
+    storyScenePending = -1;
     requested = mmvr::PrivateDebugTools && slot == 2 &&
         gSaveContext.save.saveInfo.inventory.items[SLOT_MASK_DEKU] == ITEM_MASK_DEKU &&
         mmvr::GetSettings().Get(mmvr::Setting::DebugRoomSpawn) > .5f;
@@ -1127,6 +1136,7 @@ extern "C" void MMVR_DebugRoomUpdate(PlayState *play) {
     if (mmvr::debugReturnRequested.exchange(false))
         MMVR_DebugTrialReturn(play);
     MaybeStartTownPanorama(play);
+    MaybeStartStoryScene(play);
     MaybePlaceKoumeCheckpoint(play);
     MaybePlaceInteractionRoomCheckpoint(play);
     MaybePlaceGrottoRockCheckpoint(play);
@@ -1242,6 +1252,43 @@ extern "C" void MMVR_DebugRoomDraw(PlayState *play, void *roomPointer, unsigned 
         }
     }
 }
+#ifdef MMVR_LOCAL_TEST_TOOLS
+extern "C" int MMVR_DebugNativeTriggerPadTestBegin(PlayState* play, int index) {
+    const char* native = std::getenv("MMVR_NATIVE_TEST");
+    const char* protectedSaves = std::getenv("MMVR_PROTECT_SAVES");
+    if (!mmvr::PrivateDebugTools || !native || std::string(native) != "1" ||
+        !protectedSaves || std::string(protectedSaves) != "1" || !MMVR_DebugRoomActive(play) ||
+        index < 0 || index >= visibleNativeTriggerCount)
+        return false;
+    auto* player = GET_PLAYER(play);
+    if (!player || player->csAction != PLAYER_CSACTION_NONE || play->msgCtx.msgMode != MSGMODE_NONE ||
+        (player->stateFlags1 & PLAYER_STATE1_TALKING) || play->transitionTrigger != TRANS_TRIGGER_OFF)
+        return false;
+    // Exercise the same group/page/entry pad routing used by the visitor.
+    const Vec3f before = player->actor.world.pos;
+    auto step = [&](float x, float z) {
+        player->actor.world.pos = {x, 0, z};
+        UpdateCutsceneCatalogPads(play, player);
+    };
+    auto leave = [&] { step(3600, -2200); };
+    leave(); step(4050, -3000); leave();
+    const int relative = ARRAY_COUNT(debugCutscenes) - scriptedCutsceneCount + index;
+    for (int page = 0; page < relative / cutscenePerPage; ++page) {
+        step(4050, -2600); leave();
+    }
+    const int pad = relative % cutscenePerPage;
+    if (!cutsceneGroup || cutscenePage != relative / cutscenePerPage ||
+        CutsceneEntryIndex(pad) != ARRAY_COUNT(debugCutscenes) + index ||
+        CutsceneCatalogMesh().commands.empty()) {
+        player->actor.world.pos = before;
+        return false;
+    }
+    step(float(2900 + pad * 440), -1700);
+    player->actor.world.pos = before;
+    return play->transitionTrigger == TRANS_TRIGGER_START &&
+           play->nextEntrance == debugNativeTriggers[index].entrance;
+}
+#endif
 extern "C" void MMVR_DebugRoomTest(PlayState *play) {
     if (!MMVR_DebugRoomActive(play))
         return;
@@ -1348,6 +1395,57 @@ extern "C" void MMVR_DebugRoomScenario(PlayState *play, int t) {
     }
     if (!MMVR_DebugRoomActive(play))
         return;
+#ifdef MMVR_LOCAL_TEST_TOOLS
+    if (const char* only = std::getenv("MMVR_GIBDO_ARENA_ONLY"); only && std::string(only) == "1") {
+        static std::ofstream report("native-gibdo-arena.log");
+        static bool valid = true, screamed = false;
+        auto* player = GET_PLAYER(play);
+        const auto& gibdoPad = pads[ARRAY_COUNT(pads) - 1];
+        auto move = [&](float x, float z) {
+            player->actor.world.pos = player->actor.prevPos = {x, 0, z};
+            player->actor.velocity = gZeroVec3f;
+            player->actor.speed = 0;
+        };
+        auto actor = [&]() -> EnTalkGibud* {
+            for (auto* a = play->actorCtx.actorLists[ACTORCAT_ENEMY].first; a; a = a->next)
+                if (a->id == ACTOR_EN_TALK_GIBUD && a->update && !a->init)
+                    return reinterpret_cast<EnTalkGibud*>(a);
+            return nullptr;
+        };
+        auto checkedSpawn = [&]() {
+            auto* a = actor();
+            const bool ok = a && a->actor.draw && a->actor.params == gibdoPad.params &&
+                a->switchFlag == SWITCH_FLAG_NONE && a->actor.hintId == TATL_HINT_ID_GIBDO &&
+                a->collider.dim.radius > 0 && std::isfinite(a->actor.world.pos.y) &&
+                std::abs(a->actor.world.pos.y) < 2;
+            valid &= ok;
+            report << "spawn-ready=" << ok << '\n' << std::flush;
+        };
+        if (t == 60 || t == 160) move(gibdoPad.x, gibdoPad.z);
+        if (t == 80) {
+            checkedSpawn();
+            move(-170, 100);
+            player->actor.world.rot.y = player->actor.shape.rot.y = s16(0x8000);
+        }
+        if (t > 80 && t < 120) screamed |= player->actor.freezeTimer > 0;
+        if (t == 120 || t == 210) {
+            player->actor.freezeTimer = 0; // Fixture exits before the grab to test clear/respawn.
+            move(pads[6].x, pads[6].z);
+        }
+        if (t == 140 || t == 230) {
+            const bool cleared = actor() == nullptr;
+            valid &= cleared;
+            report << "cleared=" << cleared << '\n' << std::flush;
+        }
+        if (t == 190) checkedSpawn();
+        if (t == 240) {
+            report << (valid && screamed ? "PASS" : "FAIL")
+                   << " Gibdo pad spawn/scream/clear/respawn screamed=" << screamed << '\n' << std::flush;
+            Ship::Context::GetRawInstance()->GetWindow()->Close();
+        }
+        return;
+    }
+#endif
     if (const char* only = std::getenv("MMVR_CARRY_CLIMB_ONLY"); only && std::string(only) == "1") {
         if (t == 60) {
             std::ofstream report("native-carry-climb.log");

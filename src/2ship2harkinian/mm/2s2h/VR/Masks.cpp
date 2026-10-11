@@ -79,10 +79,13 @@ void UpdateMaskContext(PlayState* play) {
         auto* play = gPlayState;
         auto* p = play ? GET_PLAYER(play) : nullptr;
         if (!p) return true;
+        // A ready bow reserves both the holding hand and the string hand.
+        // Otherwise the fresh draw trigger near the cheek grabs a worn mask
+        // before the two-handed bow interaction can consume it.
+        if (BowHeld()) return true;
         if (TryGrabCarry(play, p, hand, true)) return true;
         // Only an empty hand can reach the face; a selected but unheld mask is empty.
-        int occupied = BowHeld() ? mmvr::OffhandController(mmvr::GetSettings())
-                                 : mmvr::SwordController(mmvr::GetSettings());
+        int occupied = mmvr::SwordController(mmvr::GetSettings());
         const bool heldEquipment = ReadyWheelDrawId(play) >= 0 || (p->heldItemAction > PLAYER_IA_LAST_USED &&
                                    p->heldItemAction != PLAYER_IA_ZORA_BOOMERANG &&
                                    (p->heldItemAction < PLAYER_IA_MASK_MIN || p->heldItemAction > PLAYER_IA_MASK_MAX));

@@ -267,7 +267,12 @@ inline void Draw(ImDrawList& list, const UiDrawFrame& frame, ImTextureID frameTe
                     { "Wearable masks", "Optional mask overlays under HUD visibility and layout.", "Improved Captain's Hat fit; cosmetic Bremen march ocarina." },
                     { "Instruments and Soaring", "Fixed first-person instrument input and owl selection.", "Either stick: Left/Up previous; Right/Down next." },
                     { "Lens of Truth", "The Lens stays active when switching to the bow or ordinary items.", "Native magic costs and item restrictions still apply." },
-                    { "ReDead and Gibdo", "Scream freezes arms/body and blocks physical attacks.", "Head tracking continues; shaking controllers still escapes grabs." }
+                    { "ReDead and Gibdo", "Scream freezes arms/body and blocks physical attacks.", "Head tracking continues; shaking controllers still escapes grabs." },
+                    { "v0.36 - Items, movement and cutscenes", "Wheel bottles: reach your mouth to drink; invert and shake to dump.", "NPC offers and normal button controls remain available." },
+                    { "Bow and movement", "Optional draw-hand fine aiming; bow drawing keeps masks on.", "Fixed Goron ladders and gentler Zora water exits." },
+                    { "Masks", "Giant's Mask only equips in its arena; removal stays available.", "Wearable overlays default off; worn Bunny Hood stays hidden." },
+                    { "Story cutscenes", "Romani aliens, Mikau farewell and stolen-mask story use theater.", "Improved private debug starters, text validation and recovery." },
+                    { "Diagnostics and private tools", "Periodic diagnostic writes run off the frame thread.", "Private debug builds include a Gibdo enemy spawner." }
                 };
                 static_assert(std::size(notes) == ReleaseNotesCount);
                 const auto& note = notes[i - ReleaseNotesFirstRow];

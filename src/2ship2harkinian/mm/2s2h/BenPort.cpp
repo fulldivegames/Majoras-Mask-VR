@@ -2533,6 +2533,19 @@ extern "C" void AudioPlayer_Play(const uint8_t* buf, uint32_t len) {
 #ifdef MMVR_ENABLE
     MMVR_DebugAudioSamples(buf,len);
 #endif
+#if defined(MMVR_ENABLE) && defined(MMVR_LOCAL_TEST_TOOLS)
+    // Preserve audio-engine progression/diagnostics while guaranteeing silent
+    // device output for protected local audits. Never active in normal play.
+    const auto enabled = [](const char* key) {
+        const char* value = std::getenv(key);
+        return value && std::strcmp(value, "1") == 0;
+    };
+    if (enabled("MMVR_NATIVE_TEST") && enabled("MMVR_PROTECT_SAVES") && enabled("MMVR_AUDIT_MUTE")) {
+        const std::vector<uint8_t> silence(len, 0);
+        AudioPlayerPlayFrame(silence.data(), len);
+        return;
+    }
+#endif
     AudioPlayerPlayFrame(buf, len);
 }
 

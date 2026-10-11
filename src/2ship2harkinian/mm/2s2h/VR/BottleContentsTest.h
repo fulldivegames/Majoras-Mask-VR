@@ -40,8 +40,9 @@ static void NativeBottleContentsTest(PlayState* play) {
   mmvrgame::SelectItem(play,SLOT_BOTTLE_1,ITEM_BOTTLE);
   if(test.actor==ACTOR_EN_MUSHI2){EnMushi2 bug{};bug.actor.xzDistToPlayer=100;
    bool physicalRange=func_80A68DD4(&bug,play)!=0;
-   mmvr::GetSettings().Set(mmvr::Setting::PhysicalBottle,0);bool nativeRange=func_80A68DD4(&bug,play)==0;
-   mmvr::GetSettings().Set(mmvr::Setting::PhysicalBottle,1);passed&=physicalRange&&nativeRange;
+   // Physical catching is mandatory in first person; native range applies in third person.
+   mmvr::ApplyViewMode(1);bool nativeRange=func_80A68DD4(&bug,play)==0;
+   mmvr::ApplyViewMode(2);passed&=physicalRange&&nativeRange;
   }
   Actor actor{};EnTest5 water{};BgGoronOyu spring{};
   Actor* a=test.actor==ACTOR_EN_TEST5?&water.actor:test.actor==ACTOR_BG_GORON_OYU?&spring.dyna.actor:&actor;

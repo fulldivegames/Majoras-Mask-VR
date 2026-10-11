@@ -3,7 +3,7 @@ Full Motion Majora's Mask VR mod, made by Full Dive Games.
 
 Disclaimer: This is made using Vibe coding. I make no money from this mod, and I've put a lot of time and testing into making it polished, fun, and fully playable.
 
-**v0.35:** Body and mask fixes, optional wearable mask overlays, instrument and Soaring controls, and ReDead/Gibdo freeze behavior. Save states remain disabled; use menu and owl saving.
+**v0.36:** Bottle gestures, optional draw-hand bow aiming, Goron ladders, Zora water exits, and mask/cutscene fixes. Save states remain disabled; use menu and owl saving.
 
 ## First installation
 
@@ -23,7 +23,7 @@ This is an independent fan project. Nintendo does not make or endorse it. Ninten
 
 ## Beta release status
 
-This release is **version 0.35 beta**. It is intended to be fully playable, but a complete playthrough and every possible scenario have not been verified. Game systems, items, masks and functions have undergone development testing; that is not a guarantee that every combination or situation is free of bugs. Quest performance is not yet perfect and may vary by area and configuration. Please report reproducible issues, including your platform and build version.
+This release is **version 0.36 beta**. It is intended to be fully playable, but a complete playthrough and every possible scenario have not been verified. Game systems, items, masks and functions have undergone development testing; that is not a guarantee that every combination or situation is free of bugs. Quest performance is not yet perfect and may vary by area and configuration. Please report reproducible issues, including your platform and build version.
 
 ## PC runtime and headset setup
 
@@ -104,7 +104,7 @@ The headset's system button stays reserved for its operating system. **Controls 
 
 Optional **Items > Bottle and mask tuning > Ready masks and ocarina on selection**: select to hold a mask or start an instrument. Bring the mask to your face to wear it; trigger dismisses it or cancels free instrument play. Off by default.
 
-Optional **Ready all items on selection** in the same section also puts bottles, Deku sticks and other usable items in hand immediately. It is off by default; filled bottles keep their contents until used, and explosives need a fresh trigger press/release to throw.
+Optional **Ready all items on selection** in the same section also puts Deku sticks and other usable items in hand immediately. It is off by default; filled bottles keep their contents until used, and explosives need a fresh trigger press/release to throw.
 
 - **Sword and Deku stick:** draw/select the weapon and swing deliberately through the target. Stationary contact is not an attack. Speed, travel and recovery thresholds are adjustable under Combat. Native weapon damage and item restrictions still apply. Deku sticks retain their burning/breaking behavior.
 - **Spin attack:** hold the sword-hand trigger to charge, then release with the sword held away from you. Full charge defaults to two seconds. The default trigger-spin option turns your view through 360 degrees; disable **Trigger spin turns view** if unwanted. A deliberate physical turn with the sword extended can also trigger a spin. Magic tiers require acquired, available magic. Keep the blade extended during the attack.
@@ -116,7 +116,7 @@ Optional **Ready all items on selection** in the same section also puts bottles,
 - **Bombchus:** hold the trigger to ready one and release to place it; the placement reticle follows headset aim.
 - **Pots, rocks, boxes and Cuccos:** reach an eligible object with a free hand, press that hand's trigger and hold to carry. Release to drop or throw. Either hand works, subject to the native form's lifting eligibility. Holding a Cucco retains the game's gliding behavior. Nearby pickup targets take priority over taking a selected item into that hand.
 - **Push or pull:** place both palms against a native pushable and hold both triggers. Push or pull with your hands, or use the movement stick at the game's normal speed. Releasing either trigger lets go. The original A-button interaction remains available.
-- **Bottles:** equip an empty bottle and physically scoop through catchable creatures or water. A filled bottle uses the item trigger to release/pour its contents. Potions and milk retain their drinking action. Quest creatures such as the Deku Princess still require their native story conditions.
+- **Bottles:** selecting a bottle from the wheel puts it in your hand. Scoop creatures or water with an empty bottle. For wheel-selected bottles, hold potions or milk at your mouth briefly to drink; turn a bottle upside down and shake to pour water or release creatures/eggs. Trigger use still works. Quest conditions remain unchanged.
 - **Masks:** select a mask, hold the dominant trigger to hold it, bring it to the face slot and release there to wear it. Changing selected equipment does not remove a worn mask. With either free hand at your face, press trigger, pull the mask away, then release. Press at the face rather than holding trigger before reaching it. Story-locked transformations cannot be removed early. Wearing another owned, permitted mask can replace the current mask.
 - **Quest handoffs:** select the requested item, approach the NPC and use the item trigger. This also works during an item-request dialogue. The offer keeps native item/quest eligibility; not every NPC accepts every item or supports offering before conversation.
 - **Other usable items:** select them and use the dominant trigger. The Lens of Truth stays active when you select the bow or another ordinary item; its normal magic cost still applies. For a pictograph, aim with your head and frame the subject inside the box. Take the photo, then choose whether to keep it. Follow native on-screen confirmation prompts for photographs and telescope interactions.
@@ -246,3 +246,5 @@ Bow hand angles and holding-hand smoothing are under **Items → Bow and aiming*
 In first person, the Bombers' Notebook is a held open book: touch entries and arrows, or use the usual stick and B controls. **View > Body visibility** has separate tracked-body options. Human, Zora and Deku default on; Goron and Fierce Deity default off. Kafei follows Human body with tracked arms, in character mode and quest handoffs. One Hide legs option applies to every body; it defaults off. Motion blur defaults off; restore it under **View > Comfort and cutscenes**. Extra non-VR options are under **FullDiveGames Additions** in 2Ship.
 
 The Great Fairy Mask shows subtle view-edge sparkles when it detects a stray fairy. This defaults on; change it under **View > Fairy**.
+
+Optional **Items > Bow and aiming > Draw-hand fine bow aiming** lets small string-hand movements adjust your shot while drawing. Off by default; head aiming takes priority.

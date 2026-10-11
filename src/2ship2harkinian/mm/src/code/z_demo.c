@@ -1,4 +1,5 @@
 #include "2s2h/VR/PresentationOptions.h"
+#include "2s2h/VR/DebugRoom.h"
 #include "prevent_bss_reordering.h"
 #include "prevent_bss_reordering2.h"
 #include "PR/ultratypes.h"
@@ -637,6 +638,11 @@ void CutsceneCmd_Destination(PlayState* play, CutsceneContext* csCtx, CsCmdDesti
     } else if (cmd->type == CS_DESTINATION_BOSS_WARP) {
         if (csCtx->curFrame == cmd->startFrame) {
             Play_DisableMotionBlur();
+#ifdef MMVR_ENABLE
+            if (MMVR_DebugGiantCutsceneExit(play)) {
+                return;
+            }
+#endif
 
             switch (gDungeonBossWarpSceneId) {
                 case SCENE_MITURIN_BS:

@@ -4667,6 +4667,17 @@ void func_80831944(PlayState* play, Player* this) {
 void Player_UseItem(PlayState* play, Player* this, ItemId item) {
     PlayerItemAction itemAction = Player_ItemToItemAction(this, item);
 
+#ifdef MMVR_ENABLE
+    // Direct physical/easy equip bypasses the HUD's disabled C-button check.
+    // Growth is supported only in the native Twinmold arena. An already worn
+    // Giant's Mask may still be removed elsewhere to recover from older builds.
+    if ((itemAction == PLAYER_IA_MASK_GIANT) && (this->currentMask != PLAYER_MASK_GIANT) &&
+        (play->sceneId != SCENE_INISIE_BS)) {
+        Audio_PlaySfx(NA_SE_SY_ERROR);
+        return;
+    }
+#endif
+
     if ((((this->heldItemAction == this->itemAction) &&
           (!(this->stateFlags1 & PLAYER_STATE1_400000) ||
            (Player_MeleeWeaponFromIA(itemAction) != PLAYER_MELEEWEAPON_NONE) || (itemAction == PLAYER_IA_NONE))) ||
@@ -7002,7 +7013,7 @@ s32 func_80835DF8(PlayState* play, Player* this, CollisionPoly** outPoly, s32* o
 /**
  * PLAYER_DOORTYPE_STAIRCASE: DoorSpiral
  */
-static Vec3f mmvr_local_6ed0145c92ee7da3 = { 20.0f, 0.0f, 20.0f };
+static Vec3f mmvr_local_6e31e2d9343d8146 = { 20.0f, 0.0f, 20.0f };
 void Player_Door_Staircase(PlayState* play, Player* this, Actor* door) {
     /* persistent local storage is declared above */
     DoorSpiral* doorStaircase = (DoorSpiral*)door;
@@ -7019,9 +7030,9 @@ void Player_Door_Staircase(PlayState* play, Player* this, Actor* door) {
     this->stateFlags1 |= PLAYER_STATE1_20000000;
     func_80835BF8(&doorStaircase->actor.world.pos, doorStaircase->actor.shape.rot.y, -140.0f, &this->unk_3A0);
 
-    mmvr_local_6ed0145c92ee7da3.x = (this->doorDirection != 0) ? -400.0f : 400.0f;
-    mmvr_local_6ed0145c92ee7da3.z = 200.0f;
-    Player_TranslateAndRotateY(this, &this->unk_3A0, &mmvr_local_6ed0145c92ee7da3, &this->unk_3AC);
+    mmvr_local_6e31e2d9343d8146.x = (this->doorDirection != 0) ? -400.0f : 400.0f;
+    mmvr_local_6e31e2d9343d8146.z = 200.0f;
+    Player_TranslateAndRotateY(this, &this->unk_3A0, &mmvr_local_6e31e2d9343d8146, &this->unk_3AC);
 
     doorStaircase->shouldClimb = true;
 
@@ -7352,7 +7363,7 @@ void func_80836B3C(PlayState* play, Player* this, f32 arg2) {
     }
 }
 
-static Vec3f mmvr_local_ceef75a1a7fac828 = { 0, 0, 0 };
+static Vec3f mmvr_local_7919d67a6417dd8e = { 0, 0, 0 };
 void func_80836C70(PlayState* play, Player* this, PlayerBodyPart bodyPartIndex) {
     /* persistent local storage is declared above */
     s32 i;
@@ -7363,8 +7374,8 @@ void func_80836C70(PlayState* play, Player* this, PlayerBodyPart bodyPartIndex) 
         velocity.x = Rand_CenteredFloat(4.0f);
         velocity.y = Rand_ZeroFloat(2.0f);
         velocity.z = Rand_CenteredFloat(4.0f);
-        mmvr_local_ceef75a1a7fac828.y = -0.2f;
-        EffectSsHahen_Spawn(play, &this->bodyPartsPos[bodyPartIndex], &velocity, &mmvr_local_ceef75a1a7fac828, 0, 10, OBJECT_LINK_NUTS,
+        mmvr_local_7919d67a6417dd8e.y = -0.2f;
+        EffectSsHahen_Spawn(play, &this->bodyPartsPos[bodyPartIndex], &velocity, &mmvr_local_7919d67a6417dd8e, 0, 10, OBJECT_LINK_NUTS,
                             16, object_link_nuts_DL_008860);
     }
 }
@@ -7762,7 +7773,11 @@ void MMVR_PlayerBeginTriggerClimb(PlayState* play, Player* this, CollisionPoly* 
     this->actor.velocity.x = this->actor.velocity.y = this->actor.velocity.z = 0;
     this->actor.speed = this->speedXZ = 0;
     this->fallStartHeight = this->actor.world.pos.y;
-    Player_Anim_PlayOnce(play, this, &gPlayerAnim_link_normal_Fclimb_hold2upL);
+    // Goron has native ladder poses with a different joint layout. Do not load
+    // the human vine pose into his tracked climb or its native fallback.
+    Player_Anim_PlayOnce(play, this, this->transformation == PLAYER_FORM_GORON
+                                      ? this->ageProperties->unk_B4[this->av1.actionVar1]
+                                      : &gPlayerAnim_link_normal_Fclimb_hold2upL);
     this->skelAnime.playSpeed = 0;
     // Keep ordinary climbing's flags for native fallback and ladder completion.
     // While tracked pulls own movement, AnimTask_ActorMovement still consumes
@@ -9314,6 +9329,12 @@ void func_8083B32C(PlayState* play, Player* this, f32 arg2) {
 }
 
 s32 func_8083B3B4(PlayState* play, Player* this, Input* input) {
+#ifdef MMVR_ENABLE
+    s16 headBreachYaw, headBreachPitch;
+    const s32 headBreach = this->transformation == PLAYER_FORM_ZORA &&
+        this->actionFunc == Player_Action_56 && this->unk_AAA <= -0x0E38 &&
+        MMVR_SwimAim(play, this, &headBreachYaw, &headBreachPitch) && headBreachPitch <= -0x0E38;
+#endif
     if ((!(this->stateFlags1 & PLAYER_STATE1_400) && !(this->stateFlags2 & PLAYER_STATE2_400) &&
          (this->transformation != PLAYER_FORM_ZORA)) &&
         ((input == NULL) ||
@@ -9342,7 +9363,11 @@ s32 func_8083B3B4(PlayState* play, Player* this, Input* input) {
         ((this->stateFlags1 & PLAYER_STATE1_400) ||
          ((this->stateFlags2 & PLAYER_STATE2_400) &&
           (((Player_Action_56 != this->actionFunc) && !(this->stateFlags3 & PLAYER_STATE3_8000)) ||
-           (this->unk_AAA < -0x1555)))) &&
+           (this->unk_AAA < -0x1555)
+#ifdef MMVR_ENABLE
+           || headBreach
+#endif
+           ))) &&
         ((this->actor.depthInWater - this->actor.velocity.y) < this->ageProperties->unk_30)) {
         s32 temp_v0_3;
         s16 sp2A;
@@ -10925,8 +10950,8 @@ void func_8083F828(Vec3f* arg0, Vec3f* arg1, f32 arg2, f32 arg3, f32 arg4) {
 Color_RGBA8 D_8085D26C = { 255, 255, 255, 255 };
 Vec3f D_8085D270 = { 0.0f, 0.04f, 0.0f };
 
-static Vec3f mmvr_local_88ac7bc64c98640b = { 0.0f, 0.0f, 0.0f };
-static Vec3f mmvr_local_0bbe365a0b2a20f1 = { 0.0f, 0.0f, 0.0f };
+static Vec3f mmvr_local_ae291a820b2fdcfe = { 0.0f, 0.0f, 0.0f };
+static Vec3f mmvr_local_38805acc63c31903 = { 0.0f, 0.0f, 0.0f };
 s32 func_8083F8A8(PlayState* play, Player* this, f32 radius, s32 countMax, f32 randAccelWeight, s32 scale,
                   s32 scaleStep, s32 useLighting) {
     /* persistent local storage is declared above */
@@ -10940,9 +10965,9 @@ s32 func_8083F8A8(PlayState* play, Player* this, f32 radius, s32 countMax, f32 r
         count = (count >= ABS_ALT(countMax)) ? ABS_ALT(countMax) : count;
         for (i = 0; i < count; i++) {
             func_8083F828(&this->actor.world.pos, &pos, 0.0f, 40.0f, 10.0f);
-            mmvr_local_88ac7bc64c98640b.x = Rand_CenteredFloat(3.0f);
-            mmvr_local_88ac7bc64c98640b.z = Rand_CenteredFloat(3.0f);
-            EffectSsDust_Spawn(play, 0, &pos, &mmvr_local_88ac7bc64c98640b, &D_8085D270, &D_8085D26C, &D_8085D26C, scale, scaleStep, 42,
+            mmvr_local_ae291a820b2fdcfe.x = Rand_CenteredFloat(3.0f);
+            mmvr_local_ae291a820b2fdcfe.z = Rand_CenteredFloat(3.0f);
+            EffectSsDust_Spawn(play, 0, &pos, &mmvr_local_ae291a820b2fdcfe, &D_8085D270, &D_8085D26C, &D_8085D26C, scale, scaleStep, 42,
                                0);
         }
 
@@ -10970,8 +10995,8 @@ s32 func_8083F8A8(PlayState* play, Player* this, f32 radius, s32 countMax, f32 r
             velocity.x = Rand_CenteredFloat(3.0f);
             velocity.y = Rand_ZeroFloat(2.0f);
             velocity.z = Rand_CenteredFloat(3.0f);
-            mmvr_local_0bbe365a0b2a20f1.y = -0.1f;
-            EffectSsHahen_Spawn(play, &pos, &velocity, &mmvr_local_0bbe365a0b2a20f1, 0, 0x96, 1, 0x10, gKakeraLeafTipDL);
+            mmvr_local_38805acc63c31903.y = -0.1f;
+            EffectSsHahen_Spawn(play, &pos, &velocity, &mmvr_local_38805acc63c31903, 0, 0x96, 1, 0x10, gKakeraLeafTipDL);
         }
     }
 
@@ -11540,7 +11565,7 @@ void Player_StartMode_BlueWarp(PlayState* play, Player* this) {
  *       It is expected that this function is called while an appropriate animation
  *       is already playing, for example in a cutscene.
  */
-static u8 mmvr_local_39c579900b58001d[] = { ITEM_SWORD_RAZOR, ITEM_SWORD_KOKIRI };
+static u8 mmvr_local_cfce8b095ae5c64e[] = { ITEM_SWORD_RAZOR, ITEM_SWORD_KOKIRI };
 void Player_PutSwordInHand(PlayState* play, Player* this, s32 playSfx) {
     /* persistent local storage is declared above */
     ItemId swordItemId;
@@ -11549,7 +11574,7 @@ void Player_PutSwordInHand(PlayState* play, Player* this, s32 playSfx) {
     if (this->transformation >= 2) {
         swordItemId = ITEM_SWORD_KOKIRI;
     } else {
-        swordItemId = mmvr_local_39c579900b58001d[this->transformation];
+        swordItemId = mmvr_local_cfce8b095ae5c64e[this->transformation];
     }
     PlayerItemAction swordItemAction = sItemItemActions[swordItemId];
     Player_DestroyHookshot(this);
@@ -11566,14 +11591,14 @@ void Player_PutSwordInHand(PlayState* play, Player* this, s32 playSfx) {
     }
 }
 
-static Vec3f mmvr_local_c0951b7e27c17765 = { -1.0f, 69.0f, 20.0f };
+static Vec3f mmvr_local_d5d8615bc7781a9c = { -1.0f, 69.0f, 20.0f };
 void Player_StartMode_TimeTravel(PlayState* play, Player* this) {
     /* persistent local storage is declared above */
 
     Player_SetAction(play, this, Player_Action_TimeTravelEnd, 0);
     this->stateFlags1 |= PLAYER_STATE1_20000000;
 
-    Math_Vec3f_Copy(&this->actor.world.pos, &mmvr_local_c0951b7e27c17765);
+    Math_Vec3f_Copy(&this->actor.world.pos, &mmvr_local_d5d8615bc7781a9c);
     this->yaw = this->actor.shape.rot.y = -0x8000;
 
     // The start frame and end frame are both set to 0 so that that the animation is frozen.
@@ -11741,7 +11766,7 @@ Color_RGBA8 D_8085D338 = { 0, 0, 15, 100 };
 // sTireMarkOtherColor ?
 Color_RGBA8 D_8085D33C = { 0, 0, 0, 150 };
 
-static Vec3f mmvr_local_09309449b20acd23 = { 0.0f, 50.0f, 0.0f };
+static Vec3f mmvr_local_dc212b9ea46fb553 = { 0.0f, 50.0f, 0.0f };
 void Player_Init(Actor* thisx, PlayState* play) {
     s32 pad;
     Player* this = (Player*)thisx;
@@ -11988,7 +12013,7 @@ void Player_Init(Actor* thisx, PlayState* play) {
         )) {
         /* persistent local storage is declared above */
 
-        this->tatlActor = Player_SpawnFairy(play, this, &this->actor.world.pos, &mmvr_local_09309449b20acd23,
+        this->tatlActor = Player_SpawnFairy(play, this, &this->actor.world.pos, &mmvr_local_dc212b9ea46fb553,
                                             FAIRY_PARAMS(FAIRY_TYPE_0, false, 0));
 
         if (gSaveContext.dogParams != 0) {
@@ -12075,10 +12100,10 @@ void func_808425B4(Player* this) {
  *     - Do Action label on the A/B buttons
  *     - Tatl C-up icon for hints
  */
-static u8 mmvr_local_f5dd391364d4ae74[] = {
+static u8 mmvr_local_2fad5a5817d40b37[] = {
                 DO_ACTION_1, DO_ACTION_2, DO_ACTION_3, DO_ACTION_4, DO_ACTION_5, DO_ACTION_6, DO_ACTION_7, DO_ACTION_8,
             };
-static u8 mmvr_local_d368e33a7d30c292[] = { DO_ACTION_1, DO_ACTION_2 };
+static u8 mmvr_local_744ce1bd471c49b9[] = { DO_ACTION_1, DO_ACTION_2 };
 void Player_UpdateInterface(PlayState* play, Player* this) {
     DoAction doActionB;
     s32 sp38;
@@ -12157,7 +12182,7 @@ void Player_UpdateInterface(PlayState* play, Player* this) {
         } else if (this->stateFlags3 & PLAYER_STATE3_200000) {
             /* persistent local storage is declared above */
 
-            doActionA = mmvr_local_f5dd391364d4ae74[this->remainingHopsCounter];
+            doActionA = mmvr_local_2fad5a5817d40b37[this->remainingHopsCounter];
         } else if ((!(this->stateFlags1 & PLAYER_STATE1_CARRYING_ACTOR) || (heldActor == NULL)) &&
                    (interactRangeActor != NULL) && (this->getItemId < GI_NONE)) {
             doActionA = DO_ACTION_OPEN;
@@ -12207,9 +12232,9 @@ void Player_UpdateInterface(PlayState* play, Player* this) {
             s32 var_v0;
 
             var_v0 = ((120.0f - this->actor.depthInWater) / 40.0f);
-            var_v0 = CLAMP(var_v0, 0, ARRAY_COUNT(mmvr_local_d368e33a7d30c292) - 1);
+            var_v0 = CLAMP(var_v0, 0, ARRAY_COUNT(mmvr_local_744ce1bd471c49b9) - 1);
 
-            doActionA = mmvr_local_d368e33a7d30c292[var_v0];
+            doActionA = mmvr_local_744ce1bd471c49b9[var_v0];
         } else if (this->stateFlags3 & PLAYER_STATE3_100) {
             doActionA = DO_ACTION_JUMP;
         } else if (this->stateFlags3 & PLAYER_STATE3_1000) {
@@ -12313,7 +12338,7 @@ s32 func_808430E0(Player* this) {
  * - Update information for ledge climbing
  * - Calculate floor poly angles
  */
-static Vec3f mmvr_local_e28535ec363aaf7f = { 0.0f, 0.0f, 0.0f };
+static Vec3f mmvr_local_f89b5428a1f9af77 = { 0.0f, 0.0f, 0.0f };
 void Player_ProcessSceneCollision(PlayState* play, Player* this) {
     u8 nextLedgeClimbType = PLAYER_LEDGE_CLIMB_NONE;
     CollisionPoly* floorPoly;
@@ -12423,10 +12448,10 @@ void Player_ProcessSceneCollision(PlayState* play, Player* this) {
         s16 yawDiff;
         s32 pad;
 
-        mmvr_local_e28535ec363aaf7f.y = 178.0f * 0.1f;
-        mmvr_local_e28535ec363aaf7f.z = this->ageProperties->wallCheckRadius + 10.0f;
+        mmvr_local_f89b5428a1f9af77.y = 178.0f * 0.1f;
+        mmvr_local_f89b5428a1f9af77.z = this->ageProperties->wallCheckRadius + 10.0f;
 
-        if (Player_PosVsWallLineTest(play, this, &mmvr_local_e28535ec363aaf7f, &wallPoly, &wallBgId,
+        if (Player_PosVsWallLineTest(play, this, &mmvr_local_f89b5428a1f9af77, &wallPoly, &wallBgId,
                                      &sInteractWallCheckResult)) {
             this->actor.bgCheckFlags |= BGCHECKFLAG_PLAYER_WALL_INTERACT;
 
@@ -12490,9 +12515,9 @@ void Player_ProcessSceneCollision(PlayState* play, Player* this) {
                                                &this->actor)) {
                     this->yDistToLedge = LEDGE_DIST_MAX;
                 } else {
-                    mmvr_local_e28535ec363aaf7f.y = (ledgePosY + 5.0f) - this->actor.world.pos.y;
+                    mmvr_local_f89b5428a1f9af77.y = (ledgePosY + 5.0f) - this->actor.world.pos.y;
 
-                    if (Player_PosVsWallLineTest(play, this, &mmvr_local_e28535ec363aaf7f, &poly, &bgId,
+                    if (Player_PosVsWallLineTest(play, this, &mmvr_local_f89b5428a1f9af77, &poly, &bgId,
                                                  &sInteractWallCheckResult) &&
                         (wallYawDiff = (s32)(this->actor.wallYaw - Math_Atan2S_XY(poly->normal.z, poly->normal.x)),
                          ABS_ALT(wallYawDiff) < 0x4000) &&
@@ -13658,7 +13683,7 @@ static void Player_TryStartDekuPhysicalSpin(PlayState* play, Player* player) {
 }
 #endif
 
-static Vec3f mmvr_local_2151021af5633076;
+static Vec3f mmvr_local_e864164f38a9c128;
 void Player_Update(Actor* thisx, PlayState* play) {
     /* persistent local storage is declared above */
     Player* this = (Player*)thisx;
@@ -13683,11 +13708,11 @@ void Player_Update(Actor* thisx, PlayState* play) {
             Actor* dog;
 
             gSaveContext.dogParams &= (u16)~0x8000;
-            Player_TranslateAndRotateY(this, &this->actor.world.pos, &D_8085D41C, &mmvr_local_2151021af5633076);
+            Player_TranslateAndRotateY(this, &this->actor.world.pos, &D_8085D41C, &mmvr_local_e864164f38a9c128);
 
             dogParams = gSaveContext.dogParams;
 
-            dog = Actor_Spawn(&play->actorCtx, play, ACTOR_EN_DG, mmvr_local_2151021af5633076.x, mmvr_local_2151021af5633076.y, mmvr_local_2151021af5633076.z, 0,
+            dog = Actor_Spawn(&play->actorCtx, play, ACTOR_EN_DG, mmvr_local_e864164f38a9c128.x, mmvr_local_e864164f38a9c128.y, mmvr_local_e864164f38a9c128.z, 0,
                               this->actor.shape.rot.y, 0, dogParams | 0x8000);
             if (dog != NULL) {
                 dog->room = -1;
@@ -16802,9 +16827,9 @@ void Player_Action_WaitForPutAway(Player* this, PlayState* play) {
     }
 }
 
-static Vec3f mmvr_local_3333cb245c10fe3a = { 0.0f, 0.0f, 0.0f };
-static Vec3f mmvr_local_1dcf0ef193b1a7da = { 0.0f, 0.0f, 0.0f };
-static Vec3f mmvr_local_19a6361a9c9f4f32 = { 0.0f, 0.0f, 0.0f };
+static Vec3f mmvr_local_c5a9e46d755998dd = { 0.0f, 0.0f, 0.0f };
+static Vec3f mmvr_local_6a4202469832808d = { 0.0f, 0.0f, 0.0f };
+static Vec3f mmvr_local_6bf79cb33e0351e4 = { 0.0f, 0.0f, 0.0f };
 void Player_Action_35(Player* this, PlayState* play) {
     if (!Player_ActionHandler_13(this, play)) {
         if ((this->stateFlags3 & PLAYER_STATE3_10) && !(this->actor.bgCheckFlags & BGCHECKFLAG_GROUND)) {
@@ -16904,9 +16929,9 @@ void Player_Action_35(Player* this, PlayState* play) {
 
                                 this->actor.shape.rot.y = ((((temp_v1_4->rotY >> 7) & 0x1FF) / 180.0f) * 0x8000);
 
-                                mmvr_local_3333cb245c10fe3a.x = (this->doorDirection != 0) ? -120.0f : 120.0f;
-                                mmvr_local_3333cb245c10fe3a.y = (this->doorDirection != 0) ? -75.0f : 75.0f;
-                                mmvr_local_3333cb245c10fe3a.z = -240.0f;
+                                mmvr_local_c5a9e46d755998dd.x = (this->doorDirection != 0) ? -120.0f : 120.0f;
+                                mmvr_local_c5a9e46d755998dd.y = (this->doorDirection != 0) ? -75.0f : 75.0f;
+                                mmvr_local_c5a9e46d755998dd.z = -240.0f;
                                 if (this->doorDirection != 0) {
                                     Camera_ChangeDoorCam(play->cameraPtrs[0], &this->actor, -2, 0.0f,
                                                          temp_v1_4->pos.x + 0x32, temp_v1_4->pos.y + 0x5F,
@@ -16917,14 +16942,14 @@ void Player_Action_35(Player* this, PlayState* play) {
                                                          temp_v1_4->pos.z - 0x32);
                                 }
 
-                                Player_TranslateAndRotateY(this, &this->actor.world.pos, &mmvr_local_3333cb245c10fe3a,
+                                Player_TranslateAndRotateY(this, &this->actor.world.pos, &mmvr_local_c5a9e46d755998dd,
                                                            &this->actor.world.pos);
 
-                                mmvr_local_1dcf0ef193b1a7da.x = (this->doorDirection != 0) ? 130.0f : -130.0f;
-                                mmvr_local_1dcf0ef193b1a7da.z = 160.0f;
-                                Player_TranslateAndRotateY(this, &this->actor.world.pos, &mmvr_local_1dcf0ef193b1a7da, &this->unk_3A0);
-                                mmvr_local_19a6361a9c9f4f32.z = 160.0f;
-                                Player_TranslateAndRotateY(this, &this->unk_3A0, &mmvr_local_19a6361a9c9f4f32, &this->unk_3AC);
+                                mmvr_local_6a4202469832808d.x = (this->doorDirection != 0) ? 130.0f : -130.0f;
+                                mmvr_local_6a4202469832808d.z = 160.0f;
+                                Player_TranslateAndRotateY(this, &this->actor.world.pos, &mmvr_local_6a4202469832808d, &this->unk_3A0);
+                                mmvr_local_6bf79cb33e0351e4.z = 160.0f;
+                                Player_TranslateAndRotateY(this, &this->unk_3A0, &mmvr_local_6bf79cb33e0351e4, &this->unk_3AC);
 
                                 this->actor.shape.rot.y += (this->doorDirection != 0) ? 0x4000 : -0x4000;
                                 this->av1.actionVar1 = 0;
@@ -17610,6 +17635,25 @@ void Player_Action_50(Player* this, PlayState* play) {
                             func_808381A0(this, &gPlayerAnim_link_normal_jump_climb_up_free, play);
                             this->stateFlags1 |= PLAYER_STATE1_4000;
                         } else {
+#ifdef MMVR_ENABLE
+                            if (directClimb && this->transformation == PLAYER_FORM_GORON && this->actor.wallPoly) {
+                                // A tracked grab preserves extra wall clearance. Goron's native
+                                // finish has shorter forward root travel than Link's; restore its
+                                // authored ladder distance before handing off to that animation.
+                                // The ledge/floor probe above already proved the landing exists.
+                                CollisionPoly* wall = this->actor.wallPoly;
+                                f32 nx = COLPOLY_GET_NORMAL(wall->normal.x);
+                                f32 nz = COLPOLY_GET_NORMAL(wall->normal.z);
+                                f32 n2 = SQ(nx) + SQ(nz);
+                                f32 distance = Math3D_DistPlaneToPos(nx, COLPOLY_GET_NORMAL(wall->normal.y), nz,
+                                                                    wall->dist, &this->actor.world.pos);
+                                if (n2 > 0.5f && distance > this->ageProperties->unk_3C && distance <= 100.0f) {
+                                    f32 correction = (distance - this->ageProperties->unk_3C) / n2;
+                                    this->actor.world.pos.x -= nx * correction;
+                                    this->actor.world.pos.z -= nz * correction;
+                                }
+                            }
+#endif
                             func_8083DCC4(this, this->ageProperties->unk_D4[this->av2.actionVar2], play);
                         }
                     } else if (!directClimb) {
@@ -18216,7 +18260,14 @@ void Player_Action_56(Player* this, PlayState* play) {
             sp3E = CLAMP_MAX(sp3E, (s16)(this->floorPitch - 0xFA0));
         }
 
-        if ((this->unk_AAA >= -0x1555) && (this->actor.depthInWater < (this->ageProperties->unk_24 + 10.0f))) {
+        // Stick steering keeps the original shallow-water anti-breach clamp.
+        // With head steering, deliberate upward aim must be able to cross the
+        // surface gradually rather than require an already steep dive angle.
+        if ((this->unk_AAA >= -0x1555) && (this->actor.depthInWater < (this->ageProperties->unk_24 + 10.0f))
+#ifdef MMVR_ENABLE
+            && !(headSwim && headSwimPitch <= -0x0E38)
+#endif
+        ) {
             sp3E = CLAMP_MIN(sp3E, 0x7D0);
         }
         Math_SmoothStepToS(&this->unk_AAA, sp3E, 4, 0xFA0, 0x190);
@@ -18867,7 +18918,7 @@ void Player_Action_65(Player* this, PlayState* play) {
     }
 }
 
-static AnimSfxEntry mmvr_local_776ad5802b4994bb[] = {
+static AnimSfxEntry mmvr_local_3baee79e59bae683[] = {
             ANIMSFX(ANIMSFX_TYPE_VOICE, 5, NA_SE_VO_LI_AUTO_JUMP, CONTINUE),
             ANIMSFX(ANIMSFX_TYPE_FLOOR_LAND, 15, NA_SE_NONE, STOP),
         };
@@ -18890,7 +18941,7 @@ void Player_Action_TimeTravelEnd(Player* this, PlayState* play) {
     } else if (this->transformation != PLAYER_FORM_FIERCE_DEITY) {
         /* persistent local storage is declared above */
 
-        Player_PlayAnimSfx(this, mmvr_local_776ad5802b4994bb);
+        Player_PlayAnimSfx(this, mmvr_local_3baee79e59bae683);
     } else {
         func_808484CC(this);
     }
@@ -19187,15 +19238,15 @@ void Player_Action_69(Player* this, PlayState* play) {
     }
 }
 
-static Vec3f mmvr_local_9f7f2cfaf0f9fb24 = { 10.0f, 268 * 0.1f, 30.0f };
-static s8 mmvr_local_77b4059d9a823b63[PLAYER_FORM_MAX] = {
+static Vec3f mmvr_local_6eba36a8e008b322 = { 10.0f, 268 * 0.1f, 30.0f };
+static s8 mmvr_local_c4d91ca004d42efa[PLAYER_FORM_MAX] = {
         0x2D, // PLAYER_FORM_FIERCE_DEITY
         0x4B, // PLAYER_FORM_GORON
         0x37, // PLAYER_FORM_ZORA
         0x23, // PLAYER_FORM_DEKU
         0x28, // PLAYER_FORM_HUMAN
     };
-static struct_8085D80C mmvr_local_4274a4bbb944140f[] = {
+static struct_8085D80C mmvr_local_06a7303df3292347[] = {
         { ACTOR_EN_FISH, FISH_PARAMS(ENFISH_0) },                   // PLAYER_BOTTLE_FISH
         { ACTOR_OBJ_AQUA, AQUA_PARAMS(AQUA_TYPE_COLD) },            // PLAYER_BOTTLE_SPRING_WATER
         { ACTOR_OBJ_AQUA, AQUA_PARAMS(AQUA_TYPE_HOT) },             // PLAYER_BOTTLE_HOT_SPRING_WATER
@@ -19208,7 +19259,7 @@ static struct_8085D80C mmvr_local_4274a4bbb944140f[] = {
         { ACTOR_EN_MUSHI2, ENMUSHI2_PARAMS(ENMUSHI2_0) },                                // PLAYER_BOTTLE_HYLIAN_LOACH
         { ACTOR_EN_MUSHI2, ENMUSHI2_PARAMS(ENMUSHI2_0) },                                // PLAYER_BOTTLE_BUG
     };
-static AnimSfxEntry mmvr_local_960d547a998c7ca0[] = {
+static AnimSfxEntry mmvr_local_28cd51ef0207c0b2[] = {
         ANIMSFX(ANIMSFX_TYPE_VOICE, 38, NA_SE_VO_LI_AUTO_JUMP, CONTINUE),
         ANIMSFX(ANIMSFX_TYPE_GENERAL, 40, NA_SE_EV_BOTTLE_CAP_OPEN, STOP),
     };
@@ -19226,8 +19277,8 @@ void Player_Action_70(Player* this, PlayState* play) {
     f32 temp_fv1;
     struct_8085D80C* sp4C;
 
-    mmvr_local_9f7f2cfaf0f9fb24.z = mmvr_local_77b4059d9a823b63[this->transformation];
-    if (Player_PosVsWallLineTest(play, this, &mmvr_local_9f7f2cfaf0f9fb24, &sp6C, &sp68, &sp5C)) {
+    mmvr_local_6eba36a8e008b322.z = mmvr_local_c4d91ca004d42efa[this->transformation];
+    if (Player_PosVsWallLineTest(play, this, &mmvr_local_6eba36a8e008b322, &sp6C, &sp68, &sp5C)) {
         temp_fv1 = this->actor.world.pos.x - sp5C.x;
         temp_fa0 = this->actor.world.pos.z - sp5C.z;
         temp_fv0 = sqrtf(SQ(temp_fv1) + SQ(temp_fa0));
@@ -19251,7 +19302,7 @@ void Player_Action_70(Player* this, PlayState* play) {
                 func_80839E74(this, play);
             }
         } else if (PlayerAnimation_OnFrame(&this->skelAnime, 76.0f)) {
-            sp4C = &mmvr_local_4274a4bbb944140f[GET_BOTTLE_FROM_IA(this->itemAction) - 1];
+            sp4C = &mmvr_local_06a7303df3292347[GET_BOTTLE_FROM_IA(this->itemAction) - 1];
 
             Vec3f releasePoint={
                 (Math_SinS(this->actor.shape.rot.y)*5.0f)+this->leftHandWorld.pos.x,
@@ -19265,7 +19316,7 @@ void Player_Action_70(Player* this, PlayState* play) {
                         this->actor.shape.rot.y, 0, sp4C->params);
             Player_UpdateBottleHeld(play, this, ITEM_BOTTLE, PLAYER_IA_BOTTLE_EMPTY);
         } else {
-            Player_PlayAnimSfx(this, mmvr_local_960d547a998c7ca0);
+            Player_PlayAnimSfx(this, mmvr_local_28cd51ef0207c0b2);
         }
     }
 }
@@ -20239,10 +20290,10 @@ void func_80856074(PlayState* play, Player* this) {
     }
 }
 
-static Vec3f mmvr_local_55a511f1aa536f64 = { 0.0f, 0.5f, 0.0f };
-static Vec3f mmvr_local_9d5ffbf1c4a6f4df = { 0.0f, 0.5f, 0.0f };
-static Color_RGBA8 mmvr_local_ba2c1e0f38884c70 = { 255, 255, 55, 255 };
-static Color_RGBA8 mmvr_local_8c1e142084c3b2d1 = { 100, 50, 0, 0 };
+static Vec3f mmvr_local_bfe491caa52b4d81 = { 0.0f, 0.5f, 0.0f };
+static Vec3f mmvr_local_e72f7e41c7853517 = { 0.0f, 0.5f, 0.0f };
+static Color_RGBA8 mmvr_local_d0baa36e0187eb84 = { 255, 255, 55, 255 };
+static Color_RGBA8 mmvr_local_afb07bdbabce814d = { 100, 50, 0, 0 };
 void func_80856110(PlayState* play, Player* this, f32 arg2, f32 arg3, f32 arg4, s16 scale, s16 scaleStep, s16 life) {
     /* persistent local storage is declared above */        // velocity
     /* persistent local storage is declared above */        // accel
@@ -20254,10 +20305,10 @@ void func_80856110(PlayState* play, Player* this, f32 arg2, f32 arg3, f32 arg4, 
     pos.y = this->actor.world.pos.y + arg2;
     pos.z = this->actor.world.pos.z;
 
-    mmvr_local_55a511f1aa536f64.y = arg3;
-    mmvr_local_9d5ffbf1c4a6f4df.y = arg4;
+    mmvr_local_bfe491caa52b4d81.y = arg3;
+    mmvr_local_e72f7e41c7853517.y = arg4;
 
-    func_800B0EB0(play, &pos, &mmvr_local_55a511f1aa536f64, &mmvr_local_9d5ffbf1c4a6f4df, &mmvr_local_ba2c1e0f38884c70, &mmvr_local_8c1e142084c3b2d1, scale, scaleStep, life);
+    func_800B0EB0(play, &pos, &mmvr_local_bfe491caa52b4d81, &mmvr_local_e72f7e41c7853517, &mmvr_local_d0baa36e0187eb84, &mmvr_local_afb07bdbabce814d, scale, scaleStep, life);
 }
 
 // Deku Flower related
@@ -20383,8 +20434,8 @@ void Player_Action_93(Player* this, PlayState* play) {
     }
 }
 
-static Vec3f mmvr_local_6840a316638ec65c = { 0.0f, 0.3f, 0.0f };
-static Vec3f mmvr_local_c0e52f11ea3c67dd = { 0.0f, -0.025f, 0.0f };
+static Vec3f mmvr_local_9ca162d456aecf5e = { 0.0f, 0.3f, 0.0f };
+static Vec3f mmvr_local_6f5baf3d8f965b1e = { 0.0f, -0.025f, 0.0f };
 void func_808566C0(PlayState* play, Player* this, PlayerBodyPart bodyPartIndex, f32 arg3, f32 arg4, f32 arg5,
                    s32 life) {
     Color_RGBA8 primColor = { 255, 200, 200, 0 };
@@ -20402,8 +20453,8 @@ void func_808566C0(PlayState* play, Player* this, PlayerBodyPart bodyPartIndex, 
         sp34 = 1.0f;
     }
 
-    mmvr_local_6840a316638ec65c.x = (Rand_ZeroFloat(arg4) + arg3) * sp34;
-    mmvr_local_c0e52f11ea3c67dd.x = arg5 * sp34;
+    mmvr_local_9ca162d456aecf5e.x = (Rand_ZeroFloat(arg4) + arg3) * sp34;
+    mmvr_local_6f5baf3d8f965b1e.x = arg5 * sp34;
     if (Rand_ZeroOne() < 0.5f) {
         sp34 = -1.0f;
     } else {
@@ -20411,8 +20462,8 @@ void func_808566C0(PlayState* play, Player* this, PlayerBodyPart bodyPartIndex, 
     }
 
     temp_v0 = &this->bodyPartsPos[bodyPartIndex];
-    mmvr_local_6840a316638ec65c.z = (Rand_ZeroFloat(arg4) + arg3) * sp34;
-    mmvr_local_c0e52f11ea3c67dd.z = arg5 * sp34;
+    mmvr_local_9ca162d456aecf5e.z = (Rand_ZeroFloat(arg4) + arg3) * sp34;
+    mmvr_local_6f5baf3d8f965b1e.z = arg5 * sp34;
     pos.x = temp_v0->x;
     pos.y = Rand_ZeroFloat(15.0f) + temp_v0->y;
     pos.z = temp_v0->z;
@@ -20422,7 +20473,7 @@ void func_808566C0(PlayState* play, Player* this, PlayerBodyPart bodyPartIndex, 
         scale = -150;
     }
 
-    EffectSsKirakira_SpawnDispersed(play, &pos, &mmvr_local_6840a316638ec65c, &mmvr_local_c0e52f11ea3c67dd, &primColor, &envColor, scale, life);
+    EffectSsKirakira_SpawnDispersed(play, &pos, &mmvr_local_9ca162d456aecf5e, &mmvr_local_6f5baf3d8f965b1e, &primColor, &envColor, scale, life);
 }
 
 void func_8085687C(Player* this) {
@@ -20803,8 +20854,8 @@ void func_80857AEC(PlayState* play, Player* this) {
 }
 
 // Goron rolling related
-static Vec3f mmvr_local_9786693b48dcc3cd = { -30.0f, 60.0f, 0.0f };
-static Vec3f mmvr_local_9a67938a62ccb7ad = { 30.0f, 60.0f, 0.0f };
+static Vec3f mmvr_local_d867cdf5b0fa9711 = { -30.0f, 60.0f, 0.0f };
+static Vec3f mmvr_local_480766433ebb9757 = { 30.0f, 60.0f, 0.0f };
 void Player_Action_96(Player* this, PlayState* play) {
     if (Player_TryActionHandlerList(play, this, sActionHandlerList12, false)) {
         return;
@@ -21020,9 +21071,9 @@ void Player_Action_96(Player* this, PlayState* play) {
                     sp7C = (s32)(BINANG_SUB(yawTarget, this->yaw) * -0.5f);
                     this->unk_B0C += (f32)(SQ(sp7C)) * 8e-9f;
                     Math_ScaledStepToS(&this->yaw, yawTarget, spC8);
-                    sp6C = func_80835D2C(play, this, &mmvr_local_9786693b48dcc3cd, &sp70);
+                    sp6C = func_80835D2C(play, this, &mmvr_local_d867cdf5b0fa9711, &sp70);
 
-                    var_fa1 = func_80835D2C(play, this, &mmvr_local_9a67938a62ccb7ad, &sp70) - sp6C;
+                    var_fa1 = func_80835D2C(play, this, &mmvr_local_480766433ebb9757, &sp70) - sp6C;
                     if (fabsf(var_fa1) > 100.0f) {
                         var_fa1 = 0.0f;
                     }

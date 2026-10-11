@@ -3,26 +3,26 @@
   "include": "573b22ab3ff7b666.inc",
   "variables": [
     {
-      "name": "mmvr_local_b73abe20d4d41348",
+      "name": "mmvr_local_46fb407f65ec5c38",
       "original": "D_801BB15C",
       "function": "CutsceneCmd_Misc",
-      "line": 159,
-      "at": 5212
+      "line": 160,
+      "at": 5244
     },
     {
-      "name": "mmvr_local_3f1bf0ccc9dcea2e",
+      "name": "mmvr_local_d972d45227261f8d",
       "original": "sSeqId",
       "function": "CutsceneCmd_ModifySequence",
-      "line": 481,
-      "at": 16889
+      "line": 482,
+      "at": 16921
     },
     {
-      "name": "mmvr_local_445d6f12a953fafd",
+      "name": "mmvr_local_301f37e6a4a81cbb",
       "original": "sCutsceneTextboxType",
       "function": "CutsceneCmd_Text",
-      "line": 1024,
-      "at": 38172
+      "line": 1030,
+      "at": 38326
     }
   ],
-  "sourceSha256": "fd9891bd8e015ab3755aca05446fdc0bf1ae8e82d55ffee41f6d6270bfb98b66"
+  "sourceSha256": "837b4085d4fda31143b51c77527a3271f8b4fbfbb74763b2ab794a8f31f4b86d"
 }

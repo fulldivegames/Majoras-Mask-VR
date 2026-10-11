@@ -9,7 +9,9 @@ constexpr Trial trials[]={
  {"MAJORA",ENTRANCE(MAJORAS_LAIR,0),SCENE_LAST_BS,ACTOR_BOSS_07},
  {"GIANT PRACTICE",ENTRANCE(TWINMOLDS_LAIR,0),SCENE_INISIE_BS,ACTOR_BOSS_02}};
 int trial=-1;bool trialSnapshot=false,trialReturning=false;
+bool giantCutsceneTrial=false;
 int townPanoramaPending=-1;
+int storyScenePending=-1;
 int koumeRoomPending=0;
 int woodfallWebPending=0,woodfallWebSettle=0;
 int interactionRoom=3;
@@ -59,6 +61,8 @@ void PrepareKafeiCheckpoint(int preset){
  }
 }
 void TrialTransition(PlayState* play,int entranceId,bool human=false){
+ giantCutsceneTrial=false;
+ storyScenePending=-1;
  grottoRockPending=0;stageRehearsalPending=0;
  mmvrgame::ClearTracking();mmvrgame::ClearItemSelection();mmvr::CancelHeldMask();mmvr::GetMenu().open=false;
  play->nextEntrance=entranceId;gSaveContext.nextCutsceneIndex=0;gSaveContext.cutsceneTrigger=0;gSaveContext.respawnFlag=0;
@@ -247,16 +251,54 @@ extern "C" int MMVR_DebugLocationBegin(PlayState* play,int index){
  }
  return true;
 }
+static bool DebugGiantDialogueAvailable(PlayState* play,const DebugCutscene& entry){
+ auto resource=std::dynamic_pointer_cast<SOH::Cutscene>(
+     Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(entry.resource));
+ if(!resource||!play->msgCtx.messageTableNES)return false;
+ const auto& words=resource->commands;
+ if(words.size()<2)return false;
+ size_t pos=2;
+ for(unsigned list=0;list<words[0];++list){
+  if(pos+2>words.size())return false;
+  const auto type=words[pos++],count=words[pos++];
+  const bool cue=type==CS_CMD_PLAYER_CUE||type==CS_CMD_ACTOR_CUE_201||
+      (type>=CS_CMD_ACTOR_CUE_100&&type<=CS_CMD_ACTOR_CUE_149)||
+      (type>=CS_CMD_ACTOR_CUE_450&&type<=CS_CMD_ACTOR_CUE_599);
+  const size_t stride=cue?12:(type==CS_CMD_TEXT||type==CS_CMD_TIME||type==CS_CMD_RUMBLE||
+      type==CS_CMD_TRANSITION_GENERAL||type==CS_CMD_FADE_OUT_SEQ)?3:2;
+  const size_t length=type==CS_CMD_CAMERA_SPLINE?count/4:size_t(count)*stride;
+  if((type==CS_CMD_CAMERA_SPLINE&&count%4)||length>words.size()-pos)return false;
+  if(type==CS_CMD_TEXT)for(unsigned i=0;i<count;++i){
+   CsCmdText text{};std::memcpy(&text,&words[pos+i*stride],sizeof(text));
+   if(text.textId==0xFFFF||text.type==2)continue; // NONE / ocarina action, not dialogue.
+   auto* message=play->msgCtx.messageTableNES;
+   while(message->textId!=0xFFFF&&message->textId!=text.textId)++message;
+   if(message->textId==0xFFFF)return false;
+  }
+  pos+=length;
+ }
+ return true;
+}
 extern "C" int MMVR_DebugCutsceneBegin(PlayState* play,int index){
  if(!MMVR_DebugRoomActive(play)||index<0||index>=ARRAY_COUNT(debugCutscenes)||play->transitionTrigger!=TRANS_TRIGGER_OFF)return false;
  const auto& entry=debugCutscenes[index];
  if(Entrance_GetSceneIdAbsolute(entry.entrance)!=entry.scene)return false;
+ // The archive also contains unfinished Giant alternate takes, whose dialogue
+ // is absent from the US message table. Native gameplay never selects them.
+ // Check the actual loaded data instead of letting native message-0 fallback
+ // display an empty box. Other scene recipes keep their existing prerequisites.
+ if(entry.scene==SCENE_KYOJINNOMA&&!DebugGiantDialogueAvailable(play,entry)){
+  Log()<<"giant-dialogue-unavailable index="<<index<<"\n"<<std::flush;
+  CustomMessage::StartTextbox("This unused Giant cutscene has missing dialogue. Try Giant scripts 1, 2, 3 or 10.");
+  return false;
+ }
  trialSave=gSaveContext.save;trialSkyboxTime=gSaveContext.skyboxTime;trialTimeSpeed=R_TIME_SPEED;std::memcpy(trialEvents,gSaveContext.eventInf,sizeof(trialEvents));std::memcpy(trialCycles,gSaveContext.cycleSceneFlags,sizeof(trialCycles));
  trialSnapshot=true;trialReturning=false;trial=-1;
  Log()<<"cutscene-trial index="<<index<<" name="<<entry.name<<" scene="<<entry.scene<<" layer="<<entry.cutsceneIndex<<"\n"<<std::flush;
  // SPOT00 story scripts use human Link in the native source; restore the
  // visitor's original form from trialSave when returning to the hall.
  TrialTransition(play,entry.entrance,entry.scene==SCENE_SPOT00);
+ giantCutsceneTrial=entry.scene==SCENE_KYOJINNOMA;
  // This mirrors the native transition callsites. In particular, the Song of
  // Time lesson is in SPOT00, which must not be replaced by the synthetic hall.
  gSaveContext.nextCutsceneIndex=entry.cutsceneIndex;
@@ -293,10 +335,30 @@ extern "C" int MMVR_DebugNativeTriggerBegin(PlayState* play,int index){
   // The authored room-0 crystal is temporary switch 0x60 with its own csId 1;
   // temporary switches are cleared by a normal scene load, not in CycleSceneFlags.
   break;
+ case DebugNativeTriggerKind::RomaniAliensStory:
+  gSaveContext.save.day=1;gSaveContext.save.time=CLOCK_TIME(12,0);
+  gSaveContext.skyboxTime=gSaveContext.save.time;
+  break;
+ case DebugNativeTriggerKind::MikauHealingStory:
+  SET_WEEKEVENTREG(WEEKEVENTREG_88_10);CLEAR_WEEKEVENTREG(WEEKEVENTREG_91_02);
+  // Native Mikau despawns once this mask is owned. Trial return restores it.
+  gSaveContext.save.saveInfo.inventory.items[SLOT_MASK_ZORA]=ITEM_NONE;
+  gSaveContext.save.saveInfo.inventory.items[SLOT_OCARINA]=ITEM_OCARINA_OF_TIME;
+  SET_QUEST_ITEM(QUEST_SONG_HEALING);
+  break;
+ case DebugNativeTriggerKind::SalesmanTheftStory:
+  break;
  }
  Log()<<"native-trigger index="<<index<<" name="<<entry.name<<" scene="<<entry.scene<<"\n"<<std::flush;
  TrialTransition(play,entry.entrance,true);
  townPanoramaPending=IsTownArrival(entry.kind)?index:-1;
+ if(entry.resource){
+  // Native story chains may visit SPOT00 between scenes (Mikau's memories).
+  // Let that real cutscene scene load; the explicit debug return restores the hall.
+  requested=false;
+  gSaveContext.nextCutsceneIndex=entry.cutsceneIndex;
+  storyScenePending=index;
+ }
  return true;
 }
 // Match actual native rock and entrance actors, rather than guessed map points.
@@ -448,6 +510,69 @@ void MaybePlaceKoumeCheckpoint(PlayState* play){
  koumeRoomPending=0;
  Log()<<"koume-handoff-checkpoint room=7 ready\n"<<std::flush;
 }
+void MaybeStartStoryScene(PlayState* play){
+ if(storyScenePending<0||!play||!trialSnapshot||trialReturning)return;
+ const auto& target=debugNativeTriggers[storyScenePending];
+ if(play->sceneId!=target.scene||play->transitionTrigger!=TRANS_TRIGGER_OFF||
+    play->transitionMode!=TRANS_MODE_OFF||play->roomCtx.status||!GET_PLAYER(play))return;
+ auto resource=std::dynamic_pointer_cast<SOH::Cutscene>(
+     Ship::Context::GetRawInstance()->GetResourceManager()->LoadResource(target.resource));
+ const int script=target.scriptIndex;
+ const bool valid=resource&&script>=0&&script<play->csCtx.scriptListCount&&play->csCtx.scriptList&&
+       static_cast<const void*>(play->csCtx.scriptList[script].script)==resource->GetPointer()&&
+     SOH::Cutscene::IsStoryTheater(resource->GetPointer());
+ if(!valid){
+  storyScenePending=-1;Log()<<"story-starter rejected name="<<target.name<<"\n"<<std::flush;return;
+ }
+ if(play->csCtx.state!=CS_STATE_IDLE){
+   if(static_cast<const void*>(play->csCtx.script)==resource->GetPointer())storyScenePending=-1;
+  return;
+ }
+ if(play->pauseCtx.state!=PAUSE_STATE_OFF||CutsceneManager_GetCurrentCsId()!=CS_ID_NONE)return;
+ if(target.csId<0){
+  // Alternate-layer movie uses exactly the script selected by the native header.
+  Cutscene_StartScripted(play,script);storyScenePending=-1;return;
+ }
+ const auto* entry=CutsceneManager_GetCutsceneEntry(target.csId);
+ if(!entry||entry->scriptIndex!=script){
+  storyScenePending=-1;Log()<<"story-starter manager mismatch name="<<target.name<<"\n"<<std::flush;return;
+ }
+ if(target.preludeCsId>=0){
+  const auto* prelude=CutsceneManager_GetCutsceneEntry(target.preludeCsId);
+  if(!prelude||prelude->additionalCsId!=target.csId||prelude->scriptIndex<0||
+     prelude->scriptIndex>=play->csCtx.scriptListCount||
+     !SOH::Cutscene::IsStoryTheater(play->csCtx.scriptList[prelude->scriptIndex].script)){
+   storyScenePending=-1;Log()<<"story-starter prelude mismatch name="<<target.name<<"\n"<<std::flush;return;
+  }
+ }
+ const int actorId=target.kind==DebugNativeTriggerKind::MikauHealingStory?ACTOR_EN_ZOG:ACTOR_EN_OSN;
+ Actor* owner=nullptr;
+ for(auto* actor=play->actorCtx.actorLists[ACTORCAT_NPC].first;actor;actor=actor->next)
+  if(actor->id==actorId&&actor->update&&!actor->init){
+   if(target.kind==DebugNativeTriggerKind::MikauHealingStory){
+    const auto* mikau=reinterpret_cast<EnZog*>(actor);
+    if(ENZOG_GET_F(actor)==ENZOG_F_2||mikau->csIdList[2]!=target.preludeCsId)continue;
+   }
+   owner=actor;break;
+  }
+ if(!owner)return; // Wait for the real scene actor and its objects to initialize.
+   if(target.kind==DebugNativeTriggerKind::MikauHealingStory){
+    auto* mikau=reinterpret_cast<EnZog*>(owner);
+    // Native room also contains the cue-only Mikau double. Only the real
+    // actor with this cutscene chain may own the Song of Healing handoff.
+    owner->flags|=ACTOR_FLAG_UPDATE_CULLING_DISABLED;
+    // Native Healing starts at csId 13 (death transition), then its authored
+    // chain advances to csId 14 (farewell). Keep the real actor-owned prelude.
+    func_80B93BA8(mikau,2);
+    mikau->actionFunc=func_80B943C0;owner->shape.shadowDraw=nullptr;
+    storyScenePending=-1;Log()<<"story-starter name="<<target.name<<" prelude="<<target.preludeCsId<<"\n"<<std::flush;return;
+   }
+ CutsceneManager_Queue(target.csId);
+ if(!CutsceneManager_IsNext(target.csId))return;
+ CutsceneManager_StartWithPlayerCs(target.csId,owner);
+ storyScenePending=-1;
+ Log()<<"story-starter name="<<target.name<<" script="<<script<<"\n"<<std::flush;
+}
 void MaybeStartTownPanorama(PlayState* play){
  if(townPanoramaPending<0||!play||!trialSnapshot||trialReturning)return;
  const auto& target=debugNativeTriggers[townPanoramaPending];
@@ -488,14 +613,24 @@ extern "C" int MMVR_DebugTrialReturn(PlayState* play){
  if(MMVR_DebugRoomActive(play))return false;
  requested=true; audioProbe=true;
  townPanoramaPending=-1;koumeRoomPending=0;woodfallWebPending=0;woodfallWebSettle=0;
+ storyScenePending=-1;
  RestoreTrial();trialReturning=true;TrialTransition(play,ENTRANCE(CUTSCENE,0),true);return true;
+}
+extern "C" int MMVR_DebugGiantCutsceneExit(PlayState* play){
+ // Only an explicit private hall recipe owns this exit. Real boss encounters
+ // continue through the native destination and retain their normal quest flags.
+ if(!mmvr::PrivateDebugTools||!giantCutsceneTrial||!trialSnapshot||trialReturning||
+    !play||play->sceneId!=SCENE_KYOJINNOMA)return false;
+ const bool returned=MMVR_DebugTrialReturn(play);
+ if(returned)Log()<<"giant-cutscene-return=1\n"<<std::flush;
+ return returned;
 }
 
 // Isolated harness: validate every native entrance/dispatch and the same save
 // normalization/return helpers used by actual portal trips. This does not load
 // all rooms or pretend to complete their quests.
 static bool NativeLocationCatalogTest(PlayState* play,std::ostream& log){
- auto before=gSaveContext;auto previousSave=trialSave;auto previousSkybox=trialSkyboxTime;auto previousTimeSpeed=trialTimeSpeed;auto oldTrial=trial;auto oldSnapshot=trialSnapshot;auto oldReturning=trialReturning;auto oldPanoramaPending=townPanoramaPending;
+ auto before=gSaveContext;auto previousSave=trialSave;auto previousSkybox=trialSkyboxTime;auto previousTimeSpeed=trialTimeSpeed;auto oldTrial=trial;auto oldSnapshot=trialSnapshot;auto oldReturning=trialReturning;auto oldPanoramaPending=townPanoramaPending;auto oldStoryPending=storyScenePending;
  const s16 originalRate=R_TIME_SPEED;
  u8 oldEvents[8];CycleSceneFlags oldCycles[120];std::memcpy(oldEvents,trialEvents,sizeof(oldEvents));std::memcpy(oldCycles,trialCycles,sizeof(oldCycles));
  auto oldNext=play->nextEntrance;auto oldTrigger=play->transitionTrigger;auto oldType=play->transitionType;auto oldScene=play->sceneId;auto oldPause=play->pauseCtx.state;auto oldPrerender=R_PAUSE_BG_PRERENDER_STATE;
@@ -547,6 +682,14 @@ static bool NativeLocationCatalogTest(PlayState* play,std::ostream& log){
   gSaveContext=before;requested=true;play->sceneId=oldScene;play->transitionTrigger=TRANS_TRIGGER_OFF;
   const auto& entry=debugCutscenes[i];
   bool sceneMatches=Entrance_GetSceneIdAbsolute(entry.entrance)==entry.scene;
+  if(entry.scene==SCENE_KYOJINNOMA&&!DebugGiantDialogueAvailable(play,entry)){
+   const Save unchanged=gSaveContext.save;
+   const bool rejected=!MMVR_DebugCutsceneBegin(play,i)&&play->transitionTrigger==TRANS_TRIGGER_OFF&&
+       std::memcmp(&unchanged,&gSaveContext.save,sizeof(unchanged))==0;
+   ok&=rejected;cutscenesVerified+=rejected;
+   Message_CloseTextbox(play);
+   continue;
+  }
   bool started=MMVR_DebugCutsceneBegin(play,i)&&play->nextEntrance==entry.entrance&&
       gSaveContext.nextCutsceneIndex==entry.cutsceneIndex&&trialSnapshot;
   bool hallOverrideDisabled=entry.scene!=SCENE_SPOT00||!requested;
@@ -564,7 +707,7 @@ static bool NativeLocationCatalogTest(PlayState* play,std::ostream& log){
   const auto& entry=debugNativeTriggers[i];
   bool sceneMatches=Entrance_GetSceneIdAbsolute(entry.entrance)==entry.scene;
   bool started=MMVR_DebugNativeTriggerBegin(play,i)&&play->nextEntrance==entry.entrance&&
-      gSaveContext.nextCutsceneIndex==0&&trialSnapshot;
+      gSaveContext.nextCutsceneIndex==entry.cutsceneIndex&&trialSnapshot;
   const bool weekUnchanged=!IsTownArrival(entry.kind)||
       std::memcmp(gSaveContext.save.saveInfo.weekEventReg,before.save.saveInfo.weekEventReg,
                   sizeof(before.save.saveInfo.weekEventReg))==0;
@@ -589,6 +732,11 @@ static bool NativeLocationCatalogTest(PlayState* play,std::ostream& log){
                  townPanoramaPending==-1;break;
   case DebugNativeTriggerKind::WoodfallCrystal:
    prerequisites=gSaveContext.save.saveInfo.inventory.items[SLOT_BOW]==ITEM_BOW&&AMMO(ITEM_BOW)==30;break;
+  case DebugNativeTriggerKind::RomaniAliensStory:
+  case DebugNativeTriggerKind::MikauHealingStory:
+  case DebugNativeTriggerKind::SalesmanTheftStory:
+   prerequisites=entry.resource&&entry.scriptIndex>=0&&storyScenePending==i;
+   break;
   }
   play->sceneId=entry.scene;play->transitionTrigger=TRANS_TRIGGER_OFF;
   bool returned=MMVR_DebugTrialReturn(play)&&play->nextEntrance==ENTRANCE(CUTSCENE,0);
@@ -610,7 +758,7 @@ static bool NativeLocationCatalogTest(PlayState* play,std::ostream& log){
  }
  log<<"ordinary-exit-return="<<ordinaryReturn<<"\n";ok&=ordinaryReturn;
  requested=oldRequested;audioProbe=oldAudio;
- gSaveContext=before;trialSave=previousSave;trialSkyboxTime=previousSkybox;trialTimeSpeed=previousTimeSpeed;R_TIME_SPEED=originalRate;trial=oldTrial;trialSnapshot=oldSnapshot;trialReturning=oldReturning;townPanoramaPending=oldPanoramaPending;
+ gSaveContext=before;trialSave=previousSave;trialSkyboxTime=previousSkybox;trialTimeSpeed=previousTimeSpeed;R_TIME_SPEED=originalRate;trial=oldTrial;trialSnapshot=oldSnapshot;trialReturning=oldReturning;townPanoramaPending=oldPanoramaPending;storyScenePending=oldStoryPending;
  std::memcpy(trialEvents,oldEvents,sizeof(oldEvents));std::memcpy(trialCycles,oldCycles,sizeof(oldCycles));
  play->nextEntrance=oldNext;play->transitionTrigger=oldTrigger;play->transitionType=oldType;play->sceneId=oldScene;play->pauseCtx.state=oldPause;R_PAUSE_BG_PRERENDER_STATE=oldPrerender;
  int page=catalogPage;for(int i=0;i<catalogPages;++i){catalogPage=i;BuildCatalogPage();ok&=!CatalogMesh().commands.empty()&&!CatalogMesh().vertices.empty();}catalogPage=page;BuildCatalogPage();

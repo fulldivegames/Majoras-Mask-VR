@@ -119,17 +119,17 @@ void MMVR_StateVisit_573b22ab3ff7b666(MMVR_StateSink* sink) {
     sink->pointer(sink->context, (const void*)&(sScriptedCutsceneHandlers[mmvr_i0]), 1, "sScriptedCutsceneHandlers[]");
     }
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_demo.c::CutsceneCmd_Misc::D_801BB15C::local0", "scalar:unsigned short", 0, sizeof(mmvr_local_b73abe20d4d41348), MMVR_STATE_SCALAR_ALIGN(mmvr_local_b73abe20d4d41348), 1);
+    sink->layout(sink->context, "code/z_demo.c::CutsceneCmd_Misc::D_801BB15C::local0", "scalar:unsigned short", 0, sizeof(mmvr_local_46fb407f65ec5c38), MMVR_STATE_SCALAR_ALIGN(mmvr_local_46fb407f65ec5c38), 1);
     }
-    sink->block(sink->context, "code/z_demo.c::CutsceneCmd_Misc::D_801BB15C::local0", &mmvr_local_b73abe20d4d41348, sizeof(mmvr_local_b73abe20d4d41348));
+    sink->block(sink->context, "code/z_demo.c::CutsceneCmd_Misc::D_801BB15C::local0", &mmvr_local_46fb407f65ec5c38, sizeof(mmvr_local_46fb407f65ec5c38));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_demo.c::CutsceneCmd_ModifySequence::sSeqId::local0", "scalar:unsigned short", 0, sizeof(mmvr_local_3f1bf0ccc9dcea2e), MMVR_STATE_SCALAR_ALIGN(mmvr_local_3f1bf0ccc9dcea2e), 1);
+    sink->layout(sink->context, "code/z_demo.c::CutsceneCmd_ModifySequence::sSeqId::local0", "scalar:unsigned short", 0, sizeof(mmvr_local_d972d45227261f8d), MMVR_STATE_SCALAR_ALIGN(mmvr_local_d972d45227261f8d), 1);
     }
-    sink->block(sink->context, "code/z_demo.c::CutsceneCmd_ModifySequence::sSeqId::local0", &mmvr_local_3f1bf0ccc9dcea2e, sizeof(mmvr_local_3f1bf0ccc9dcea2e));
+    sink->block(sink->context, "code/z_demo.c::CutsceneCmd_ModifySequence::sSeqId::local0", &mmvr_local_d972d45227261f8d, sizeof(mmvr_local_d972d45227261f8d));
     if(sink->layout) {
-    sink->layout(sink->context, "code/z_demo.c::CutsceneCmd_Text::sCutsceneTextboxType::local0", "scalar:int", 0, sizeof(mmvr_local_445d6f12a953fafd), MMVR_STATE_SCALAR_ALIGN(mmvr_local_445d6f12a953fafd), 1);
+    sink->layout(sink->context, "code/z_demo.c::CutsceneCmd_Text::sCutsceneTextboxType::local0", "scalar:int", 0, sizeof(mmvr_local_301f37e6a4a81cbb), MMVR_STATE_SCALAR_ALIGN(mmvr_local_301f37e6a4a81cbb), 1);
     }
-    sink->block(sink->context, "code/z_demo.c::CutsceneCmd_Text::sCutsceneTextboxType::local0", &mmvr_local_445d6f12a953fafd, sizeof(mmvr_local_445d6f12a953fafd));
+    sink->block(sink->context, "code/z_demo.c::CutsceneCmd_Text::sCutsceneTextboxType::local0", &mmvr_local_301f37e6a4a81cbb, sizeof(mmvr_local_301f37e6a4a81cbb));
     sink->function(sink->context, "code/z_demo.c::Cutscene_InitContext", (void (*)(void))Cutscene_InitContext);
     sink->function(sink->context, "code/z_demo.c::Cutscene_StartManual", (void (*)(void))Cutscene_StartManual);
     sink->function(sink->context, "code/z_demo.c::Cutscene_StopManual", (void (*)(void))Cutscene_StopManual);

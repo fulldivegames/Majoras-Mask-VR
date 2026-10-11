@@ -13,6 +13,7 @@ bool ExchangeItemContextActive(PlayState*);
 void ClearItemTrigger();
 void ClearItemSelection();
 int SelectedItem(PlayState*);
+bool RadialBottleActive(PlayState*);
 int MinigameExplosive(PlayState*);
 int InventorySlotItem(int slot);
 bool MaskGivenOnMoon(int item);

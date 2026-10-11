@@ -2,6 +2,9 @@
 #include "Bottle.h"
 #include "NativeCombat.h"
 #include "Interactions.h"
+#include "ItemUse.h"
+#include "FormAim.h"
+#include "bottle_gesture.h"
 #include "runtime.h"
 #include "ui.h"
 #include "combat.h"
@@ -31,6 +34,48 @@ int releaseScene = -1;
 Vec3f releaseMouth{};
 bool releaseValid = false;
 std::chrono::steady_clock::time_point releaseAt;
+mmvr::BottleUseGesture useGesture;
+mmvr::BottleGestureAction pendingUse = mmvr::BottleGestureAction::None;
+Player* useOwner = nullptr;
+int useScene = -1, useForm = -1, useHand = -1, useItem = ITEM_NONE, useSlot = -1;
+std::chrono::steady_clock::time_point useAt;
+bool Drinkable(int item) {
+    switch (item) {
+        case ITEM_POTION_RED: case ITEM_POTION_GREEN: case ITEM_POTION_BLUE:
+        case ITEM_MILK_BOTTLE: case ITEM_MILK_HALF: case ITEM_CHATEAU: case ITEM_POE:
+            return true;
+        default: return false;
+    }
+}
+bool Pourable(int item) {
+    switch (item) {
+        case ITEM_FISH: case ITEM_BUG: case ITEM_FAIRY: case ITEM_SPRING_WATER:
+        case ITEM_HOT_SPRING_WATER: case ITEM_ZORA_EGG: case ITEM_DEKU_PRINCESS:
+        case ITEM_SEAHORSE: case ITEM_HYLIAN_LOACH:
+            return true;
+        default: return false; // Quest trade contents keep their native use/offer.
+    }
+}
+bool BottleUseEligible(PlayState* play, Player* p) {
+    return p && mmvrgame::RadialBottleActive(play) && mmvrgame::InteractionsEligible(play, p) && mmvr::PhysicalActionsAllowed() &&
+           mmvr::StateResumeInputReady() && MMVR_BottleFormAllowed(p) &&
+           !(p->stateFlags1 & PLAYER_STATE1_4000000) &&
+           !(p->stateFlags2 & PLAYER_STATE2_USING_OCARINA) &&
+           !p->heldActor && p->itemAction == p->heldItemAction &&
+           play->msgCtx.msgMode == MSGMODE_NONE && !mmvr::GetSelector().open &&
+           !mmvrgame::ExchangeItemContextActive(play) &&
+           p->heldItemButton == EQUIP_SLOT_C_DOWN &&
+           C_SLOT_EQUIP(0, EQUIP_SLOT_C_DOWN) >= SLOT_BOTTLE_1 &&
+           C_SLOT_EQUIP(0, EQUIP_SLOT_C_DOWN) <= SLOT_BOTTLE_6 &&
+           mmvrgame::SelectedItem(play) == p->heldItemId &&
+           Player_GetItemOnButton(play, p, EQUIP_SLOT_C_DOWN) == p->heldItemId;
+}
+void ClearScoop() {
+    gesture.Reset();
+    window.Cancel();
+    samples.clear();
+    valid = false;
+}
 Vec3f Point(const mmvr::Matrix& m, float x, float y, float z) {
     Vec3f p{};
     for (int c = 0; c < 3; ++c)
@@ -60,10 +105,11 @@ XrVector3f BottleMouthForForm(const Player* p) {
     return { BottleMouth.x + offset.x, BottleMouth.y + offset.y, BottleMouth.z + offset.z };
 }
 void ClearBottle() {
-    gesture.Reset();
-    window.Cancel();
-    samples.clear();
-    valid = false;
+    ClearScoop();
+    useGesture.Reset();
+    pendingUse = mmvr::BottleGestureAction::None;
+    useOwner = nullptr;
+    releaseValid = false;
 }
 void UpdateBottle(const mmvr::TrackingFrame& frame, const mmvr::Matrix& model) {
     auto* play = gPlayState;
@@ -77,10 +123,50 @@ void UpdateBottle(const mmvr::TrackingFrame& frame, const mmvr::Matrix& model) {
         releaseScene = play->sceneId;
         releaseAt = std::chrono::steady_clock::now();
     }
+    const int slot = p ? C_SLOT_EQUIP(0, EQUIP_SLOT_C_DOWN) : -1;
+    if (!p || useOwner != p || useScene != play->sceneId || useForm != p->transformation ||
+        useHand != controller || useItem != p->heldItemId || useSlot != slot) {
+        useGesture.Reset();
+        pendingUse = mmvr::BottleGestureAction::None;
+        useOwner = p;
+        useScene = play ? play->sceneId : -1;
+        useForm = p ? p->transformation : -1;
+        useHand = controller;
+        useItem = p ? p->heldItemId : ITEM_NONE;
+        useSlot = slot;
+    }
+    const bool useAllowed = BottleUseEligible(play, p) && frame.handTracked[controller] &&
+                            frame.handValid[controller] && std::isfinite(frame.trackingScale) &&
+                            frame.trackingScale > .05f;
+    if (useAllowed && (Drinkable(useItem) || Pourable(useItem))) {
+        const auto opening = BottleMouthForForm(p);
+        const auto mouth = Point(model, opening.x, opening.y, opening.z);
+        const auto headPose = FormHeadPose();
+        const auto local = Point(mmvr::InversePose(headPose), mouth.x, mouth.y, mouth.z);
+        const float units = 40.f * frame.trackingScale;
+        const bool atMouth = headPose.m[3][3] &&
+            std::hypot(local.x / units, local.y / units + .07f, local.z / units + .10f) <= .14f;
+        const float length = std::hypot(model.m[1][0], model.m[1][1], model.m[1][2]);
+        const auto& pos = frame.hands[controller].position;
+        if (useGesture.epoch != frame.epoch || frame.timeSeconds < useGesture.lastTime ||
+            frame.timeSeconds - useGesture.lastTime > .15)
+            pendingUse = mmvr::BottleGestureAction::None;
+        // Raw tracking position removes locomotion/camera movement from shakes.
+        const auto action = useGesture.Update(frame.timeSeconds, frame.epoch, length > 1e-7f,
+            Drinkable(useItem), Pourable(useItem), atMouth, length > 1e-7f ? model.m[1][1] / length : 0.f,
+            { pos.x / frame.trackingScale, pos.y / frame.trackingScale, pos.z / frame.trackingScale });
+        if (action != mmvr::BottleGestureAction::None) {
+            pendingUse = action;
+            useAt = std::chrono::steady_clock::now();
+        }
+    } else {
+        useGesture.Reset();
+        pendingUse = mmvr::BottleGestureAction::None;
+    }
     if (!MMVR_IndependentBottle(p) || !InteractionsEligible(play, p) || !mmvr::PhysicalActionsAllowed() ||
         !frame.handTracked[controller] || p->heldActor || play->msgCtx.msgMode != MSGMODE_NONE ||
         mmvr::GetSelector().open) {
-        ClearBottle();
+        ClearScoop();
         return;
     }
     // Measured native glass opening; the capture sweep follows its rendered hand basis.
@@ -118,6 +204,25 @@ void UpdateBottle(const mmvr::TrackingFrame& frame, const mmvr::Matrix& model) {
     samples.push_back({ bottleTime, mouth });
     while (samples.size() > 32 || (!samples.empty() && bottleTime - samples.front().bottleTime > .18))
         samples.pop_front();
+}
+bool ProcessBottleGesture(PlayState* play) {
+    if (pendingUse == mmvr::BottleGestureAction::None) return false;
+    const auto action = pendingUse;
+    pendingUse = mmvr::BottleGestureAction::None;
+    auto* p = play ? GET_PLAYER(play) : nullptr;
+    if (!p || useOwner != p || useScene != play->sceneId || useForm != p->transformation ||
+        useHand != mmvr::SwordController(mmvr::GetSettings()) || useItem != p->heldItemId ||
+        useSlot != C_SLOT_EQUIP(0, EQUIP_SLOT_C_DOWN) || !BottleUseEligible(play, p) ||
+        std::chrono::steady_clock::now() - useAt > std::chrono::milliseconds(150) ||
+        (action == mmvr::BottleGestureAction::Drink ? !Drinkable(useItem) : !Pourable(useItem)))
+        return false;
+    // Request the existing native use once, on the game update, never in draw.
+    // Native actors still own eggs, poured water, healing and NPC exchanges.
+    auto& input = *CONTROLLER1(&play->state);
+    input.cur.button |= BTN_CDOWN;
+    input.press.button |= BTN_CDOWN;
+    mmvr::HapticPulse(useHand, .25f);
+    return true;
 }
 } // namespace mmvrgame
 extern "C" int MMVR_BottleReleasePoint(Player* p, float* point) {
@@ -224,6 +329,15 @@ extern "C" void MMVR_VisitVrBottleState(MMVR_StateSink* sink) {
     mmvrgame::NativeStateField(sink,"vr/bottle/releaseMouth",releaseMouth);
     mmvrgame::NativeStateField(sink,"vr/bottle/releaseValid",releaseValid);
     mmvrgame::NativeStateField(sink,"vr/bottle/releaseAt",releaseAt);
+    mmvrgame::NativeStateField(sink,"vr/bottle/useGesture",useGesture);
+    mmvrgame::NativeStateField(sink,"vr/bottle/pendingUse",pendingUse);
+    mmvrgame::NativeStateField(sink,"vr/bottle/useOwner",useOwner);
+    mmvrgame::NativeStateField(sink,"vr/bottle/useScene",useScene);
+    mmvrgame::NativeStateField(sink,"vr/bottle/useForm",useForm);
+    mmvrgame::NativeStateField(sink,"vr/bottle/useHand",useHand);
+    mmvrgame::NativeStateField(sink,"vr/bottle/useItem",useItem);
+    mmvrgame::NativeStateField(sink,"vr/bottle/useSlot",useSlot);
+    mmvrgame::NativeStateField(sink,"vr/bottle/useAt",useAt);
 }
 #endif
 
@@ -234,6 +348,7 @@ void RebaseBottleTracking(const mmvr::TrackingFrame& f) {
     gesture.Rebase(bottleTime,f.timeSeconds,f.epoch);
     window.Rebase(bottleTime,f.timeSeconds);bottleTime=f.timeSeconds;
     samples.clear();valid=false;releaseValid=false;releaseAt={};
+    useGesture.Reset();pendingUse=mmvr::BottleGestureAction::None;useOwner=nullptr;
 }
 }
 #endif

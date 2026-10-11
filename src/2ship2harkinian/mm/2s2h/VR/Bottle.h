@@ -7,6 +7,7 @@ inline constexpr XrVector3f BottleMouth{440,578,-60}; // Center of the native gl
 XrVector3f BottleMouthForForm(const Player*);
 void UpdateBottle(const mmvr::TrackingFrame&,const mmvr::Matrix& model);
 void ClearBottle();
+bool ProcessBottleGesture(struct PlayState*);
 }
 extern "C" {
 #endif

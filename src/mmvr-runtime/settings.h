@@ -221,6 +221,7 @@ enum class Setting {
     HideDekuBodyLegs,
     HideDeityBodyLegs,
     HideBodyLegs,
+    BowDrawHandAim,
     Count
 };
 struct SettingDefinition {
@@ -445,12 +446,15 @@ inline constexpr SettingDefinition SettingDefinitions[] = {
     { "gVR.HideDekuBodyLegs", "Hide Deku legs", 0, 0, 1, 1, "off/on" },
     { "gVR.HideDeityBodyLegs", "Hide Fierce Deity legs", 0, 0, 1, 1, "off/on" },
     { "gVR.HideBodyLegs", "Hide legs (all bodies)", 0, 0, 1, 1, "off/on" },
+    { "gVR.BowDrawHandAim", "Draw-hand fine bow aiming", 0, 0, 1, 1, "off/on" },
 };
 static_assert(sizeof(SettingDefinitions) / sizeof(SettingDefinitions[0]) == size_t(Setting::Count));
 inline float BoundSetting(Setting id, float value) {
     // Model matching is always enabled; its legacy switch is no longer exposed.
     // Old profiles must not silently select the taller nominal fallback.
     if (id == Setting::ModelFormHeight) return 1.f;
+    // Keep the legacy key/ID for older profiles; worn Bunny Hood is always hidden.
+    if (id == Setting::HideBunnyHood) return 1.f;
     // Core first-person controls remain enabled, including in older saved profiles.
     if (id == Setting::PhysicalSword || id == Setting::PhysicalShield || id == Setting::PhysicalBow || id == Setting::PhysicalBottle || id == Setting::PhysicalCarry || id == Setting::PhysicalMasks || id == Setting::PhysicalFists || id == Setting::PhysicalFins || id == Setting::TrackedAim) return 1.f;
     if(!PrivateDebugTools && (id==Setting::DebugRoomSpawn || id==Setting::DebugSkipCutscenes ||

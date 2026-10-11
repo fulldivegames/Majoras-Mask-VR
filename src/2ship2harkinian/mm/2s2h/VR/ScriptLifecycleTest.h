@@ -3,6 +3,8 @@
 #include "2s2h/resource/type/Cutscene.h"
 #include "2s2h/ShipInit.hpp"
 extern "C" int MMVR_DebugCutsceneBegin(PlayState*,int);
+extern "C" int MMVR_DebugRoomActive(PlayState*);
+extern "C" int MMVR_DebugGiantCutsceneExit(PlayState*);
 extern "C" s16 sSceneCutsceneCount;
 // The native ending deliberately holds forever at CS_MISC_FINALE. Discover
 // that boundary from the actual loaded resource, not a timeout or guessed frame.
@@ -57,6 +59,10 @@ static mmvr::Pad NativeScriptLifecycle(PlayState* play,unsigned tick) {
     static unsigned progressed=0,settled=0,lastFrame=0;
     static bool described=false;static int finale=-2;static unsigned finaleHeld=0;
     static unsigned budget=5000;
+    static const bool giantCheck=std::getenv("MMVR_GIANT_SCRIPT_CHECK")!=nullptr;
+    static Save giantSave{};
+    static unsigned giantMessages=0;
+    static u16 giantLastText=0;
     static std::ofstream log("native-script-lifecycle.log");
     mmvr::Pad pad;pad.active=true;
     auto finish=[&](const char* status,const char* why){log<<status<<" script="<<index<<" progress="<<progressed<<" reason="<<why<<'\n'<<std::flush;Ship::Context::GetRawInstance()->GetWindow()->Close();};
@@ -67,7 +73,19 @@ static mmvr::Pad NativeScriptLifecycle(PlayState* play,unsigned tick) {
         // only after entering gameplay so the movie itself can be exercised.
         CVarSetInteger("gEnhancements.Cutscenes.SkipToFileSelect",0);
         ShipInit::Init("gEnhancements.Cutscenes.SkipToFileSelect");
-        launched=MMVR_DebugCutsceneBegin(play,index);if(!launched){finish("FAIL","launch-rejected");return pad;}}
+        if(giantCheck){
+            giantSave=gSaveContext.save;
+            if(MMVR_DebugGiantCutsceneExit(play)){finish("FAIL","nontrial-exit-intercepted");return pad;}
+        }
+        launched=MMVR_DebugCutsceneBegin(play,index);
+        if(!launched){
+            const bool unused=giantCheck&&(index==49||index==50||index==52||index==53);
+            const bool unchanged=MMVR_DebugRoomActive(play)&&play->transitionTrigger==TRANS_TRIGGER_OFF&&
+                std::memcmp(&giantSave,&gSaveContext.save,sizeof(giantSave))==0;
+            finish(unused&&unchanged?"PASS":"FAIL",unused&&unchanged?"missing-dialogue-safely-rejected":"launch-rejected");
+            return pad;
+        }
+    }
     nativeScriptLaunched=launched;
     if(!launched)return pad;
     const auto& entry=debugCutscenes[index];
@@ -119,6 +137,14 @@ static mmvr::Pad NativeScriptLifecycle(PlayState* play,unsigned tick) {
     auto* p=GET_PLAYER(play);
     if(!std::isfinite(p->actor.world.pos.x)||!std::isfinite(p->actor.world.pos.y)||!std::isfinite(p->actor.world.pos.z)){finish("FAIL","nonfinite-player-position");return pad;}
     if(play->msgCtx.msgLength && tick%24==0)pad.buttons=BTN_A;
+    if(giantCheck&&play->sceneId==SCENE_KYOJINNOMA&&play->msgCtx.msgLength&&
+       play->msgCtx.decodedTextLen>2&&play->msgCtx.textDrawPos>=play->msgCtx.decodedTextLen&&
+       play->msgCtx.currentTextId!=giantLastText){
+        giantLastText=play->msgCtx.currentTextId;++giantMessages;
+        log<<"giant-visible-dialogue="<<giantLastText<<" decoded="<<play->msgCtx.textDrawPos<<'\n'<<std::flush;
+        mmvr::RequestNativeCapture((std::string("lesson-giant-")+std::to_string(giantLastText)).c_str());
+        pad.buttons=0; // Keep this completed page visible through the capture draw.
+    }
     if(play->msgCtx.msgMode==MSGMODE_SONG_PROMPT){
         const int song=play->msgCtx.ocarinaAction-OCARINA_ACTION_PROMPT_SONATA;
         if(song>=0&&song<=OCARINA_SONG_GORON_LULLABY_INTRO){
@@ -132,7 +158,27 @@ static mmvr::Pad NativeScriptLifecycle(PlayState* play,unsigned tick) {
     if(tick%60==0)log<<"tick="<<tick<<" scene="<<play->sceneId<<" state="<<int(play->csCtx.state)<<" frame="<<play->csCtx.curFrame<<" message="<<int(play->msgCtx.msgMode)<<" textId="<<play->msgCtx.currentTextId<<" textState="<<int(Message_GetState(&play->msgCtx))<<" choice="<<int(play->msgCtx.choiceIndex)<<" endType="<<int(play->msgCtx.textboxEndType)<<" ocarina="<<play->msgCtx.ocarinaAction<<" csIndex="<<gSaveContext.save.cutsceneIndex<<'\n'<<std::flush;
     if(finale>0&&play->csCtx.state!=CS_STATE_IDLE&&play->csCtx.curFrame==finale-1&&progressed>=unsigned(finale-2))++finaleHeld;else finaleHeld=0;
     if(finaleHeld>=60){log<<"terminal-finale-held ticks="<<finaleHeld<<'\n';finish("PASS","native-script-completed");return pad;}
-    if(settled>=30 && progressed>=2)finish("PASS","native-script-completed");
+    if(settled>=30 && progressed>=2){
+        if(giantCheck){
+            const bool hall=MMVR_DebugRoomActive(play)&&!Player_InCsMode(play)&&
+                !play->envCtx.fillScreen&&play->pauseCtx.state==PAUSE_STATE_OFF;
+            auto expectedInfo=giantSave.saveInfo;
+            // EnElf_Update advances the native hint timer after control returns.
+            // It is elapsed gameplay time, not leaked trial quest progress.
+            expectedInfo.playerData.tatlTimer=gSaveContext.save.saveInfo.playerData.tatlTimer;
+            const bool saveRestored=std::memcmp(&expectedInfo,&gSaveContext.save.saveInfo,sizeof(expectedInfo))==0;
+            if(!saveRestored){
+                const auto* before=reinterpret_cast<const u8*>(&expectedInfo);
+                const auto* after=reinterpret_cast<const u8*>(&gSaveContext.save.saveInfo);
+                for(size_t i=0;i<sizeof(giantSave.saveInfo);++i)
+                    if(before[i]!=after[i])log<<"giant-save-difference offset="<<i<<" before="<<unsigned(before[i])<<" after="<<unsigned(after[i])<<'\n';
+            }
+            log<<"giant-return hall="<<hall<<" saveRestored="<<saveRestored<<" messages="<<giantMessages<<'\n'<<std::flush;
+            if(!hall||!saveRestored||giantMessages==0){finish("FAIL","giant-dialogue-or-control-return");return pad;}
+            mmvr::RequestNativeCapture("lesson-giant-return");
+        }
+        finish("PASS","native-script-completed");
+    }
     else if(tick>=budget || (!started&&tick>=600))finish("BLOCKED","needs-authored-prerequisite-or-input");
     return pad;
 }

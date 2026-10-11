@@ -1,4 +1,5 @@
 #include "2s2h/VR/PresentationOptions.h"
+#include "2s2h/VR/DebugRoom.h"
 #include "prevent_bss_reordering.h"
 #include "prevent_bss_reordering2.h"
 #include "PR/ultratypes.h"
@@ -155,7 +156,7 @@ void CutsceneHandler_StartScript(PlayState* play, CutsceneContext* csCtx) {
 
 /* Start of command handling section */
 
-static u16 mmvr_local_b73abe20d4d41348 = 0xFFFF;
+static u16 mmvr_local_46fb407f65ec5c38 = 0xFFFF;
 void CutsceneCmd_Misc(PlayState* play, CutsceneContext* csCtx, CsCmdMisc* cmd) {
     /* persistent local storage is declared above */
     Player* player = GET_PLAYER(play);
@@ -383,8 +384,8 @@ void CutsceneCmd_Misc(PlayState* play, CutsceneContext* csCtx, CsCmdMisc* cmd) {
             break;
 
         case CS_MISC_TIME_ADVANCE:
-            if (csCtx->curFrame != mmvr_local_b73abe20d4d41348) {
-                mmvr_local_b73abe20d4d41348 = csCtx->curFrame;
+            if (csCtx->curFrame != mmvr_local_46fb407f65ec5c38) {
+                mmvr_local_46fb407f65ec5c38 = csCtx->curFrame;
 
                 if (R_TIME_SPEED != 0) {
                     gSaveContext.save.time = CURRENT_TIME + (u16)R_TIME_SPEED;
@@ -478,7 +479,7 @@ void Cutscene_SetSfxReverbIndexTo1(PlayState* play, CutsceneContext* csCtx, CsCm
     }
 }
 
-static u16 mmvr_local_3f1bf0ccc9dcea2e;
+static u16 mmvr_local_d972d45227261f8d;
 void CutsceneCmd_ModifySequence(PlayState* play, CutsceneContext* csCtx, CsCmdModifySeq* cmd) {
     /* persistent local storage is declared above */
     u8 dayMinusOne;
@@ -515,12 +516,12 @@ void CutsceneCmd_ModifySequence(PlayState* play, CutsceneContext* csCtx, CsCmdMo
                 break;
 
             case CS_MOD_SEQ_STORE:
-                mmvr_local_3f1bf0ccc9dcea2e = AudioSeq_GetActiveSeqId(SEQ_PLAYER_BGM_MAIN);
+                mmvr_local_d972d45227261f8d = AudioSeq_GetActiveSeqId(SEQ_PLAYER_BGM_MAIN);
                 break;
 
             case CS_MOD_SEQ_RESTORE:
-                if (mmvr_local_3f1bf0ccc9dcea2e != NA_BGM_DISABLED) {
-                    Audio_PlaySceneSequence(mmvr_local_3f1bf0ccc9dcea2e, dayMinusOne);
+                if (mmvr_local_d972d45227261f8d != NA_BGM_DISABLED) {
+                    Audio_PlaySceneSequence(mmvr_local_d972d45227261f8d, dayMinusOne);
                 }
                 break;
 
@@ -639,6 +640,11 @@ void CutsceneCmd_Destination(PlayState* play, CutsceneContext* csCtx, CsCmdDesti
     } else if (cmd->type == CS_DESTINATION_BOSS_WARP) {
         if (csCtx->curFrame == cmd->startFrame) {
             Play_DisableMotionBlur();
+#ifdef MMVR_ENABLE
+            if (MMVR_DebugGiantCutsceneExit(play)) {
+                return;
+            }
+#endif
 
             switch (gDungeonBossWarpSceneId) {
                 case SCENE_MITURIN_BS:
@@ -1022,7 +1028,7 @@ s32 Cutscene_CountNormalMasks(void) {
     return count;
 }
 
-static s32 mmvr_local_445d6f12a953fafd = CS_TEXT_TYPE_DEFAULT;
+static s32 mmvr_local_301f37e6a4a81cbb = CS_TEXT_TYPE_DEFAULT;
 void CutsceneCmd_Text(PlayState* play, CutsceneContext* csCtx, CsCmdText* cmd) {
     /* persistent local storage is declared above */
     u8 talkState;
@@ -1035,10 +1041,10 @@ void CutsceneCmd_Text(PlayState* play, CutsceneContext* csCtx, CsCmdText* cmd) {
 
     if (cmd->type != CS_TEXT_OCARINA_ACTION) {
         if (sCurTextId != cmd->textId) {
-            if (mmvr_local_445d6f12a953fafd == CS_TEXT_TYPE_3) {
+            if (mmvr_local_301f37e6a4a81cbb == CS_TEXT_TYPE_3) {
                 csCtx->curFrame--;
             }
-            mmvr_local_445d6f12a953fafd = CS_TEXT_TYPE_1;
+            mmvr_local_301f37e6a4a81cbb = CS_TEXT_TYPE_1;
             sCurTextId = cmd->textId;
             if (cmd->type == CS_TEXT_TYPE_BOSSES_REMAINS) {
                 if (GameInteractor_Should(VB_MEET_MOON_REQUIREMENTS, CHECK_QUEST_ITEM(QUEST_REMAINS_ODOLWA) &&
@@ -1067,7 +1073,7 @@ void CutsceneCmd_Text(PlayState* play, CutsceneContext* csCtx, CsCmdText* cmd) {
         }
     } else {
         if (sCurOcarinaAction != cmd->textId) {
-            mmvr_local_445d6f12a953fafd = CS_TEXT_OCARINA_ACTION;
+            mmvr_local_301f37e6a4a81cbb = CS_TEXT_OCARINA_ACTION;
             sCurOcarinaAction = cmd->textId;
             Message_DisplayOcarinaStaff(play, cmd->textId);
             return;
@@ -1093,7 +1099,7 @@ void CutsceneCmd_Text(PlayState* play, CutsceneContext* csCtx, CsCmdText* cmd) {
                     if (cmd->altTextId1 != 0xFFFF) {
                         Message_ContinueTextbox(play, cmd->altTextId1);
                         if (cmd->type == CS_TEXT_TYPE_3) {
-                            mmvr_local_445d6f12a953fafd = CS_TEXT_TYPE_3;
+                            mmvr_local_301f37e6a4a81cbb = CS_TEXT_TYPE_3;
                             if (cmd->altTextId2 != 0xFFFF) {
                                 csCtx->curFrame++;
                             }
@@ -1111,7 +1117,7 @@ void CutsceneCmd_Text(PlayState* play, CutsceneContext* csCtx, CsCmdText* cmd) {
                     if (cmd->altTextId2 != 0xFFFF) {
                         Message_ContinueTextbox(play, cmd->altTextId2);
                         if (cmd->type == CS_TEXT_TYPE_3) {
-                            mmvr_local_445d6f12a953fafd = CS_TEXT_TYPE_3;
+                            mmvr_local_301f37e6a4a81cbb = CS_TEXT_TYPE_3;
                             if (cmd->altTextId1 != 0xFFFF) {
                                 csCtx->curFrame++;
                             }
@@ -1128,7 +1134,7 @@ void CutsceneCmd_Text(PlayState* play, CutsceneContext* csCtx, CsCmdText* cmd) {
             }
         }
 
-        if ((talkState == TEXT_STATE_CLOSING) && (mmvr_local_445d6f12a953fafd == CS_TEXT_TYPE_3)) {
+        if ((talkState == TEXT_STATE_CLOSING) && (mmvr_local_301f37e6a4a81cbb == CS_TEXT_TYPE_3)) {
             csCtx->curFrame--;
             sCurTextId++;
         }

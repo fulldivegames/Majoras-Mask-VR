@@ -1,8 +1,8 @@
 {
   "done": [
     {
-      "source": "code/z_play.c",
-      "locals": 10
+      "source": "overlays/actors/ovl_player_actor/z_player.c",
+      "locals": 27
     }
   ],
   "failures": {}

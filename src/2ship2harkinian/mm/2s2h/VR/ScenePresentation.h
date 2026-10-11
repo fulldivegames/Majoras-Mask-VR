@@ -241,6 +241,9 @@ inline mmvr::SceneFacts SceneFacts(PlayState* play) {
         (SOH::Cutscene::IsHistoricalFlashback(activeScript) ||
          (play->csCtx.state != CS_STATE_IDLE && SOH::Cutscene::IsHistoricalFlashback(play->csCtx.script)));
     f.authoredTheater = f.authoredTheater || historicalFlashback;
+    f.authoredTheater = f.authoredTheater || (f.scripted &&
+        (SOH::Cutscene::IsStoryTheater(activeScript) ||
+         (play->csCtx.state != CS_STATE_IDLE && SOH::Cutscene::IsStoryTheater(play->csCtx.script))));
     f.remote = f.remote || historicalFlashback;
     // Script-level participation is evidence of Link's involvement, not an
     // active animation cue. Never reuse stale script metadata during gameplay.

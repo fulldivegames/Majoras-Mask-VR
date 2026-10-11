@@ -106,6 +106,8 @@ static void NativeCombatFixture(PlayState* play){
 #include "LessonLifecycleTest.h"
 #include "PotionShopLifecycleTest.h"
 #include "ScriptLifecycleTest.h"
+#include "StorySceneTest.h"
+#include "MovementStoryTest.h"
 #include "SceneResourceAudit.h"
 #include "EncounterAudit.h"
 extern "C" void MMVR_VerifySettingsRepair(PlayState*);
@@ -151,6 +153,8 @@ static mmvr::Pad NativeTestInput(){
   }
   if(std::getenv("MMVR_SWORD_CHARGE_TEST")){if(playTicks==60)NativeSwordChargeTest(gPlayState);return pad;}
   if(std::getenv("MMVR_QUICK_WHEEL_TEST")){if(playTicks==60)NativeQuickWheelTest(gPlayState);return pad;}
+  if(std::getenv("MMVR_GORON_LADDER_TEST")||std::getenv("MMVR_HUMAN_LADDER_TEST")||std::getenv("MMVR_ZORA_BREACH_TEST"))return NativeMovementStoryTest(gPlayState,playTicks);
+  if(std::getenv("MMVR_BOW_MASK_TEST")){if(playTicks==60)NativeBowMaskOwnershipTest(gPlayState);return pad;}
   if(std::getenv("MMVR_MOON_MASK_TEST")){if(playTicks==60)NativeMoonMaskTest(gPlayState);return pad;}
   if(std::getenv("MMVR_FULL_BODY_TEST")){NativeFullBodyTest(gPlayState,playTicks);return pad;}
   if(std::getenv("MMVR_RENDER_BINDING_TEST")){
@@ -203,6 +207,7 @@ static mmvr::Pad NativeTestInput(){
   }
   if(std::getenv("MMVR_SAVE_PROP_OWL_TEST")){if(playTicks==60)NativeSavePropOwlTest(gPlayState);return pad;}
   if(std::getenv("MMVR_HEAD_AIM_TEST")){if(playTicks==60)NativeHeadAimTest(gPlayState);return pad;}
+  if(std::getenv("MMVR_STORY_SCENE_CASE"))return NativeStorySceneTest(gPlayState,playTicks);
   if(std::getenv("MMVR_ENCOUNTER_TEST"))return NativeEncounterAudit(gPlayState,playTicks);
   if(std::getenv("MMVR_SCENE_RESOURCE_AUDIT")){if(playTicks==60)NativeSceneResourceAudit();return pad;}
   if(std::getenv("MMVR_MESSAGE_DECODE_TEST") || std::getenv("MMVR_MESSAGE_PAGES_TEST")){if(playTicks==60)NativeMessageDecodeTest(gPlayState);return pad;}
@@ -350,6 +355,8 @@ static mmvr::Pad NativeTestInput(){
     failure.flush();log.flush();Ship::Context::GetRawInstance()->GetWindow()->Close();return pad;
    }
    MMVR_DebugRoomScenario(gPlayState,playTicks);
+   // The native well Gibdo notices noisy footsteps, not a stationary teleport.
+   if(std::getenv("MMVR_GIBDO_ARENA_ONLY")&&playTicks>80&&playTicks<=100)pad.x=80;
    if(playTicks>=690&&playTicks<=1520)return NativeClimbLifecycle(gPlayState,playTicks);
    if(playTicks>=1521&&playTicks<=1990)return NativeRepairLifecycle(gPlayState,playTicks);
    if(playTicks>2055){std::ofstream("native-room-exit.txt")<<(gPlayState->sceneId==SCENE_CLOCKTOWER&&!MMVR_DebugRoomActive(gPlayState));log.flush();Ship::Context::GetRawInstance()->GetWindow()->Close();}

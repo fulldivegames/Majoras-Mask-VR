@@ -3,194 +3,194 @@
   "include": "1213518c7a380a9f.inc",
   "variables": [
     {
-      "name": "mmvr_local_6ed0145c92ee7da3",
+      "name": "mmvr_local_6e31e2d9343d8146",
       "original": "D_8085D10C",
       "function": "Player_Door_Staircase",
-      "line": 7006,
-      "at": 298127
+      "line": 7017,
+      "at": 298601
     },
     {
-      "name": "mmvr_local_ceef75a1a7fac828",
+      "name": "mmvr_local_7919d67a6417dd8e",
       "original": "D_8085D130",
       "function": "func_80836C70",
-      "line": 7355,
-      "at": 311885
+      "line": 7366,
+      "at": 312359
     },
     {
-      "name": "mmvr_local_88ac7bc64c98640b",
+      "name": "mmvr_local_ae291a820b2fdcfe",
       "original": "D_8085D27C",
       "function": "func_8083F8A8",
-      "line": 10928,
-      "at": 463105
+      "line": 10953,
+      "at": 464293
     },
     {
-      "name": "mmvr_local_0bbe365a0b2a20f1",
+      "name": "mmvr_local_38805acc63c31903",
       "original": "D_8085D288",
       "function": "func_8083F8A8",
-      "line": 10929,
-      "at": 463158
+      "line": 10954,
+      "at": 464346
     },
     {
-      "name": "mmvr_local_39c579900b58001d",
+      "name": "mmvr_local_cfce8b095ae5c64e",
       "original": "sSwordItemIds",
       "function": "Player_PutSwordInHand",
-      "line": 11540,
-      "at": 489454
+      "line": 11565,
+      "at": 490642
     },
     {
-      "name": "mmvr_local_c0951b7e27c17765",
+      "name": "mmvr_local_d5d8615bc7781a9c",
       "original": "sPedestalPos",
       "function": "Player_StartMode_TimeTravel",
-      "line": 11565,
-      "at": 490357
+      "line": 11590,
+      "at": 491545
     },
     {
-      "name": "mmvr_local_09309449b20acd23",
+      "name": "mmvr_local_dc212b9ea46fb553",
       "original": "sTatlSpawnPosOffset",
       "function": "Player_Init",
-      "line": 11982,
-      "at": 508734
+      "line": 12007,
+      "at": 509922
     },
     {
-      "name": "mmvr_local_f5dd391364d4ae74",
+      "name": "mmvr_local_2fad5a5817d40b37",
       "original": "D_8085D34C",
       "function": "Player_UpdateInterface",
-      "line": 12147,
-      "at": 515375
+      "line": 12172,
+      "at": 516563
     },
     {
-      "name": "mmvr_local_d368e33a7d30c292",
+      "name": "mmvr_local_744ce1bd471c49b9",
       "original": "D_8085D354",
       "function": "Player_UpdateInterface",
-      "line": 12197,
-      "at": 518315
+      "line": 12222,
+      "at": 519503
     },
     {
-      "name": "mmvr_local_e28535ec363aaf7f",
+      "name": "mmvr_local_f89b5428a1f9af77",
       "original": "sInteractWallCheckOffset",
       "function": "Player_ProcessSceneCollision",
-      "line": 12410,
-      "at": 529162
+      "line": 12435,
+      "at": 530350
     },
     {
-      "name": "mmvr_local_2151021af5633076",
+      "name": "mmvr_local_e864164f38a9c128",
       "original": "sDogSpawnPos",
       "function": "Player_Update",
-      "line": 13652,
-      "at": 583669
+      "line": 13677,
+      "at": 584857
     },
     {
-      "name": "mmvr_local_3333cb245c10fe3a",
+      "name": "mmvr_local_c5a9e46d755998dd",
       "original": "D_8085D62C",
       "function": "Player_Action_35",
-      "line": 16876,
-      "at": 708146
+      "line": 16901,
+      "at": 709334
     },
     {
-      "name": "mmvr_local_1dcf0ef193b1a7da",
+      "name": "mmvr_local_6a4202469832808d",
       "original": "D_8085D638",
       "function": "Player_Action_35",
-      "line": 16877,
-      "at": 708227
+      "line": 16902,
+      "at": 709415
     },
     {
-      "name": "mmvr_local_19a6361a9c9f4f32",
+      "name": "mmvr_local_6bf79cb33e0351e4",
       "original": "D_8085D644",
       "function": "Player_Action_35",
-      "line": 16878,
-      "at": 708308
+      "line": 16903,
+      "at": 709496
     },
     {
-      "name": "mmvr_local_776ad5802b4994bb",
+      "name": "mmvr_local_3baee79e59bae683",
       "original": "sJumpOffPedestalAnimSfxList",
       "function": "Player_Action_TimeTravelEnd",
-      "line": 18873,
-      "at": 792791
+      "line": 18924,
+      "at": 795807
     },
     {
-      "name": "mmvr_local_9f7f2cfaf0f9fb24",
+      "name": "mmvr_local_6eba36a8e008b322",
       "original": "D_8085D7F8",
       "function": "Player_Action_70",
-      "line": 19176,
-      "at": 807295
+      "line": 19227,
+      "at": 810311
     },
     {
-      "name": "mmvr_local_77b4059d9a823b63",
+      "name": "mmvr_local_c4d91ca004d42efa",
       "original": "D_8085D804",
       "function": "Player_Action_70",
-      "line": 19177,
-      "at": 807353
+      "line": 19228,
+      "at": 810369
     },
     {
-      "name": "mmvr_local_4274a4bbb944140f",
+      "name": "mmvr_local_06a7303df3292347",
       "original": "D_8085D80C",
       "function": "Player_Action_70",
-      "line": 19184,
-      "at": 807606
+      "line": 19235,
+      "at": 810622
     },
     {
-      "name": "mmvr_local_960d547a998c7ca0",
+      "name": "mmvr_local_28cd51ef0207c0b2",
       "original": "D_8085D838",
       "function": "Player_Action_70",
-      "line": 19197,
-      "at": 808855
+      "line": 19248,
+      "at": 811871
     },
     {
-      "name": "mmvr_local_55a511f1aa536f64",
+      "name": "mmvr_local_bfe491caa52b4d81",
       "original": "D_8085D918",
       "function": "func_80856110",
-      "line": 20224,
-      "at": 848356
+      "line": 20275,
+      "at": 851372
     },
     {
-      "name": "mmvr_local_9d5ffbf1c4a6f4df",
+      "name": "mmvr_local_e72f7e41c7853517",
       "original": "D_8085D924",
       "function": "func_80856110",
-      "line": 20225,
-      "at": 848428
+      "line": 20276,
+      "at": 851444
     },
     {
-      "name": "mmvr_local_ba2c1e0f38884c70",
+      "name": "mmvr_local_d0baa36e0187eb84",
       "original": "D_8085D930",
       "function": "func_80856110",
-      "line": 20226,
-      "at": 848503
+      "line": 20277,
+      "at": 851519
     },
     {
-      "name": "mmvr_local_8c1e142084c3b2d1",
+      "name": "mmvr_local_afb07bdbabce814d",
       "original": "D_8085D934",
       "function": "func_80856110",
-      "line": 20227,
-      "at": 848576
+      "line": 20278,
+      "at": 851592
     },
     {
-      "name": "mmvr_local_6840a316638ec65c",
+      "name": "mmvr_local_9ca162d456aecf5e",
       "original": "D_8085D940",
       "function": "func_808566C0",
-      "line": 20367,
-      "at": 853680
+      "line": 20418,
+      "at": 856696
     },
     {
-      "name": "mmvr_local_c0e52f11ea3c67dd",
+      "name": "mmvr_local_6f5baf3d8f965b1e",
       "original": "D_8085D94C",
       "function": "func_808566C0",
-      "line": 20368,
-      "at": 853733
+      "line": 20419,
+      "at": 856749
     },
     {
-      "name": "mmvr_local_9786693b48dcc3cd",
+      "name": "mmvr_local_d867cdf5b0fa9711",
       "original": "D_8085D978",
       "function": "Player_Action_96",
-      "line": 20954,
-      "at": 876031
+      "line": 21005,
+      "at": 879047
     },
     {
-      "name": "mmvr_local_9a67938a62ccb7ad",
+      "name": "mmvr_local_480766433ebb9757",
       "original": "D_8085D984",
       "function": "Player_Action_96",
-      "line": 20955,
-      "at": 876103
+      "line": 21006,
+      "at": 879119
     }
   ],
-  "sourceSha256": "0b34759da391595cbd82cc307dbcad92455f6ada6014f3341ad24d2932a6ea3d"
+  "sourceSha256": "6b29c9ed5c8398d4cac4237ee8ba4fb665345ce35288fc22ff13a673e16600fc"
 }

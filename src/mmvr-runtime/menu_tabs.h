@@ -25,7 +25,7 @@ inline constexpr int AssignmentFirst = int(Setting::Count), ResetSettingsRow = A
                      DiagnosticExportRow = NativeOptionsRow + 1,
                      SetupGuideRow = NativeOptionsRow + 2,
                      ReleaseNotesFirstRow = NativeOptionsRow + 3,
-                     ReleaseNotesCount = 46,
+                     ReleaseNotesCount = 51,
                      SaveGameRow = ReleaseNotesFirstRow + ReleaseNotesCount,
                      SearchSettingsRow = SaveGameRow + 1,
                      MenuRows = SearchSettingsRow + 1;
@@ -91,6 +91,11 @@ struct MenuEntry {
 };
 // Explicit presentation order is independent of persistent setting IDs.
 inline constexpr MenuEntry OrderedMenu[] = {
+    { ReleaseNotesFirstRow + 46, 39 },
+    { ReleaseNotesFirstRow + 47, 39 },
+    { ReleaseNotesFirstRow + 48, 39 },
+    { ReleaseNotesFirstRow + 49, 39 },
+    { ReleaseNotesFirstRow + 50, 39 },
     { ReleaseNotesFirstRow + 41, 39 },
     { ReleaseNotesFirstRow + 42, 39 },
     { ReleaseNotesFirstRow + 43, 39 },
@@ -282,6 +287,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { int(Setting::BowAimYaw), 14 },
     { int(Setting::BowAimPitch), 14 },
     { int(Setting::BowHandSmoothing), 14 },
+    { int(Setting::BowDrawHandAim), 14 },
     { int(Setting::BowGrabDistance), 14 },
     { int(Setting::BowMinDraw), 14 },
     { int(Setting::BowFullDraw), 14 },
@@ -435,6 +441,7 @@ inline constexpr MenuEntry OrderedMenu[] = {
     { TutorialFirstRow + 52, 36 },
     { TutorialFirstRow + 53, 36 },
     { TutorialFirstRow + 54, 36 },
+    { TutorialFirstRow + 55, 36 },
     { NativeOptionsRow, 37 },
 
 };
@@ -444,7 +451,7 @@ inline bool MenuRowVisible(int row) {
     if (row == int(Setting::PhysicalSword) || row == int(Setting::PhysicalShield) || row == int(Setting::PhysicalBow) || row == int(Setting::PhysicalBottle) || row == int(Setting::PhysicalCarry) || row == int(Setting::PhysicalMasks) || row == int(Setting::PhysicalFists) || row == int(Setting::PhysicalFins) || row == int(Setting::TrackedAim)) return false;
     // Retain saved IDs, but one shared leg control and the human body control
     // now own these policies. Retired rows also stay out of both search menus.
-    if (row == int(Setting::HideLegs) || row == int(Setting::KafeiBody) ||
+    if (row == int(Setting::HideBunnyHood) || row == int(Setting::HideLegs) || row == int(Setting::KafeiBody) ||
         (row >= int(Setting::HideHumanBodyLegs) && row <= int(Setting::HideDeityBodyLegs))) return false;
     if (row == int(Setting::AreaPanoramaScreens)) return false;
     if(!PrivateDebugTools && (row==DebugReturnRow || row==SkipDayRow || row==SkipTwoHoursRow || row==int(Setting::DebugRoomSpawn) ||

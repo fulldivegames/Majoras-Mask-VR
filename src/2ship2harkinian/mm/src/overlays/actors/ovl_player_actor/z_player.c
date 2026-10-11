@@ -4667,6 +4667,17 @@ void func_80831944(PlayState* play, Player* this) {
 void Player_UseItem(PlayState* play, Player* this, ItemId item) {
     PlayerItemAction itemAction = Player_ItemToItemAction(this, item);
 
+#ifdef MMVR_ENABLE
+    // Direct physical/easy equip bypasses the HUD's disabled C-button check.
+    // Growth is supported only in the native Twinmold arena. An already worn
+    // Giant's Mask may still be removed elsewhere to recover from older builds.
+    if ((itemAction == PLAYER_IA_MASK_GIANT) && (this->currentMask != PLAYER_MASK_GIANT) &&
+        (play->sceneId != SCENE_INISIE_BS)) {
+        Audio_PlaySfx(NA_SE_SY_ERROR);
+        return;
+    }
+#endif
+
     if ((((this->heldItemAction == this->itemAction) &&
           (!(this->stateFlags1 & PLAYER_STATE1_400000) ||
            (Player_MeleeWeaponFromIA(itemAction) != PLAYER_MELEEWEAPON_NONE) || (itemAction == PLAYER_IA_NONE))) ||
@@ -7760,7 +7771,11 @@ void MMVR_PlayerBeginTriggerClimb(PlayState* play, Player* this, CollisionPoly* 
     this->actor.velocity.x = this->actor.velocity.y = this->actor.velocity.z = 0;
     this->actor.speed = this->speedXZ = 0;
     this->fallStartHeight = this->actor.world.pos.y;
-    Player_Anim_PlayOnce(play, this, &gPlayerAnim_link_normal_Fclimb_hold2upL);
+    // Goron has native ladder poses with a different joint layout. Do not load
+    // the human vine pose into his tracked climb or its native fallback.
+    Player_Anim_PlayOnce(play, this, this->transformation == PLAYER_FORM_GORON
+                                      ? this->ageProperties->unk_B4[this->av1.actionVar1]
+                                      : &gPlayerAnim_link_normal_Fclimb_hold2upL);
     this->skelAnime.playSpeed = 0;
     // Keep ordinary climbing's flags for native fallback and ladder completion.
     // While tracked pulls own movement, AnimTask_ActorMovement still consumes
@@ -9312,6 +9327,12 @@ void func_8083B32C(PlayState* play, Player* this, f32 arg2) {
 }
 
 s32 func_8083B3B4(PlayState* play, Player* this, Input* input) {
+#ifdef MMVR_ENABLE
+    s16 headBreachYaw, headBreachPitch;
+    const s32 headBreach = this->transformation == PLAYER_FORM_ZORA &&
+        this->actionFunc == Player_Action_56 && this->unk_AAA <= -0x0E38 &&
+        MMVR_SwimAim(play, this, &headBreachYaw, &headBreachPitch) && headBreachPitch <= -0x0E38;
+#endif
     if ((!(this->stateFlags1 & PLAYER_STATE1_400) && !(this->stateFlags2 & PLAYER_STATE2_400) &&
          (this->transformation != PLAYER_FORM_ZORA)) &&
         ((input == NULL) ||
@@ -9340,7 +9361,11 @@ s32 func_8083B3B4(PlayState* play, Player* this, Input* input) {
         ((this->stateFlags1 & PLAYER_STATE1_400) ||
          ((this->stateFlags2 & PLAYER_STATE2_400) &&
           (((Player_Action_56 != this->actionFunc) && !(this->stateFlags3 & PLAYER_STATE3_8000)) ||
-           (this->unk_AAA < -0x1555)))) &&
+           (this->unk_AAA < -0x1555)
+#ifdef MMVR_ENABLE
+           || headBreach
+#endif
+           ))) &&
         ((this->actor.depthInWater - this->actor.velocity.y) < this->ageProperties->unk_30)) {
         s32 temp_v0_3;
         s16 sp2A;
@@ -17596,6 +17621,25 @@ void Player_Action_50(Player* this, PlayState* play) {
                             func_808381A0(this, &gPlayerAnim_link_normal_jump_climb_up_free, play);
                             this->stateFlags1 |= PLAYER_STATE1_4000;
                         } else {
+#ifdef MMVR_ENABLE
+                            if (directClimb && this->transformation == PLAYER_FORM_GORON && this->actor.wallPoly) {
+                                // A tracked grab preserves extra wall clearance. Goron's native
+                                // finish has shorter forward root travel than Link's; restore its
+                                // authored ladder distance before handing off to that animation.
+                                // The ledge/floor probe above already proved the landing exists.
+                                CollisionPoly* wall = this->actor.wallPoly;
+                                f32 nx = COLPOLY_GET_NORMAL(wall->normal.x);
+                                f32 nz = COLPOLY_GET_NORMAL(wall->normal.z);
+                                f32 n2 = SQ(nx) + SQ(nz);
+                                f32 distance = Math3D_DistPlaneToPos(nx, COLPOLY_GET_NORMAL(wall->normal.y), nz,
+                                                                    wall->dist, &this->actor.world.pos);
+                                if (n2 > 0.5f && distance > this->ageProperties->unk_3C && distance <= 100.0f) {
+                                    f32 correction = (distance - this->ageProperties->unk_3C) / n2;
+                                    this->actor.world.pos.x -= nx * correction;
+                                    this->actor.world.pos.z -= nz * correction;
+                                }
+                            }
+#endif
                             func_8083DCC4(this, this->ageProperties->unk_D4[this->av2.actionVar2], play);
                         }
                     } else if (!directClimb) {
@@ -18202,7 +18246,14 @@ void Player_Action_56(Player* this, PlayState* play) {
             sp3E = CLAMP_MAX(sp3E, (s16)(this->floorPitch - 0xFA0));
         }
 
-        if ((this->unk_AAA >= -0x1555) && (this->actor.depthInWater < (this->ageProperties->unk_24 + 10.0f))) {
+        // Stick steering keeps the original shallow-water anti-breach clamp.
+        // With head steering, deliberate upward aim must be able to cross the
+        // surface gradually rather than require an already steep dive angle.
+        if ((this->unk_AAA >= -0x1555) && (this->actor.depthInWater < (this->ageProperties->unk_24 + 10.0f))
+#ifdef MMVR_ENABLE
+            && !(headSwim && headSwimPitch <= -0x0E38)
+#endif
+        ) {
             sp3E = CLAMP_MIN(sp3E, 0x7D0);
         }
         Math_SmoothStepToS(&this->unk_AAA, sp3E, 4, 0xFA0, 0x190);

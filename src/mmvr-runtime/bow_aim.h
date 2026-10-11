@@ -82,6 +82,45 @@ inline Matrix RigidBowModel(const Matrix& model, const Matrix& grip, float yaw, 
     for(int k=0;k<3;++k) result.m[3][k]=model.m[3][k];
     return result;
 }
+// Small draw-hand corrections relative to the nocking position. Capture in
+// bow-local coordinates so moving/turning the whole rig preserves the aim.
+// Never rotate the held bow, bypass draw eligibility or replace head aiming.
+class BowDrawHandAim {
+    bool captured = false;
+    float baseX = 0, baseZ = 0;
+public:
+    void Reset() { captured = false; }
+    XrVector3f Update(const Matrix& model, XrVector3f delta, float trackingScale,
+                     bool active, bool enabled) {
+        XrVector3f axes[3];
+        for (int row=0;row<3;++row) {
+            const float length=std::hypot(model.m[row][0],model.m[row][1],model.m[row][2]);
+            if (!std::isfinite(length) || length < 1e-7f) { Reset(); return {}; }
+            axes[row]={model.m[row][0]/length,model.m[row][1]/length,model.m[row][2]/length};
+        }
+        const auto forward=axes[1];
+        if (!active || !enabled || !std::isfinite(trackingScale) || trackingScale <= .05f ||
+            !std::isfinite(delta.x) || !std::isfinite(delta.y) || !std::isfinite(delta.z)) {
+            Reset(); return forward;
+        }
+        auto project=[&](int row) { return (delta.x*axes[row].x+delta.y*axes[row].y+delta.z*axes[row].z)/(40.f*trackingScale); };
+        const float x=project(0), z=project(2);
+        if (!captured) { baseX=x; baseZ=z; captured=true; return forward; }
+        float dx=x-baseX, dz=z-baseZ;
+        const float lateral=std::hypot(dx,dz);
+        // Five millimetres of slack prevents small tremors at full draw from
+        // steering the arrow. The maximum correction is fifteen degrees.
+        if (lateral <= .005f) return forward;
+        const float along=std::max(.10f,project(1));
+        const float gain=std::min(lateral-.005f,along*.2679491924f)/lateral;
+        dx*=gain; dz*=gain;
+        XrVector3f result{forward.x*along+axes[0].x*dx+axes[2].x*dz,
+                         forward.y*along+axes[0].y*dx+axes[2].y*dz,
+                         forward.z*along+axes[0].z*dx+axes[2].z*dz};
+        const float length=std::hypot(result.x,result.y,result.z);
+        return {result.x/length,result.y/length,result.z/length};
+    }
+};
 // Native high-detail arrow: tip X=-396, nock X=2001, scale 0.01.
 constexpr float ArrowTipX = -396.f, ArrowNockX = 2001.f, ArrowLength = (ArrowNockX - ArrowTipX) * .01f;
 // Add 20 cm only to the wooden shaft; neither arrowhead nor feathers stretch.

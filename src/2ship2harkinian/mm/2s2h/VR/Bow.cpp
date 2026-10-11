@@ -33,6 +33,7 @@ s32 func_808305BC(PlayState*, Player*, ItemId*, ArrowType*);
 }
 namespace {
 mmvr::BowDraw draw;
+mmvr::BowDrawHandAim drawHandAim;
 bool fullDrawFeedback = false;
 bool pending = false;
 Vec3f shotPosition{};
@@ -91,6 +92,7 @@ bool BowHeld() {
 }
 void ClearBow() {
     draw.Cancel();
+    drawHandAim.Reset();
     fullDrawFeedback = false;
     pending = false;
     bowPoseValid = false;
@@ -201,7 +203,12 @@ void UpdateBow(const mmvr::TrackingFrame& frame, const mmvr::Matrix& view, const
     stringHand = pullHand;
     bowPoseValid = true;
     stringPull = draw.drawing ? draw.pull : 0;
-    auto direction = bowDirection; // The visible bow, arrow and shot share one axis.
+    // Capture the relaxed grip offset on grab; only subsequent draw-hand
+    // motion steers. Include the release sample before dropping the capture.
+    auto direction = bowDirection;
+    if (settings.Get(mmvr::Setting::BowDrawHandAim) > .5f && settings.Get(mmvr::Setting::HeadItemAim) <= .5f)
+        direction = drawHandAim.Update(model,{delta.x,delta.y,delta.z},frame.trackingScale,draw.drawing || fire,true);
+    else drawHandAim.Reset();
     const auto stringDirection = direction;
     if (settings.Get(mmvr::Setting::HeadItemAim) > .5f) {
         const auto headAim = worldPose(frame.head);
@@ -224,6 +231,7 @@ void UpdateBow(const mmvr::TrackingFrame& frame, const mmvr::Matrix& view, const
         shotPower = draw.pull;
         pending = true;
     }
+    if (!draw.drawing) drawHandAim.Reset();
 }
 void ProcessBowInput(PlayState* play) {
     auto* p = GET_PLAYER(play);
@@ -493,6 +501,7 @@ extern "C" void MMVR_DrawAimReticle(PlayState* play) {
 #include "NativeStateFields.h"
 extern "C" void MMVR_VisitVrBowState(MMVR_StateSink* sink) {
     mmvrgame::NativeStateField(sink,"vr/bow/draw",draw);
+    mmvrgame::NativeStateField(sink,"vr/bow/drawHandAim",drawHandAim);
     mmvrgame::NativeStateField(sink,"vr/bow/pending",pending);
     mmvrgame::NativeStateField(sink,"vr/bow/shotPosition",shotPosition);
     mmvrgame::NativeStateField(sink,"vr/bow/shotRotation",shotRotation);
@@ -517,6 +526,7 @@ namespace mmvrgame {
 void RebaseBowTracking(const mmvr::TrackingFrame& f) {
     const int dominant=mmvr::SwordController(mmvr::GetSettings());
     fullDrawFeedback = false;
+    drawHandAim.Reset();
     draw.Rebase(draw.SampleTime(),f.timeSeconds,f.epoch,
                 f.handTracked[dominant]&&f.triggers[dominant]>=.25f);
     auto* play=gPlayState;auto* p=play?GET_PLAYER(play):nullptr;

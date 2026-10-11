@@ -120,6 +120,12 @@ int main(){
         check(mmvr::InMaskFaceSlot(mmvr::CaptainMaskWearContact(palm,.42f),head,.14f));
     }
     check(mmvr::Settings{}.Get(mmvr::Setting::HideBunnyHood)==1);
+    {
+        mmvr::Settings oldProfile;
+        oldProfile.Set(mmvr::Setting::HideBunnyHood,0);
+        check(oldProfile.Get(mmvr::Setting::HideBunnyHood)==1);
+        check(!mmvr::MenuRowVisible(int(mmvr::Setting::HideBunnyHood)));
+    }
     check(mmvr::Settings{}.Get(mmvr::Setting::HideBodyLegs)==0);
     check(mmvr::MenuRowVisible(int(mmvr::Setting::HideBodyLegs)));
     for(auto retired : {mmvr::Setting::HideLegs,mmvr::Setting::KafeiBody,
@@ -1014,6 +1020,42 @@ int main(){
         for(int row=0;row<3;++row)for(int k=0;k<3;++k)check(close(actual.m[row][k],expected.m[row][k]));
         for(int k=0;k<3;++k)check(close(actual.m[3][k],model.m[3][k]));
       }
+    }
+    // Draw-hand corrections: both model chiralities, world scales and rig turns.
+    check(mmvr::Settings{}.Get(mmvr::Setting::BowDrawHandAim)==0);
+    for(int hand:{0,1}) for(float scale:{.5f,1.f,2.f}) for(float turn:{0.f,1.5f,3.14f}) {
+        auto model=mmvr::RigidBowModel(mmvr::ModelHandCalibration(1,hand,mmvr::Settings{}),mmvr::YawPose(turn),-8,-90);
+        XrVector3f axis[3];
+        for(int row=0;row<3;++row) {
+            const float n=std::hypot(model.m[row][0],model.m[row][1],model.m[row][2]);
+            axis[row]={model.m[row][0]/n,model.m[row][1]/n,model.m[row][2]/n};
+        }
+        auto delta=[&](float x,float y,float z) {return XrVector3f{
+            (x*axis[0].x+y*axis[1].x+z*axis[2].x)*40*scale,
+            (x*axis[0].y+y*axis[1].y+z*axis[2].y)*40*scale,
+            (x*axis[0].z+y*axis[1].z+z*axis[2].z)*40*scale};};
+        auto dot=[](XrVector3f a,XrVector3f b){return a.x*b.x+a.y*b.y+a.z*b.z;};
+        mmvr::BowDrawHandAim aim;
+        check(close(dot(aim.Update(model,delta(.02f,.02f,-.03f),scale,true,true),axis[1]),1));
+        auto along=aim.Update(model,delta(.02f,.45f,-.03f),scale,true,true);
+        check(close(dot(along,axis[1]),1)); // Pulling back alone does not steer.
+        auto tiny=aim.Update(model,delta(.024f,.45f,-.03f),scale,true,true);
+        check(close(dot(tiny,axis[1]),1));
+        auto vertical=aim.Update(model,delta(.02f,.45f,.01f),scale,true,true);
+        check(dot(vertical,axis[2])>.05f && dot(vertical,axis[1])>.96f);
+        auto horizontal=aim.Update(model,delta(-.02f,.45f,-.03f),scale,true,true);
+        check(dot(horizontal,axis[0])<-.05f);
+        auto cap=aim.Update(model,delta(1.f,.45f,1.f),scale,true,true);
+        check(close(std::hypot(cap.x,cap.y,cap.z),1));
+        check(close(dot(cap,axis[1]),std::cos(15*.01745329252f)));
+        auto off=aim.Update(model,delta(1.f,.45f,1.f),scale,true,false);
+        check(close(dot(off,axis[1]),1));
+        check(close(dot(aim.Update(model,delta(1.f,.45f,1.f),scale,true,true),axis[1]),1)); // Fresh enable recaptures.
+        aim.Update(model,{},scale,false,true);
+        check(close(dot(aim.Update(model,delta(-1,.45f,0),scale,true,true),axis[1]),1));
+        const XrVector3f nock{-cap.x*10,-cap.y*10,-cap.z*10};
+        auto arrow=mmvr::ArrowPose(cap,nock,scale);
+        for(int k=0;k<3;++k) check(close(arrow.m[3][k]+mmvr::ArrowNockX*arrow.m[0][k],(&nock.x)[k]));
     }
     // Bow stabilization preserves direction and bypasses deliberate turns.
     {

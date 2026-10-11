@@ -1,7 +1,10 @@
 #pragma once
 #include "Masks.h"
 #include "Bottle.h"
+#include "mask_fit.h"
+#include <cstring>
 extern "C" { void Player_Action_63(Player*,PlayState*);
+void Player_UseItem(PlayState*,Player*,ItemId);
 Actor* Actor_Delete(ActorContext*,Actor*,PlayState*);
 }
 // Isolated copied-save fixture. Production entry remains the wheel's SelectItem.
@@ -69,6 +72,33 @@ static void NativeQuickWheelTest(PlayState* play) {
         mmvrgame::RecordFormTracking(f,view,head);
         mmvrgame::RecordTracking(f,view,head);mmvrgame::ProcessItemTrigger(play);
     };
+    // Exercise the shared native entry, not just the VR mask selection gate.
+    // Direct callers must obey the same arena restriction as native C buttons.
+    const auto originalScene=play->sceneId;
+    for(int testScene=0;testScene<SCENE_MAX;++testScene) {
+        if(testScene==SCENE_INISIE_BS)continue;
+        for(int form=0;form<PLAYER_FORM_MAX;++form) {
+            prepare(SLOT_MASK_GIANT,ITEM_MASK_GIANT,form,0,0);
+            play->sceneId=testScene;
+            const auto before=*p;
+            const auto beforeMask=gSaveContext.save.equippedMask;
+            Player_UseItem(play,p,ITEM_MASK_GIANT);
+            check(std::memcmp(&before,p,sizeof(before))==0&&gSaveContext.save.equippedMask==beforeMask,
+                  "giant-denied-outside-arena-without-mutation");
+            play->sceneId=originalScene;
+        }
+    }
+    prepare(SLOT_MASK_GIANT,ITEM_MASK_GIANT,PLAYER_FORM_HUMAN,0,0);
+    play->sceneId=SCENE_INISIE_BS;
+    gSaveContext.magicState=MAGIC_STATE_IDLE;
+    gSaveContext.save.saveInfo.playerData.magic=48;
+    Player_UseItem(play,p,ITEM_MASK_GIANT);
+    check(p->itemAction==PLAYER_IA_MASK_GIANT&&p->unk_AA5==PLAYER_UNKAA5_5,"giant-native-arena-use");
+    play->sceneId=originalScene;
+    prepare(SLOT_MASK_GIANT,ITEM_MASK_GIANT,PLAYER_FORM_HUMAN,0,0);
+    p->currentMask=PLAYER_MASK_GIANT;
+    Player_UseItem(play,p,ITEM_MASK_GIANT);
+    check(p->itemAction==PLAYER_IA_MASK_GIANT&&p->unk_AA5==PLAYER_UNKAA5_5,"giant-removal-recovery-outside-arena");
     for(int enabled=0;enabled<3;++enabled)for(int left=0;left<2;++left)
         for(int item=ITEM_MASK_DEKU;item<=ITEM_MASK_GIANT;++item) {
             prepare(SLOT_MASK_DEKU,item,PLAYER_FORM_HUMAN,enabled,left);
@@ -86,7 +116,23 @@ static void NativeQuickWheelTest(PlayState* play) {
                 mmvrgame::SelectItem(play,SLOT_MASK_DEKU,item);
                 mmvrgame::ProcessItemTrigger(play);sample(hand,0,true);
                 f.hands[hand].position={0,-.2f,-.25f};sample(hand,0,true);
+                const auto reachStart=f.hands[hand].position;
                 f.hands[hand].position={0,-.12f,-.14f};
+                if(item==ITEM_MASK_CAPTAIN) {
+                    // Put the fitted skull's wearing surface at the face slot,
+                    // rather than assuming every mask is centered on its grip.
+                    const auto contact=mmvr::CaptainMaskWearContact(f.hands[hand],mmvr::GetSettings().Get(mmvr::Setting::MaskSize));
+                    f.hands[hand].position.x-=contact.position.x;
+                    f.hands[hand].position.y+=-.12f-contact.position.y;
+                    f.hands[hand].position.z+=-.14f-contact.position.z;
+                }
+                const auto reachTarget=f.hands[hand].position;
+                for(int i=1;i<=8;++i) {
+                    const float t=i/8.f;
+                    f.hands[hand].position={reachStart.x+t*(reachTarget.x-reachStart.x),
+                        reachStart.y+t*(reachTarget.y-reachStart.y),reachStart.z+t*(reachTarget.z-reachStart.z)};
+                    sample(hand,0,true);
+                }
                 for(int i=0;i<6;++i)sample(hand,0,true);
                 check(mmvr::TakeMaskUse()==item&&mmvr::HeldMaskItem()<0,"face-use");
                 mmvrgame::SelectItem(play,SLOT_MASK_DEKU,item);mmvrgame::ProcessItemTrigger(play);
@@ -127,16 +173,38 @@ static void NativeQuickWheelTest(PlayState* play) {
         for(int item=ITEM_BOTTLE;item<=ITEM_OBABA_DRINK;++item) {
             prepare(SLOT_BOTTLE_1,item,PLAYER_FORM_HUMAN,enabled,left);
             // Empty bottles already ready on selection for physical catching.
-            check((p->heldItemId==item)==bool(enabled||item==ITEM_BOTTLE),"bottle-ready-only");
+            check(p->heldItemId==item,"bottle-ready-only");
+            check(mmvrgame::RadialBottleActive(play),"bottle-owned-by-radial-readiness");
             for(int i=0;i<8;++i) {
                 sample(1-left,0,false);
-                if(enabled&&p->upperActionFunc)p->upperActionFunc(p,play);
+                if(p->upperActionFunc)p->upperActionFunc(p,play);
                 check(gSaveContext.save.saveInfo.inventory.items[SLOT_BOTTLE_1]==item,"bottle-retains-contents");
                 check(p->unk_AA5==PLAYER_UNKAA5_0,"bottle-no-use-request");
-                if(enabled)check(p->heldItemAction==Player_ItemToItemAction(p,static_cast<ItemId>(item))&&
+                check(p->heldItemAction==Player_ItemToItemAction(p,static_cast<ItemId>(item))&&
                     p->itemAction==p->heldItemAction,"bottle-coherent-native-action");
             }
-            if(enabled)check(bool(MMVR_IndependentBottle(p))==(item==ITEM_BOTTLE),"filled-bottle-cannot-catch");
+            check(bool(MMVR_IndependentBottle(p))==(item==ITEM_BOTTLE),"filled-bottle-cannot-catch");
+        }
+        for(int item : {ITEM_POTION_RED,ITEM_FISH}) {
+            prepare(SLOT_BOTTLE_1,item,PLAYER_FORM_HUMAN,enabled,left);
+            check(mmvrgame::RadialBottleActive(play),"bottle-radial-gesture-owner");
+            const auto heldId=p->heldItemId;
+            const auto heldAction=p->heldItemAction;
+            mmvrgame::ClearItemSelection(); // Same native held bottle, no radial owner.
+            check(p->heldItemId==heldId&&p->heldItemAction==heldAction,"native-bottle-left-equipped");
+            check(!mmvrgame::RadialBottleActive(play),"native-bottle-no-radial-owner");
+            for(int i=0;i<40;++i) {
+                f.timeSeconds=clock+=.02;
+                const auto opening=mmvrgame::BottleMouthForForm(p);
+                auto model=mmvr::YawPose(0,view.m[3][0]-opening.x,
+                    view.m[3][1]-2.8f-opening.y,view.m[3][2]-4.f-opening.z);
+                if(item==ITEM_FISH)model.m[1][1]=-1;
+                f.hands[1-left].position.x=i%2?.06f:0.f;
+                mmvrgame::UpdateBottle(f,model);
+                check(!mmvrgame::ProcessBottleGesture(play),"non-radial-mouth-and-shake-do-not-use");
+                check(gSaveContext.save.saveInfo.inventory.items[SLOT_BOTTLE_1]==item&&
+                      p->unk_AA5==PLAYER_UNKAA5_0,"non-radial-contents-retained");
+            }
         }
         prepare(SLOT_DEKU_STICK,ITEM_DEKU_STICK,PLAYER_FORM_HUMAN,enabled,left,10);
         check((p->heldItemAction==PLAYER_IA_DEKU_STICK)==bool(enabled),"stick-ready");
@@ -201,9 +269,10 @@ static void NativeQuickWheelTest(PlayState* play) {
         const int slot=item==ITEM_POTION_RED?SLOT_BOTTLE_1:SLOT(item);
         prepare(slot,item,PLAYER_FORM_HUMAN,0,left);
         mmvr::GetSettings().Set(mmvr::Setting::QuickWheelAllItems,1);
+        const auto beforeAction=p->itemAction,beforeHeld=p->heldItemAction;
         p->talkActor=&npc;p->exchangeItemAction=PLAYER_IA_BOTTLE_POTION_RED;
         mmvrgame::SelectItem(play,slot,item);mmvrgame::ProcessItemTrigger(play);
-        check(p->itemAction==PLAYER_IA_NONE&&p->heldItemAction==PLAYER_IA_NONE&&
+        check(p->itemAction==beforeAction&&p->heldItemAction==beforeHeld&&
               mmvrgame::ReadyWheelDrawId(play)<0,"npc-offer-selection-does-not-use-or-preview");
         check(gSaveContext.save.saveInfo.inventory.items[slot]==item,"npc-offer-keeps-inventory");
     }

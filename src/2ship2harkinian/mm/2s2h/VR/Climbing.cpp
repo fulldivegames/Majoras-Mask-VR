@@ -236,7 +236,7 @@ static int ApproachClimb(PlayState* play, const mmvr::TrackingFrame& frame, cons
     // remains latched through a native handoff until the next input update.
     if (!MMVR_PhysicalClimbEnabled(play, p) || (p && (p->actor.freezeTimer || (p->stateFlags2 & PLAYER_STATE2_80))) || !mmvr::InputFocused() || mmvr::MenuPaused() ||
         MMVR_ItemPresentationActive(p) || NativeViewfinderActive(play) || p->itemAction != p->heldItemAction ||
-        p->transformation == PLAYER_FORM_GORON || p->csAction != PLAYER_CSACTION_NONE || p->heldActor ||
+        p->csAction != PLAYER_CSACTION_NONE || p->heldActor ||
         play->csCtx.state != CS_STATE_IDLE || play->pauseCtx.state != PAUSE_STATE_OFF ||
         play->msgCtx.msgMode != MSGMODE_NONE || play->transitionTrigger != TRANS_TRIGGER_OFF ||
         gSaveContext.save.saveInfo.playerData.health <= 0 || (p->stateFlags2 & PLAYER_STATE2_USING_OCARINA) ||

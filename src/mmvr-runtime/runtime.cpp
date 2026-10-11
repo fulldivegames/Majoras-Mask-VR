@@ -83,6 +83,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "periodic_reports.h"
 
 namespace mmvr {
 namespace {
@@ -344,15 +345,6 @@ void DebugLog(const std::string& message) {
 void Log(const std::string& message) {
     std::ofstream("mmvr.log", std::ios::app) << message << std::endl;
     DebugLog(message);
-}
-void LogReport(const std::vector<std::string>& messages) {
-    // Periodic telemetry is one ordered append, rather than reopening/flushing
-    // the same file for every line on the frame submission thread.
-    std::ofstream file("mmvr.log", std::ios::app);
-    for (const auto& message : messages) {
-        file << message << '\n';
-        DebugLog(message);
-    }
 }
 void Check(XrResult result, const char* operation) {
     if (XR_FAILED(result))
@@ -1418,6 +1410,7 @@ class TheaterRuntime {
     FrameTimingWindow submissionIntervals;
     std::chrono::steady_clock::time_point previousFocusedSubmit{};
     std::chrono::steady_clock::time_point lastReport = std::chrono::steady_clock::now();
+    std::unique_ptr<PeriodicReportWriter> reportWriter;
     void MakeDialogueChain() {
         if (dialogueChain) return;
 #ifdef __ANDROID__
@@ -1869,6 +1862,15 @@ class TheaterRuntime {
         // A launch without five seconds of focused rendering has no timing sample.
         // Replace the prior launch's JSON immediately instead of presenting it as fresh.
         std::ofstream("mmvr-frame-timing.json") << "{\"sampleFrames\":0,\"pending\":true}";
+        try {
+            const char* token = std::getenv("MMVR_SESSION_TOKEN");
+            reportWriter = std::make_unique<PeriodicReportWriter>(
+                std::filesystem::current_path(), token ? token : "", DebugLog);
+        } catch (const std::exception& e) {
+            // Diagnostics are optional. Never fall back to synchronous periodic
+            // I/O if the worker cannot start.
+            Log(std::string("Periodic diagnostics disabled: ") + e.what());
+        }
 #ifdef __ANDROID__
         GlVerifyTransfer();
         Log("GLES transfer self-test passed: exact RGBA, alpha and vertical orientation");
@@ -2703,7 +2705,7 @@ class TheaterRuntime {
             previousFocusedSubmit = now;
         } else previousFocusedSubmit = {};
         lastSubmitEnd = now;
-        if (now - lastReport >= std::chrono::seconds(5)) {
+        if (now - lastReport >= std::chrono::seconds(5) && reportWriter) {
             std::vector<std::string> reportMessages;
             reportMessages.reserve(8);
             auto report = [&](std::string message) { reportMessages.push_back(std::move(message)); };
@@ -2737,7 +2739,7 @@ class TheaterRuntime {
                 deadlineSamples=lateSubmissions=displayTargetGaps=0;
                 poseToSubmitTotal=poseToSubmitMax=submitLeadTotal=0;submitLeadMin=1e9;
             }
-            std::ofstream metrics("mmvr-frame-timing.json");
+            std::ostringstream metrics;
             metrics << "{\"sampleFrames\":" << sampleFrames << ",\"targetHz\":" << targetHz
                     << ",\"submitHz\":" << submitHz << ",\"appWorkMeanMs\":" << appMeanMs
                     << ",\"appWorkP95Ms\":" << appP95Ms << ",\"workOverBudgetFrames\":" << overBudget
@@ -2764,33 +2766,14 @@ class TheaterRuntime {
                 metrics << (i ? "," : "") << "\"" << mvReasonNames[i] << "\":" << multiviewBlocked[i];
             metrics << "}}";
 #endif
-            metrics << "}";
-            long rss = 0;
-#ifdef __ANDROID__
-            {
-                std::ifstream status("/proc/self/status");
-                std::string line;
-                while (std::getline(status, line))
-                    if (line.rfind("VmRSS:", 0) == 0) {
-                        std::istringstream value(line.substr(6));
-                        value >> rss;
-                        break;
-                    }
-            }
-#endif
-            static std::ofstream profile("mmvr-scene-performance.csv", std::ios::app);
-            static bool profileHeader = []() {
-                if (const char* token = std::getenv("MMVR_SESSION_TOKEN"))
-                    std::ofstream("mmvr-scene-performance-session.txt") << token;
-                profile
-                    << "scene,nativeFrame,actors,nativeLogicDrawMs,focused,submitHz,cpuMeanMs,cpuP95Ms,gpuEyeUiMeanMs,gpuSamples,rssKiB,materialCacheEntries,sampleFrames,appWorkMaxMs,workOverBudgetFrames,workOver2xBudgetFrames,workOver50MsFrames\n";
-                return true;
-            }();
-            profile << diagnosticScene << "," << diagnosticFrame << "," << diagnosticActors << "," << nativeFrameCost
+            metrics << ",\"diagnosticReportsDropped\":" << reportWriter->Dropped()
+                    << ",\"diagnosticReportsFailed\":" << reportWriter->Failed() << "}";
+            std::ostringstream profileBeforeRss, profileAfterRss;
+            profileBeforeRss << diagnosticScene << "," << diagnosticFrame << "," << diagnosticActors << "," << nativeFrameCost
                     << "," << inputFocused << "," << submitHz << "," << appMeanMs << "," << appP95Ms << "," << gpuMeanMs
-                    << "," << gpuSamples << "," << rss << "," << materialCacheEntries << "," << sampleFrames << ","
-                    << appMaxMs << "," << overBudget << "," << over2xBudget << "," << over50Ms << "\n"
-                    << std::flush;
+                    << "," << gpuSamples << ",";
+            profileAfterRss << "," << materialCacheEntries << "," << sampleFrames << ","
+                    << appMaxMs << "," << overBudget << "," << over2xBudget << "," << over50Ms << "\n";
             report("XR CPU submission intervals: meanMs=" + std::to_string(submissionIntervals.Mean()) +
                 " p95Ms=" + std::to_string(submissionIntervals.P95()) +
                 " maxMs=" + std::to_string(submissionIntervals.Max()) +
@@ -2839,7 +2822,8 @@ class TheaterRuntime {
             eyeTimings.Reset();
             reportedFrames = frames;
             lastReport = now;
-            LogReport(reportMessages);
+            reportWriter->Submit({metrics.str(), profileBeforeRss.str(), profileAfterRss.str(),
+                                  std::move(reportMessages)});
         }
     }
 };
