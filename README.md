@@ -9,7 +9,7 @@ One project for **Windows PCVR** and **standalone Meta Quest**. Choose the downl
 
 **Version 0.36 beta downloads:** [Windows PCVR ZIP](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.36/MMVR-Windows-0.36.zip) | [Quest standalone APK](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.36/MMVR-Quest-0.36.apk) | [Release Notes](https://github.com/fulldivegames/Majoras-Mask-VR/releases/tag/v0.36)
 
-**Steam Frame: [Download APK](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.36/MMVR-Steam-Frame-0.36-build281-startup2.apk) - UNTESTED; not confirmed working.**
+**Steam Frame: [Download APK](https://github.com/fulldivegames/Majoras-Mask-VR/releases/download/v0.36/MMVR-Steam-Frame-0.36-build281-startup3.apk) - UNTESTED; not confirmed working.**
 
 **v0.36:** Bottle gestures, optional draw-hand bow aiming, Goron ladders, Zora water exits and mask/cutscene fixes. Wheel-selected bottles drink at your mouth and dump with an upside-down shake. Optional draw-hand aiming: Items > Bow and aiming.
 
